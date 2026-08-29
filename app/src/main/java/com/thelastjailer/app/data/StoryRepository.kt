@@ -15,6 +15,9 @@ object StoryRepository {
 
     fun chapter(id: String): Chapter? = chapters.find { it.id == id }
 
+    /** All nodes belonging to a chapter, in authoring order — used for the scene thumbnail strip. */
+    fun nodesInChapter(chapterId: String): List<StoryNode> = nodesById.values.filter { it.chapterId == chapterId }
+
     /** Choices whose [com.thelastjailer.app.ChoiceRequirement] (if any) the current state satisfies. */
     fun visibleChoices(node: StoryNode, state: GameState): List<Choice> =
         node.choices.filter { it.requirements?.isSatisfiedBy(state) ?: true }
