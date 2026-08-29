@@ -4,11 +4,8 @@ import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,13 +13,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -36,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -43,9 +39,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
 
 class MainActivity : ComponentActivity() {
@@ -60,7 +56,6 @@ private val Panel = Color(0xFF11151B)
 private val Gold = Color(0xFFC79A4A)
 private val GoldSoft = Color(0xFF8D6A32)
 private val TextCream = Color(0xFFE8DFC9)
-private val Muted = Color(0xFF9B9588)
 
 @Composable
 fun JailerApp() {
@@ -75,77 +70,70 @@ fun JailerApp() {
 
     Surface(modifier = Modifier.fillMaxSize(), color = Night) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(Color(0xFF151A21), Night)))
+            modifier = Modifier.fillMaxSize().background(
+                Brush.verticalGradient(listOf(Color(0xFF151A21), Night))
+            )
         ) {
-            Header(onSave = { showSlots = true })
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("☰", color = Gold, fontSize = 25.sp)
+                Text("THE LAST JAILER", color = TextCream, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                TextButton(onClick = { showSlots = true }) { Text("SAVE", color = Gold) }
+            }
 
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 14.dp),
+                modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
+                    Text("CHAPTER I — THE FALLEN KNIGHT", color = Gold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
-                    Text(
-                        "CHAPTER I — THE FALLEN KNIGHT",
-                        color = Gold,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.5.sp
-                    )
-                    Spacer(Modifier.height(8.dp))
-
-                    SceneIllustration(modifier = Modifier.fillMaxWidth().height(230.dp))
-
+                    SceneIllustration(Modifier.fillMaxWidth().height(220.dp))
                     Spacer(Modifier.height(12.dp))
-                    Text(
-                        scene.title,
-                        color = TextCream,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text(scene.title, color = TextCream, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
-                    Text(
-                        scene.text,
-                        color = TextCream.copy(alpha = .92f),
-                        style = MaterialTheme.typography.bodyLarge,
-                        lineHeight = 23.sp
-                    )
+                    Text(scene.text, color = TextCream.copy(alpha = .92f), style = MaterialTheme.typography.bodyLarge, lineHeight = 23.sp)
                 }
 
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    Spacer(Modifier.height(10.dp))
                     StatsBar(state)
                     Spacer(Modifier.height(8.dp))
-
                     scene.choices.forEachIndexed { index, choice ->
-                        ChoiceButton(
-                            label = choice.label,
-                            accent = index == 0,
+                        Button(
                             onClick = {
-                                val newTrophies = choice.trophy?.let { trophy ->
-                                    if (trophy in state.trophies) state.trophies else state.trophies + trophy
+                                val trophies = choice.trophy?.let { t ->
+                                    if (t in state.trophies) state.trophies else state.trophies + t
                                 } ?: state.trophies
                                 state = state.copy(
                                     sceneId = choice.next,
                                     courage = state.courage + choice.courage,
                                     honour = state.honour + choice.honour,
-                                    trophies = newTrophies
+                                    trophies = trophies
                                 )
                                 store.save(1, state)
+                            },
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                            shape = RoundedCornerShape(5.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (index == 0) Color(0xFF211A0F) else Color(0xFF171B21),
+                                contentColor = TextCream
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, if (index == 0) Gold else GoldSoft.copy(alpha = .55f))
+                        ) {
+                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Text(if (index == 0) "◆" else "›", color = Gold, fontSize = 18.sp)
+                                Spacer(Modifier.width(10.dp))
+                                Text(choice.label, fontWeight = FontWeight.SemiBold)
                             }
-                        )
+                        }
                     }
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedButton(
-                        onClick = { showSlots = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Gold),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, GoldSoft)
-                    ) { Text("SAVE / LOAD", letterSpacing = 1.sp) }
+                    Spacer(Modifier.height(4.dp))
+                    OutlinedButton(onClick = { showSlots = true }, modifier = Modifier.fillMaxWidth()) {
+                        Text("SAVE / LOAD", color = Gold)
+                    }
                     Spacer(Modifier.height(8.dp))
                 }
             }
@@ -153,46 +141,21 @@ fun JailerApp() {
     }
 
     if (showSlots) {
-        SaveDialog(store = store, state = state, onStateChange = { state = it }, onClose = { showSlots = false })
+        SaveDialog(store, state, { state = it }, { showSlots = false })
     }
 }
 
 @Composable
-private fun Header(onSave: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+private fun SceneIllustration(modifier: Modifier) {
+    androidx.compose.foundation.layout.Box(
+        modifier = modifier.clip(RoundedCornerShape(8.dp))
     ) {
-        Text("☰", color = Gold, fontSize = 25.sp)
-        Text(
-            "THE LAST JAILER",
-            color = TextCream,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 2.sp
-        )
-        TextButton(onClick = onSave) { Text("SAVE", color = Gold, fontSize = 12.sp) }
-    }
-}
-
-@Composable
-private fun SceneIllustration(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .border(1.dp, GoldSoft.copy(alpha = .65f), RoundedCornerShape(8.dp))
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
+        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
             drawRect(brush = Brush.verticalGradient(listOf(Color(0xFF26303A), Color(0xFF090B10))))
-
-            // distant ruined towers
             val tower = Color(0xFF111821)
             drawRect(tower, Offset(size.width * .08f, size.height * .45f), Size(size.width * .09f, size.height * .35f))
             drawRect(tower, Offset(size.width * .17f, size.height * .34f), Size(size.width * .07f, size.height * .46f))
             drawRect(tower, Offset(size.width * .72f, size.height * .39f), Size(size.width * .08f, size.height * .41f))
-
-            // mountains
             val mountain = Path().apply {
                 moveTo(0f, size.height * .68f)
                 lineTo(size.width * .28f, size.height * .38f)
@@ -204,82 +167,42 @@ private fun SceneIllustration(modifier: Modifier = Modifier) {
                 close()
             }
             drawPath(mountain, Color(0xFF141A20))
-
-            // giant tree silhouette
             val tree = Color(0xFF0B0D10)
             drawCircle(tree, size.minDimension * .33f, Offset(size.width * .73f, size.height * .25f))
             drawCircle(tree, size.minDimension * .29f, Offset(size.width * .88f, size.height * .38f))
             drawRect(tree, Offset(size.width * .72f, size.height * .22f), Size(size.width * .12f, size.height * .78f))
-
-            // glowing black door
             val doorLeft = size.width * .63f
             val doorTop = size.height * .30f
             val doorW = size.width * .20f
             val doorH = size.height * .49f
-            drawRoundRect(Color(0xFF17120D), Offset(doorLeft, doorTop), Size(doorW, doorH), 12f, 12f)
-            drawRoundRect(GoldSoft.copy(alpha = .7f), Offset(doorLeft, doorTop), Size(doorW, doorH), 12f, 12f, style = Stroke(3f))
-            drawCircle(Gold, Offset(doorLeft + doorW * .76f, doorTop + doorH * .54f), 4f)
+            val radius = CornerRadius(12f, 12f)
+            drawRoundRect(color = Color(0xFF17120D), topLeft = Offset(doorLeft, doorTop), size = Size(doorW, doorH), cornerRadius = radius)
+            drawRoundRect(color = GoldSoft.copy(alpha = .7f), topLeft = Offset(doorLeft, doorTop), size = Size(doorW, doorH), cornerRadius = radius, style = Stroke(3f))
+            drawCircle(color = Gold, radius = 4f, center = Offset(doorLeft + doorW * .76f, doorTop + doorH * .54f))
             drawLine(GoldSoft, Offset(doorLeft + doorW * .12f, doorTop + doorH * .72f), Offset(doorLeft + doorW * .88f, doorTop + doorH * .72f), 2f)
-
-            // lantern
-            drawCircle(Gold.copy(alpha = .35f), Offset(doorLeft + doorW * .52f, doorTop + doorH * .32f), 28f)
-            drawCircle(Gold, Offset(doorLeft + doorW * .52f, doorTop + doorH * .32f), 5f)
-
-            // Kaelen silhouette
+            drawCircle(color = Gold.copy(alpha = .35f), radius = 28f, center = Offset(doorLeft + doorW * .52f, doorTop + doorH * .32f))
+            drawCircle(color = Gold, radius = 5f, center = Offset(doorLeft + doorW * .52f, doorTop + doorH * .32f))
             val kx = size.width * .25f
             val ky = size.height * .57f
-            drawCircle(Color(0xFF0A0B0D), 18f, Offset(kx, ky - 47f))
-            drawRoundRect(Color(0xFF0A0B0D), Offset(kx - 25f, ky - 28f), Size(50f, 92f), 16f, 16f)
+            drawCircle(color = Color(0xFF0A0B0D), radius = 18f, center = Offset(kx, ky - 47f))
+            drawRoundRect(color = Color(0xFF0A0B0D), topLeft = Offset(kx - 25f, ky - 28f), size = Size(50f, 92f), cornerRadius = CornerRadius(16f, 16f))
             drawLine(Color(0xFF6C6B65), Offset(kx + 18f, ky + 12f), Offset(kx + 56f, ky + 54f), 5f, StrokeCap.Round)
-            drawLine(Color(0xFF6C6B65), Offset(kx + 55f, ky + 54f), Offset(kx + 63f, ky + 46f), 2f)
-
-            // rain
-            for (i in 0 until 34) {
+            repeat(34) { i ->
                 val x = (i * 47f) % size.width
                 val y = (i * 71f) % size.height
                 drawLine(Color.White.copy(alpha = .10f), Offset(x, y), Offset(x - 8f, y + 22f), 1f)
             }
         }
-        Text(
-            "THE ROAD TO BLACKMERE",
-            modifier = Modifier.align(Alignment.BottomStart).padding(12.dp),
-            color = TextCream.copy(alpha = .78f),
-            fontSize = 10.sp,
-            letterSpacing = 1.2.sp
-        )
+        Text("THE ROAD TO BLACKMERE", modifier = Modifier.padding(12.dp).align(Alignment.BottomStart), color = TextCream.copy(alpha = .78f), fontSize = 10.sp)
     }
 }
 
 @Composable
 private fun StatsBar(state: GameState) {
-    Row(
-        modifier = Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(6.dp)).padding(10.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(modifier = Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(6.dp)).padding(10.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
         Text("⚔ COURAGE ${state.courage}", color = Gold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         Text("⚖ HONOUR ${state.honour}", color = Color(0xFF8AA7C2), fontSize = 12.sp, fontWeight = FontWeight.Bold)
         Text("🏆 ${state.trophies.size}", color = TextCream, fontSize = 12.sp)
-    }
-}
-
-@Composable
-private fun ChoiceButton(label: String, accent: Boolean, onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
-        shape = RoundedCornerShape(5.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (accent) Color(0xFF211A0F) else Color(0xFF171B21),
-            contentColor = TextCream
-        ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, if (accent) Gold else GoldSoft.copy(alpha = .55f))
-    ) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(if (accent) "◆" else "›", color = Gold, fontSize = 18.sp)
-            Spacer(Modifier.width(10.dp))
-            Text(label, fontWeight = FontWeight.SemiBold)
-        }
     }
 }
 
@@ -292,10 +215,7 @@ private fun SaveDialog(store: SaveStore, state: GameState, onStateChange: (GameS
             Column(modifier = Modifier.fillMaxWidth()) {
                 (1..3).forEach { slot ->
                     val saved = store.load(slot)
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("Slot $slot", modifier = Modifier.weight(1f))
                         TextButton(onClick = { store.save(slot, state) }) { Text("SAVE") }
                         TextButton(enabled = saved != null, onClick = { saved?.let { onStateChange(it); onClose() } }) { Text("LOAD") }
