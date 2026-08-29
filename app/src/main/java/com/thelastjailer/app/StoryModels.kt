@@ -50,7 +50,9 @@ data class StoryNode(
     val title: String,
     val illustrationId: String,
     val narrativeText: String,
-    val choices: List<Choice>
+    val choices: List<Choice>,
+    /** When set, this node is a fight: [com.thelastjailer.app.ui.CombatScreen] replaces [choices]. */
+    val combatEncounterId: String? = null
 )
 
 data class Chapter(

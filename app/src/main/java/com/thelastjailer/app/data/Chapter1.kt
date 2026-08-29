@@ -156,7 +156,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
                 nextNodeId = "first_blood",
                 consequences = Consequences(
                     setFlags = setOf("helped_dwarf"),
-                    grantItemIds = listOf("dwarven_token"),
+                    grantItemIds = listOf("dwarven_token", "healing_draught"),
                     unlockTrophy = "Friend of Stonebeard"
                 )
             ),
@@ -187,34 +187,8 @@ val chapter1Nodes: List<StoryNode> = listOf(
 
             There is no door to knock on here. Only the fight.
         """.trimIndent(),
-        choices = listOf(
-            Choice(
-                label = "Meet it blade already drawn.",
-                nextNodeId = "chapter1_end",
-                requirements = ChoiceRequirement(requiredFlags = setOf("drew_sword")),
-                consequences = Consequences(
-                    statDeltas = mapOf(StatType.HEALTH to -5, StatType.XP to 40, StatType.GOLD to 10),
-                    unlockTrophy = "First Blood"
-                )
-            ),
-            Choice(
-                label = "Fight with everything you have.",
-                nextNodeId = "chapter1_end",
-                consequences = Consequences(
-                    statDeltas = mapOf(StatType.HEALTH to -15, StatType.XP to 40, StatType.GOLD to 10),
-                    unlockTrophy = "First Blood"
-                )
-            ),
-            Choice(
-                label = "Use the narrow tunnel against it.",
-                nextNodeId = "chapter1_end",
-                requirements = ChoiceRequirement(minStats = mapOf(StatType.COURAGE to 2)),
-                consequences = Consequences(
-                    statDeltas = mapOf(StatType.HEALTH to -8, StatType.XP to 40),
-                    unlockTrophy = "First Blood"
-                )
-            )
-        )
+        choices = emptyList(),
+        combatEncounterId = "first_blood_encounter"
     ),
     StoryNode(
         id = "chapter1_end",

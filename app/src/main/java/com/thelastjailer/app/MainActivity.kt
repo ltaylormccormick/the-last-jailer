@@ -95,6 +95,30 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                         state = state.applyChoice(choice)
                         store.save(state.activeSlot, state)
                     },
+                    onCombatResolved = { encounter, outcome ->
+                        var updated = state
+                            .copy(health = (state.health - outcome.damageTaken).coerceIn(1, state.maxHealth))
+                            .consumeItems(outcome.consumedItemIds)
+                        updated = if (outcome.victory) {
+                            updated.applyChoice(
+                                Choice(
+                                    label = "",
+                                    nextNodeId = encounter.victoryNodeId,
+                                    consequences = Consequences(
+                                        statDeltas = mapOf(
+                                            StatType.XP to encounter.xpReward,
+                                            StatType.GOLD to encounter.goldReward
+                                        ),
+                                        unlockTrophy = encounter.unlockTrophy
+                                    )
+                                )
+                            )
+                        } else {
+                            updated.copy(sceneId = encounter.defeatNodeId ?: encounter.victoryNodeId)
+                        }
+                        state = updated
+                        store.save(state.activeSlot, state)
+                    },
                     onOpenJournal = { screen = AppScreen.JOURNAL },
                     onOpenInventory = { screen = AppScreen.INVENTORY },
                     onOpenCharacter = { screen = AppScreen.CHARACTER },

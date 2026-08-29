@@ -22,6 +22,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,8 +34,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.thelastjailer.app.BuildConfig
 import com.thelastjailer.app.Choice
+import com.thelastjailer.app.CombatEncounter
+import com.thelastjailer.app.CombatOutcome
 import com.thelastjailer.app.GameState
 import com.thelastjailer.app.StoryNode
+import com.thelastjailer.app.data.CombatRepository
 import com.thelastjailer.app.data.EntitlementRepository
 import com.thelastjailer.app.data.StoryRepository
 
@@ -40,6 +47,7 @@ fun StoryScreen(
     state: GameState,
     entitlements: EntitlementRepository,
     onChoiceSelected: (Choice) -> Unit,
+    onCombatResolved: (CombatEncounter, CombatOutcome) -> Unit,
     onOpenJournal: () -> Unit,
     onOpenInventory: () -> Unit,
     onOpenCharacter: () -> Unit,
@@ -50,6 +58,8 @@ fun StoryScreen(
     val node = StoryRepository.node(state.sceneId)
     val choices = StoryRepository.visibleChoices(node, state)
     val chapterUnlocked = entitlements.isChapterUnlocked(node.chapterId)
+    val encounter = node.combatEncounterId?.let { CombatRepository.encounter(it) }
+    var inCombat by remember(node.id) { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize().padding(horizontal = 14.dp)) {
         StoryHeader(
@@ -67,6 +77,19 @@ fun StoryScreen(
             return@Column
         }
 
+        if (encounter != null && inCombat) {
+            CombatScreen(
+                encounter = encounter,
+                playerState = state,
+                onResolved = { outcome ->
+                    onCombatResolved(encounter, outcome)
+                    inCombat = false
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+            return@Column
+        }
+
         ChapterThumbnailStrip(node)
         Spacer(Modifier.height(10.dp))
 
@@ -77,7 +100,7 @@ fun StoryScreen(
                 }
                 Spacer(Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.SpaceBetween) {
-                    ChoiceList(choices, onChoiceSelected)
+                    ActionArea(encounter, choices, onEngage = { inCombat = true }, onChoiceSelected)
                     Column {
                         StatsBar(state)
                         Spacer(Modifier.height(8.dp))
@@ -91,7 +114,7 @@ fun StoryScreen(
                 Column(modifier = Modifier.fillMaxWidth()) {
                     StatsBar(state)
                     Spacer(Modifier.height(8.dp))
-                    ChoiceList(choices, onChoiceSelected)
+                    ActionArea(encounter, choices, onEngage = { inCombat = true }, onChoiceSelected)
                     Spacer(Modifier.height(8.dp))
                     CharacterSummaryCard(state)
                     Spacer(Modifier.height(8.dp))
@@ -164,6 +187,28 @@ private fun NarrativePanel(node: StoryNode) {
         Text(node.title, style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))
         Text(node.narrativeText, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+@Composable
+private fun ActionArea(
+    encounter: CombatEncounter?,
+    choices: List<Choice>,
+    onEngage: () -> Unit,
+    onChoiceSelected: (Choice) -> Unit
+) {
+    if (encounter != null) {
+        Button(
+            onClick = onEngage,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+            shape = RoundedCornerShape(5.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF211A0F), contentColor = JailerColors.TextPrimary),
+            border = BorderStroke(1.dp, JailerColors.Gold)
+        ) {
+            Text("⚔ ENGAGE", fontWeight = FontWeight.SemiBold)
+        }
+    } else {
+        ChoiceList(choices, onChoiceSelected)
     }
 }
 

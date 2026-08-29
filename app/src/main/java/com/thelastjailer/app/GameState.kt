@@ -46,6 +46,14 @@ private fun GameState.withStatDelta(stat: StatType, delta: Int): GameState = whe
     StatType.XP -> applyXpGain(delta)
 }
 
+/** Removes one occurrence per id in [itemIds] from the inventory (e.g. a consumed potion). */
+fun GameState.consumeItems(itemIds: List<String>): GameState {
+    if (itemIds.isEmpty()) return this
+    val remaining = inventory.toMutableList()
+    itemIds.forEach { remaining.remove(it) }
+    return copy(inventory = remaining)
+}
+
 /** XP gains roll over into levels; each level needs 100 more XP than the last. */
 private fun GameState.applyXpGain(delta: Int): GameState {
     if (delta <= 0) return copy(xp = (xp + delta).coerceAtLeast(0))
