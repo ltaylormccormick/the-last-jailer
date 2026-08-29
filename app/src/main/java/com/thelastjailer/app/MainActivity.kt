@@ -43,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
+import com.thelastjailer.app.data.EntitlementRepository
+import com.thelastjailer.app.data.LocalEntitlementRepository
 import com.thelastjailer.app.data.StoryRepository
 
 class MainActivity : ComponentActivity() {
@@ -64,6 +66,9 @@ fun JailerApp() {
     val store = remember(context) {
         SaveStore(context.getSharedPreferences("jailer_saves", Context.MODE_PRIVATE))
     }
+    val entitlements = remember(context) {
+        LocalEntitlementRepository(context.getSharedPreferences("jailer_entitlements", Context.MODE_PRIVATE))
+    }
     var state by remember {
         val slot = store.currentActiveSlot() ?: 1
         mutableStateOf(store.load(slot) ?: GameState(activeSlot = slot))
@@ -71,6 +76,7 @@ fun JailerApp() {
     var showSlots by remember { mutableStateOf(false) }
     val node = StoryRepository.node(state.sceneId)
     val choices = StoryRepository.visibleChoices(node, state)
+    val chapterUnlocked = entitlements.isChapterUnlocked(node.chapterId)
 
     Surface(modifier = Modifier.fillMaxSize(), color = Night) {
         Column(
@@ -88,6 +94,13 @@ fun JailerApp() {
                 TextButton(onClick = { showSlots = true }) { Text("SAVE", color = Gold) }
             }
 
+            if (!chapterUnlocked) {
+                LockedChapterScreen(
+                    node = node,
+                    entitlements = entitlements,
+                    modifier = Modifier.fillMaxSize().padding(14.dp)
+                )
+            } else {
             Column(
                 modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp),
                 verticalArrangement = Arrangement.SpaceBetween
@@ -139,11 +152,39 @@ fun JailerApp() {
                     Spacer(Modifier.height(8.dp))
                 }
             }
+            }
         }
     }
 
     if (showSlots) {
-        SaveDialog(store, state, { state = it }, { showSlots = false })
+        SaveDialog(store, entitlements, state, { state = it }, { showSlots = false })
+    }
+}
+
+@Composable
+private fun LockedChapterScreen(
+    node: StoryNode,
+    entitlements: EntitlementRepository,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.Center) {
+        Text("CHAPTER LOCKED", color = Gold, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(12.dp))
+        Text(
+            "${node.title} is part of the full story. Unlock it with a one-time purchase to continue Kaelen's tale beyond Chapter III.",
+            color = TextCream.copy(alpha = .9f),
+            style = MaterialTheme.typography.bodyLarge
+        )
+        Spacer(Modifier.height(20.dp))
+        Button(onClick = { entitlements.unlockFullStory() }) {
+            Text("UNLOCK FULL STORY")
+        }
+        if (BuildConfig.DEBUG) {
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(onClick = { entitlements.setDebugPurchaseSimulated(true) }) {
+                Text("DEBUG: SIMULATE PURCHASE", color = Gold)
+            }
+        }
     }
 }
 
@@ -222,18 +263,33 @@ private fun StatsBar(state: GameState) {
 }
 
 @Composable
-private fun SaveDialog(store: SaveStore, state: GameState, onStateChange: (GameState) -> Unit, onClose: () -> Unit) {
+private fun SaveDialog(
+    store: SaveStore,
+    entitlements: EntitlementRepository,
+    state: GameState,
+    onStateChange: (GameState) -> Unit,
+    onClose: () -> Unit
+) {
     AlertDialog(
         onDismissRequest = onClose,
         title = { Text("Save Slots") },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                (1..3).forEach { slot ->
+                (1..entitlements.maxSaveSlots()).forEach { slot ->
                     val saved = store.load(slot)
                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("Slot $slot", modifier = Modifier.weight(1f))
-                        TextButton(onClick = { store.save(slot, state) }) { Text("SAVE") }
-                        TextButton(enabled = saved != null, onClick = { saved?.let { onStateChange(it); onClose() } }) { Text("LOAD") }
+                        TextButton(onClick = {
+                            store.save(slot, state.copy(activeSlot = slot))
+                            store.setActiveSlot(slot)
+                        }) { Text("SAVE") }
+                        TextButton(enabled = saved != null, onClick = {
+                            saved?.let {
+                                store.setActiveSlot(slot)
+                                onStateChange(it)
+                                onClose()
+                            }
+                        }) { Text("LOAD") }
                     }
                 }
             }
