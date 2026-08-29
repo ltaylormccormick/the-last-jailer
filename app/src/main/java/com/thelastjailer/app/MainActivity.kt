@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
+import com.thelastjailer.app.data.StoryRepository
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,13 +61,16 @@ private val TextCream = Color(0xFFE8DFC9)
 @Composable
 fun JailerApp() {
     val context = LocalContext.current
-    val scenes = remember { demoScenes() }
     val store = remember(context) {
         SaveStore(context.getSharedPreferences("jailer_saves", Context.MODE_PRIVATE))
     }
-    var state by remember { mutableStateOf(store.load(1) ?: GameState()) }
+    var state by remember {
+        val slot = store.currentActiveSlot() ?: 1
+        mutableStateOf(store.load(slot) ?: GameState(activeSlot = slot))
+    }
     var showSlots by remember { mutableStateOf(false) }
-    val scene = scenes[state.sceneId] ?: scenes.getValue("prologue")
+    val node = StoryRepository.node(state.sceneId)
+    val choices = StoryRepository.visibleChoices(node, state)
 
     Surface(modifier = Modifier.fillMaxSize(), color = Night) {
         Column(
@@ -89,31 +93,29 @@ fun JailerApp() {
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    Text("CHAPTER I — THE FALLEN KNIGHT", color = Gold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    val chapter = StoryRepository.chapter(node.chapterId)
+                    Text(
+                        (chapter?.title ?: node.chapterId).uppercase(),
+                        color = Gold,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                     Spacer(Modifier.height(8.dp))
-                    SceneIllustration(Modifier.fillMaxWidth().height(220.dp))
+                    SceneIllustration(node.illustrationId, Modifier.fillMaxWidth().height(220.dp))
                     Spacer(Modifier.height(12.dp))
-                    Text(scene.title, color = TextCream, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Text(node.title, color = TextCream, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
-                    Text(scene.text, color = TextCream.copy(alpha = .92f), style = MaterialTheme.typography.bodyLarge, lineHeight = 23.sp)
+                    Text(node.narrativeText, color = TextCream.copy(alpha = .92f), style = MaterialTheme.typography.bodyLarge, lineHeight = 23.sp)
                 }
 
                 Column(modifier = Modifier.fillMaxWidth()) {
                     StatsBar(state)
                     Spacer(Modifier.height(8.dp))
-                    scene.choices.forEachIndexed { index, choice ->
+                    choices.forEachIndexed { index, choice ->
                         Button(
                             onClick = {
-                                val trophies = choice.trophy?.let { t ->
-                                    if (t in state.trophies) state.trophies else state.trophies + t
-                                } ?: state.trophies
-                                state = state.copy(
-                                    sceneId = choice.next,
-                                    courage = state.courage + choice.courage,
-                                    honour = state.honour + choice.honour,
-                                    trophies = trophies
-                                )
-                                store.save(1, state)
+                                state = state.applyChoice(choice)
+                                store.save(state.activeSlot, state)
                             },
                             modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
                             shape = RoundedCornerShape(5.dp),
@@ -146,7 +148,7 @@ fun JailerApp() {
 }
 
 @Composable
-private fun SceneIllustration(modifier: Modifier) {
+private fun SceneIllustration(illustrationId: String, modifier: Modifier) {
     androidx.compose.foundation.layout.Box(
         modifier = modifier.clip(RoundedCornerShape(8.dp))
     ) {
@@ -193,16 +195,29 @@ private fun SceneIllustration(modifier: Modifier) {
                 drawLine(Color.White.copy(alpha = .10f), Offset(x, y), Offset(x - 8f, y + 22f), 1f)
             }
         }
-        Text("THE ROAD TO BLACKMERE", modifier = Modifier.padding(12.dp).align(Alignment.BottomStart), color = TextCream.copy(alpha = .78f), fontSize = 10.sp)
+        Text(
+            "PLACEHOLDER ART — $illustrationId",
+            modifier = Modifier.padding(12.dp).align(Alignment.BottomStart),
+            color = TextCream.copy(alpha = .78f),
+            fontSize = 10.sp
+        )
     }
 }
 
 @Composable
 private fun StatsBar(state: GameState) {
-    Row(modifier = Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(6.dp)).padding(10.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-        Text("⚔ COURAGE ${state.courage}", color = Gold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        Text("⚖ HONOUR ${state.honour}", color = Color(0xFF8AA7C2), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        Text("🏆 ${state.trophies.size}", color = TextCream, fontSize = 12.sp)
+    Column(modifier = Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(6.dp)).padding(10.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            Text("❤ ${state.health}/${state.maxHealth}", color = Color(0xFFC25B5B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text("⚔ COURAGE ${state.courage}", color = Gold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text("⚖ HONOUR ${state.honour}", color = Color(0xFF8AA7C2), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(6.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            Text("LVL ${state.level} · XP ${state.xp}/${state.xpToNextLevel}", color = TextCream, fontSize = 12.sp)
+            Text("⛁ ${state.gold}", color = Gold, fontSize = 12.sp)
+            Text("🏆 ${state.trophies.size}", color = TextCream, fontSize = 12.sp)
+        }
     }
 }
 
@@ -226,28 +241,3 @@ private fun SaveDialog(store: SaveStore, state: GameState, onStateChange: (GameS
         confirmButton = { TextButton(onClick = onClose) { Text("CLOSE") } }
     )
 }
-
-private fun demoScenes(): Map<String, Scene> = mapOf(
-    "prologue" to Scene("prologue", "The Road to Blackmere", "Three years ago, Kaelen Veyr wore the king's colours. Tonight he wears a broken sword and the shame of a knight who failed. At the edge of the old road, a black door stands where no door should be.", listOf(
-        Choice("Approach the door.", "door", courage = 1),
-        Choice("Keep walking. A disgraced knight has no business with it.", "road", honour = 1)
-    )),
-    "door" to Scene("door", "The Door Without a Wall", "There is no wall. No hinges. No handle. Yet when Kaelen touches the iron, something on the other side knocks once.", listOf(
-        Choice("Knock back.", "knock", courage = 1, trophy = "Answered the Door"),
-        Choice("Draw your sword.", "sword", courage = 1)
-    )),
-    "road" to Scene("road", "The Weight of a Name", "Kaelen takes ten steps. Behind him, the knock comes again. He remembers the men who died when he obeyed an order he should have questioned.", listOf(
-        Choice("Turn back.", "door", honour = 1),
-        Choice("Leave the past behind.", "end", courage = 1)
-    )),
-    "knock" to Scene("knock", "Something Answers", "The door opens onto darkness lit by a distant blue fire. A voice whispers: 'The last one has returned.'", listOf(
-        Choice("Step through.", "end", courage = 1)
-    )),
-    "sword" to Scene("sword", "Steel and Silence", "Kaelen raises his blade. The darkness does not attack. Instead, the sword begins to hum with a warmth he has not felt since the day he was disgraced.", listOf(
-        Choice("Lower the sword.", "end", honour = 1),
-        Choice("Enter with steel drawn.", "end", courage = 1)
-    )),
-    "end" to Scene("end", "Chapter One — The First Threshold", "The road behind Kaelen is no longer the same. Somewhere beyond the door, something ancient is waiting. The choice was his. The consequences will be too.", listOf(
-        Choice("Return to the beginning.", "prologue")
-    ))
-)
