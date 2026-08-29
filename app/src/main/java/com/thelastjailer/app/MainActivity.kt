@@ -12,6 +12,8 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,15 +40,17 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            val windowSizeClass = calculateWindowSizeClass(this)
+            val isExpandedWidth = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded
             JailerTheme {
-                JailerApp()
+                JailerApp(isExpandedWidth = isExpandedWidth)
             }
         }
     }
 }
 
 @Composable
-fun JailerApp() {
+fun JailerApp(isExpandedWidth: Boolean = false) {
     val context = LocalContext.current
     val store = remember(context) {
         SaveStore(context.getSharedPreferences("jailer_saves", Context.MODE_PRIVATE))
@@ -92,7 +96,8 @@ fun JailerApp() {
                     onOpenJournal = { screen = AppScreen.JOURNAL },
                     onOpenInventory = { screen = AppScreen.INVENTORY },
                     onOpenCharacter = { screen = AppScreen.CHARACTER },
-                    onOpenMenu = { /* menu drawer is future work */ }
+                    onOpenMenu = { /* menu drawer is future work */ },
+                    isExpandedWidth = isExpandedWidth
                 )
                 AppScreen.CHARACTER -> CharacterScreen(state)
                 AppScreen.INVENTORY -> InventoryScreen(state)
