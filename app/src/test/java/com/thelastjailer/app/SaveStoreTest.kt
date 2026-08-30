@@ -8,11 +8,13 @@ import org.junit.Before
 import org.junit.Test
 
 class SaveStoreTest {
+    private lateinit var prefs: FakeSharedPreferences
     private lateinit var store: SaveStore
 
     @Before
     fun setUp() {
-        store = SaveStore(FakeSharedPreferences())
+        prefs = FakeSharedPreferences()
+        store = SaveStore(prefs)
     }
 
     @Test
@@ -88,6 +90,21 @@ class SaveStoreTest {
         assertEquals(slot2, loaded2)
         assertEquals(1, loaded1?.activeSlot)
         assertEquals(2, loaded2?.activeSlot)
+    }
+
+    @Test
+    fun `loading a slot saved by the pre-rework StringSet inventory format does not crash`() {
+        // Before the foundation rework, inventory was stored as a StringSet under this same key.
+        // Real Android's SharedPreferences throws ClassCastException reading that back as a
+        // String, so a returning player's old save must not crash the app on load.
+        prefs.edit()
+            .putString("4.scene", "fallen_knight")
+            .putStringSet("4.inventory", mutableSetOf("dwarven_token", "healing_draught"))
+            .apply()
+
+        val loaded = store.load(4)
+
+        assertEquals(setOf("dwarven_token", "healing_draught"), loaded?.inventory?.toSet())
     }
 
     @Test

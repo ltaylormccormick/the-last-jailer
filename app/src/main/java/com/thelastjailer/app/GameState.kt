@@ -129,13 +129,24 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
             level = prefs.getInt("$slot.level", 1),
             xp = prefs.getInt("$slot.xp", 0),
             xpToNextLevel = prefs.getInt("$slot.xpToNextLevel", 100),
-            inventory = prefs.getString("$slot.inventory", "")
-                ?.split(",")
-                ?.filter { it.isNotBlank() }
-                ?: emptyList(),
+            inventory = readInventory(slot),
             trophies = prefs.getStringSet("$slot.trophies", emptySet()) ?: emptySet(),
             flags = prefs.getStringSet("$slot.flags", emptySet()) ?: emptySet()
         )
+    }
+
+    /**
+     * A pre-rework build stored inventory as a StringSet under this same key; reading that value
+     * back with [android.content.SharedPreferences.getString] throws ClassCastException on real
+     * Android (unlike the JVM test double), so fall back to the legacy format instead of crashing.
+     */
+    private fun readInventory(slot: Int): List<String> = try {
+        prefs.getString("$slot.inventory", "")
+            ?.split(",")
+            ?.filter { it.isNotBlank() }
+            ?: emptyList()
+    } catch (e: ClassCastException) {
+        prefs.getStringSet("$slot.inventory", emptySet())?.toList() ?: emptyList()
     }
 
     fun hasSave(slot: Int): Boolean = prefs.contains("$slot.scene")
