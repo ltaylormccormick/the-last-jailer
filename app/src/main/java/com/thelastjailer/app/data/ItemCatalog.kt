@@ -24,6 +24,16 @@ object ItemCatalog {
             id = "healing_draught",
             name = "Healing Draught",
             description = "A dwarven remedy, bitter and effective."
+        ),
+        Item(
+            id = "tarnished_guard_token",
+            name = "Tarnished Guard Token",
+            description = "A clasp from a King's Guard cloak — not his own. A reminder of what the silver once meant."
+        ),
+        Item(
+            id = "sturdy_buckler",
+            name = "Sturdy Buckler",
+            description = "Dwarven-forged and dented from use. Given, not lent, by a smith who expects nothing back."
         )
     ).associateBy { it.id }
 
