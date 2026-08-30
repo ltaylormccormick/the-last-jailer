@@ -39,6 +39,11 @@ object ItemCatalog {
             id = "warden_sigil",
             name = "Warden's Sigil",
             description = "A dwarven sigil marking one who has stood at the failing gate. Small, heavy, and impossible to lose."
+        ),
+        Item(
+            id = "jailers_brand",
+            name = "Jailer's Brand",
+            description = "A mark on the palm, small and precise, left by the binding rite. It does not fade."
         )
     ).associateBy { it.id }
 
