@@ -44,6 +44,14 @@ object EnemyCatalog {
             minAttack = 11,
             maxAttack = 18,
             description = "Nothing about it is patient anymore. It got out once already, and it isn't interested in waiting for a second chance."
+        ),
+        Enemy(
+            id = "loyalist_enforcer",
+            name = "Cinder Loyalist Enforcer",
+            maxHealth = 120,
+            minAttack = 12,
+            maxAttack = 19,
+            description = "Marked twice over — Ilsevet's cinder brand, and Voss's name crossed through beneath it. Sent to clean up a problem, not negotiate with one."
         )
     ).associateBy { it.id }
 
@@ -95,11 +103,26 @@ private val unboundEncounter = CombatEncounter(
     unlockTrophy = "What Got Out"
 )
 
+private val loyalistAmbushEncounter = CombatEncounter(
+    id = "loyalist_ambush_encounter",
+    enemyId = "loyalist_enforcer",
+    victoryNodeId = "after_the_ambush",
+    xpReward = 170,
+    goldReward = 45,
+    unlockTrophy = "An Uneasy Alliance"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
-        listOf(firstBloodEncounter, sealBreakerEncounter, siegeEncounter, cinderEnvoyEncounter, unboundEncounter)
-            .associateBy { it.id }
+        listOf(
+            firstBloodEncounter,
+            sealBreakerEncounter,
+            siegeEncounter,
+            cinderEnvoyEncounter,
+            unboundEncounter,
+            loyalistAmbushEncounter
+        ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)
 }
