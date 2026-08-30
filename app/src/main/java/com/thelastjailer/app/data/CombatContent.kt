@@ -20,6 +20,14 @@ object EnemyCatalog {
             minAttack = 7,
             maxAttack = 13,
             description = "A shape without real edges, pressed thin against the gate until it found a way through."
+        ),
+        Enemy(
+            id = "ashen_vanguard",
+            name = "Ashen Vanguard",
+            maxHealth = 85,
+            minAttack = 9,
+            maxAttack = 15,
+            description = "Ash-grey plate, unhurried, and utterly certain the door is coming down today."
         )
     ).associateBy { it.id }
 
@@ -44,10 +52,19 @@ private val sealBreakerEncounter = CombatEncounter(
     unlockTrophy = "Seal Held"
 )
 
+private val siegeEncounter = CombatEncounter(
+    id = "siege_encounter",
+    enemyId = "ashen_vanguard",
+    victoryNodeId = "what_the_prisoner_offers_again",
+    xpReward = 100,
+    goldReward = 30,
+    unlockTrophy = "Line Held"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
-        listOf(firstBloodEncounter, sealBreakerEncounter).associateBy { it.id }
+        listOf(firstBloodEncounter, sealBreakerEncounter, siegeEncounter).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)
 }
