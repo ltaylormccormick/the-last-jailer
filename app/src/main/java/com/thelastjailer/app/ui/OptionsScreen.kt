@@ -23,31 +23,35 @@ import com.thelastjailer.app.data.EntitlementRepository
 
 @Composable
 fun OptionsScreen(entitlements: EntitlementRepository, modifier: Modifier = Modifier) {
+    var unlocked by remember { mutableStateOf(entitlements.hasUnlockedFullStory()) }
+
     Column(modifier = modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("OPTIONS", style = MaterialTheme.typography.labelLarge)
 
         OrnatePanel(modifier = Modifier.fillMaxWidth()) {
             Text(
-                if (entitlements.hasUnlockedFullStory()) "Full story unlocked" else "Chapters I-III free",
+                if (unlocked) "Full story unlocked" else "Chapters I-III free",
                 style = MaterialTheme.typography.bodyLarge
             )
-            if (!entitlements.hasUnlockedFullStory()) {
-                Button(onClick = { entitlements.unlockFullStory() }) {
+            if (!unlocked) {
+                Button(onClick = {
+                    entitlements.unlockFullStory()
+                    unlocked = true
+                }) {
                     Text("UNLOCK FULL STORY")
                 }
             }
         }
 
         if (BuildConfig.DEBUG) {
-            var simulated by remember { mutableStateOf(entitlements.hasUnlockedFullStory()) }
             OrnatePanel(modifier = Modifier.fillMaxWidth()) {
                 Text("DEBUG", style = MaterialTheme.typography.labelLarge)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text("Simulate purchased", style = MaterialTheme.typography.bodyMedium)
                     Switch(
-                        checked = simulated,
+                        checked = unlocked,
                         onCheckedChange = {
-                            simulated = it
+                            unlocked = it
                             entitlements.setDebugPurchaseSimulated(it)
                         }
                     )

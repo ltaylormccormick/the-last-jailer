@@ -57,7 +57,9 @@ fun StoryScreen(
 ) {
     val node = StoryRepository.node(state.sceneId)
     val choices = StoryRepository.visibleChoices(node, state)
-    val chapterUnlocked = entitlements.isChapterUnlocked(node.chapterId)
+    var chapterUnlocked by remember(node.chapterId) {
+        mutableStateOf(entitlements.isChapterUnlocked(node.chapterId))
+    }
     val encounter = node.combatEncounterId?.let { CombatRepository.encounter(it) }
     var inCombat by remember(node.id) { mutableStateOf(false) }
 
@@ -73,7 +75,12 @@ fun StoryScreen(
         Spacer(Modifier.height(8.dp))
 
         if (!chapterUnlocked) {
-            LockedChapterScreen(node = node, entitlements = entitlements, modifier = Modifier.fillMaxSize())
+            LockedChapterScreen(
+                node = node,
+                entitlements = entitlements,
+                onUnlocked = { chapterUnlocked = true },
+                modifier = Modifier.fillMaxSize()
+            )
             return@Column
         }
 
@@ -235,7 +242,12 @@ private fun ChoiceList(choices: List<Choice>, onChoiceSelected: (Choice) -> Unit
 }
 
 @Composable
-private fun LockedChapterScreen(node: StoryNode, entitlements: EntitlementRepository, modifier: Modifier = Modifier) {
+private fun LockedChapterScreen(
+    node: StoryNode,
+    entitlements: EntitlementRepository,
+    onUnlocked: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Column(modifier = modifier, verticalArrangement = Arrangement.Center) {
         Text("CHAPTER LOCKED", style = MaterialTheme.typography.labelLarge)
         Spacer(Modifier.height(12.dp))
@@ -244,12 +256,18 @@ private fun LockedChapterScreen(node: StoryNode, entitlements: EntitlementReposi
             style = MaterialTheme.typography.bodyLarge
         )
         Spacer(Modifier.height(20.dp))
-        Button(onClick = { entitlements.unlockFullStory() }) {
+        Button(onClick = {
+            entitlements.unlockFullStory()
+            onUnlocked()
+        }) {
             Text("UNLOCK FULL STORY")
         }
         if (BuildConfig.DEBUG) {
             Spacer(Modifier.height(12.dp))
-            OutlinedButton(onClick = { entitlements.setDebugPurchaseSimulated(true) }) {
+            OutlinedButton(onClick = {
+                entitlements.setDebugPurchaseSimulated(true)
+                onUnlocked()
+            }) {
                 Text("DEBUG: SIMULATE PURCHASE", color = JailerColors.Gold)
             }
         }
