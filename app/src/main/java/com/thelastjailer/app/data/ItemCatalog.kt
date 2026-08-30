@@ -49,6 +49,11 @@ object ItemCatalog {
             id = "ashen_signet",
             name = "Ashen Signet",
             description = "A rank insignia stripped from a fallen vanguard. Beneath the enamel: answers to the Cinder Marshal."
+        ),
+        Item(
+            id = "cinder_marshal_missive",
+            name = "Cinder Marshal's Missive",
+            description = "A sealed dispatch, dropped in the retreat. The wax bears a mark shaped like a closed hand around a flame."
         )
     ).associateBy { it.id }
 

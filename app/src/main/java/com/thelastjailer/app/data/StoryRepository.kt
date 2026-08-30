@@ -7,10 +7,10 @@ import com.thelastjailer.app.StoryNode
 
 /** All chapters and story nodes, aggregated from the per-chapter content files. */
 object StoryRepository {
-    val chapters: List<Chapter> = listOf(chapter1, chapter2, chapter3, chapter4)
+    val chapters: List<Chapter> = listOf(chapter1, chapter2, chapter3, chapter4, chapter5)
 
     private val nodesById: Map<String, StoryNode> =
-        (chapter1Nodes + chapter2Nodes + chapter3Nodes + chapter4Nodes).associateBy { it.id }
+        (chapter1Nodes + chapter2Nodes + chapter3Nodes + chapter4Nodes + chapter5Nodes).associateBy { it.id }
 
     fun node(id: String): StoryNode = nodesById[id] ?: nodesById.getValue(chapter1.startNodeId)
 

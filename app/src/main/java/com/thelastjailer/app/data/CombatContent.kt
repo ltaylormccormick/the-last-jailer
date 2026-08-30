@@ -28,6 +28,14 @@ object EnemyCatalog {
             minAttack = 9,
             maxAttack = 15,
             description = "Ash-grey plate, unhurried, and utterly certain the door is coming down today."
+        ),
+        Enemy(
+            id = "cinder_adept",
+            name = "Cinder-Marked Adept",
+            maxHealth = 95,
+            minAttack = 10,
+            maxAttack = 16,
+            description = "Trained by the Order, marked by something the Order never sanctioned. Fights like a zealot with nothing left to prove."
         )
     ).associateBy { it.id }
 
@@ -61,10 +69,19 @@ private val siegeEncounter = CombatEncounter(
     unlockTrophy = "Line Held"
 )
 
+private val cinderEnvoyEncounter = CombatEncounter(
+    id = "cinder_envoy_encounter",
+    enemyId = "cinder_adept",
+    victoryNodeId = "aftermath_of_betrayal",
+    xpReward = 120,
+    goldReward = 35,
+    unlockTrophy = "The Marshal's Warning"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
-        listOf(firstBloodEncounter, sealBreakerEncounter, siegeEncounter).associateBy { it.id }
+        listOf(firstBloodEncounter, sealBreakerEncounter, siegeEncounter, cinderEnvoyEncounter).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)
 }
