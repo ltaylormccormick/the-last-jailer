@@ -34,6 +34,11 @@ object ItemCatalog {
             id = "sturdy_buckler",
             name = "Sturdy Buckler",
             description = "Dwarven-forged and dented from use. Given, not lent, by a smith who expects nothing back."
+        ),
+        Item(
+            id = "warden_sigil",
+            name = "Warden's Sigil",
+            description = "A dwarven sigil marking one who has stood at the failing gate. Small, heavy, and impossible to lose."
         )
     ).associateBy { it.id }
 
