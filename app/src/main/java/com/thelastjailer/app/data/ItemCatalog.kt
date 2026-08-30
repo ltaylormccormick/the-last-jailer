@@ -44,6 +44,11 @@ object ItemCatalog {
             id = "jailers_brand",
             name = "Jailer's Brand",
             description = "A mark on the palm, small and precise, left by the binding rite. It does not fade."
+        ),
+        Item(
+            id = "ashen_signet",
+            name = "Ashen Signet",
+            description = "A rank insignia stripped from a fallen vanguard. Beneath the enamel: answers to the Cinder Marshal."
         )
     ).associateBy { it.id }
 
