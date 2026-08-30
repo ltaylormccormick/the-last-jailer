@@ -46,6 +46,32 @@ private fun GameState.withStatDelta(stat: StatType, delta: Int): GameState = whe
     StatType.XP -> applyXpGain(delta)
 }
 
+/**
+ * Applies the result of a [CombatEncounter] played out in [com.thelastjailer.app.ui.CombatScreen].
+ * Combat is never fatal to the run: health always ends up at least 1, however much [CombatOutcome.damageTaken]
+ * was. A win grants the encounter's XP/gold/trophy and moves to [CombatEncounter.victoryNodeId];
+ * a loss moves to [CombatEncounter.defeatNodeId] (falling back to the same node as victory) with
+ * no reward. Either way, whatever items were used during the fight are consumed from inventory.
+ */
+fun GameState.resolveCombat(encounter: CombatEncounter, outcome: CombatOutcome): GameState {
+    val survived = copy(health = (health - outcome.damageTaken).coerceIn(1, maxHealth))
+        .consumeItems(outcome.consumedItemIds)
+    return if (outcome.victory) {
+        survived.applyChoice(
+            Choice(
+                label = "",
+                nextNodeId = encounter.victoryNodeId,
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.XP to encounter.xpReward, StatType.GOLD to encounter.goldReward),
+                    unlockTrophy = encounter.unlockTrophy
+                )
+            )
+        )
+    } else {
+        survived.copy(sceneId = encounter.defeatNodeId ?: encounter.victoryNodeId)
+    }
+}
+
 /** Removes one occurrence per id in [itemIds] from the inventory (e.g. a consumed potion). */
 fun GameState.consumeItems(itemIds: List<String>): GameState {
     if (itemIds.isEmpty()) return this

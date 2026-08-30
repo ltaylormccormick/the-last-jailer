@@ -22,8 +22,16 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
+      - name: Run unit tests
+        run: ./gradlew testDebugUnitTest --stacktrace
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: the-last-jailer-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: the-last-jailer-test-results
+          path: app/build/reports/tests/testDebugUnitTest
