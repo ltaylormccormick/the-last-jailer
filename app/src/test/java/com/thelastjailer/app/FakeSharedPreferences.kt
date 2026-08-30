@@ -12,12 +12,19 @@ class FakeSharedPreferences : SharedPreferences {
 
     override fun getAll(): MutableMap<String, *> = values.toMutableMap()
 
-    override fun getString(key: String?, defValue: String?): String? =
-        (values[key] as? String) ?: defValue
+    // Real Android's SharedPreferencesImpl does an unchecked `(String) v` / `(Set<String>) v` cast
+    // here and throws ClassCastException on a type mismatch rather than falling back to defValue —
+    // mirrored below so tests can catch bugs like reading a key back in the wrong format.
+    override fun getString(key: String?, defValue: String?): String? {
+        val v = values[key] ?: return defValue
+        return v as String
+    }
 
     @Suppress("UNCHECKED_CAST")
-    override fun getStringSet(key: String?, defValues: MutableSet<String>?): MutableSet<String>? =
-        (values[key] as? Set<String>)?.toMutableSet() ?: defValues
+    override fun getStringSet(key: String?, defValues: MutableSet<String>?): MutableSet<String>? {
+        val v = values[key] ?: return defValues
+        return (v as Set<String>).toMutableSet()
+    }
 
     override fun getInt(key: String?, defValue: Int): Int = (values[key] as? Int) ?: defValue
 

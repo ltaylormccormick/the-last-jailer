@@ -94,7 +94,9 @@ class CombatEngine(
     private fun finish(victory: Boolean) {
         outcome = CombatOutcome(
             victory = victory,
-            damageTaken = (startingPlayerHealth - playerHealth).coerceAtLeast(0),
+            // Can be negative when Healing Draughts more than offset damage taken during the
+            // fight; GameState.resolveCombat subtracts this, so a negative value restores health.
+            damageTaken = startingPlayerHealth - playerHealth,
             consumedItemIds = consumedItems
         )
     }

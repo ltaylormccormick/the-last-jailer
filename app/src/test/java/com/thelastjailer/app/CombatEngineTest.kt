@@ -108,6 +108,37 @@ class CombatEngineTest {
     }
 
     @Test
+    fun `healing more than the damage taken reports a negative damageTaken`() {
+        // Player's own attack always deals at least 8, so this 5-health enemy always dies to it —
+        // guaranteeing victory regardless of the random roll, with no further enemy retaliation.
+        val seed = 7L
+        val weakEnemy = testEnemy(maxHealth = 5, minAttack = 4, maxAttack = 9)
+        val engine = CombatEngine(
+            enemy = weakEnemy,
+            startingPlayerHealth = 50,
+            playerMaxHealth = 100,
+            playerCourage = 0,
+            availableDraughts = 1,
+            random = Random(seed)
+        )
+        val expected = Random(seed)
+        val enemyDamageDuringDraughtRound = expected.nextInt(weakEnemy.minAttack, weakEnemy.maxAttack + 1)
+
+        engine.useDraught()
+        engine.attack()
+
+        val outcome = engine.outcome
+        assertNotNull(outcome)
+        assertTrue(outcome!!.victory)
+        val expectedHealth = 50 + 25 - enemyDamageDuringDraughtRound
+        assertEquals(expectedHealth, engine.playerHealth)
+        // Ended the fight above the starting health, so damageTaken must be negative: GameState
+        // .resolveCombat subtracts it, and subtracting a negative restores the net healing.
+        assertEquals(50 - expectedHealth, outcome.damageTaken)
+        assertTrue(outcome.damageTaken < 0)
+    }
+
+    @Test
     fun `using a draught with none available is a no-op`() {
         val enemy = testEnemy()
         val engine = CombatEngine(

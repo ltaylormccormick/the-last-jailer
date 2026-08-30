@@ -68,6 +68,16 @@ class GameStateResolveCombatTest {
     }
 
     @Test
+    fun `a negative damageTaken from net healing raises health above its pre-fight value`() {
+        val state = GameState(health = 40, maxHealth = 100)
+        val outcome = CombatOutcome(victory = true, damageTaken = -20, consumedItemIds = emptyList())
+
+        val result = state.resolveCombat(testEncounter, outcome)
+
+        assertEquals(60, result.health)
+    }
+
+    @Test
     fun `items used during the fight are removed from inventory`() {
         val state = GameState(health = 100, maxHealth = 100, inventory = listOf("healing_draught", "dwarven_token"))
         val outcome = CombatOutcome(victory = true, damageTaken = 0, consumedItemIds = listOf("healing_draught"))
