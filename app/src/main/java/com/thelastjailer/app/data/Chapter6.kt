@@ -208,7 +208,7 @@ val chapter6Nodes: List<StoryNode> = listOf(
             Chapter VII awaits.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Rest, and plan for what's coming.", nextNodeId = "fallen_knight")
+            Choice(label = "Rest, and plan for what's coming.", nextNodeId = "voss_returns_alone")
         )
     )
 )
