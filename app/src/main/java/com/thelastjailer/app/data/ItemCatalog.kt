@@ -54,6 +54,11 @@ object ItemCatalog {
             id = "cinder_marshal_missive",
             name = "Cinder Marshal's Missive",
             description = "A sealed dispatch, dropped in the retreat. The wax bears a mark shaped like a closed hand around a flame."
+        ),
+        Item(
+            id = "kestrels_locket",
+            name = "Kestrel's Locket",
+            description = "Warded in the same hand as a gate that failed anyway. An apology, carried the rest of the way for her."
         )
     ).associateBy { it.id }
 

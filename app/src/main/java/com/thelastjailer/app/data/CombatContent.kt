@@ -36,6 +36,14 @@ object EnemyCatalog {
             minAttack = 10,
             maxAttack = 16,
             description = "Trained by the Order, marked by something the Order never sanctioned. Fights like a zealot with nothing left to prove."
+        ),
+        Enemy(
+            id = "unbound_horror",
+            name = "The Unbound",
+            maxHealth = 110,
+            minAttack = 11,
+            maxAttack = 18,
+            description = "Nothing about it is patient anymore. It got out once already, and it isn't interested in waiting for a second chance."
         )
     ).associateBy { it.id }
 
@@ -78,10 +86,20 @@ private val cinderEnvoyEncounter = CombatEncounter(
     unlockTrophy = "The Marshal's Warning"
 )
 
+private val unboundEncounter = CombatEncounter(
+    id = "unbound_encounter",
+    enemyId = "unbound_horror",
+    victoryNodeId = "what_must_be_decided",
+    xpReward = 150,
+    goldReward = 40,
+    unlockTrophy = "What Got Out"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
-        listOf(firstBloodEncounter, sealBreakerEncounter, siegeEncounter, cinderEnvoyEncounter).associateBy { it.id }
+        listOf(firstBloodEncounter, sealBreakerEncounter, siegeEncounter, cinderEnvoyEncounter, unboundEncounter)
+            .associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)
 }
