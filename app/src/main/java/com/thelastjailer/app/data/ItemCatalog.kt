@@ -109,6 +109,11 @@ object ItemCatalog {
             id = "twisted_frame_component",
             name = "Twisted Frame Component",
             description = "Pulled loose from the seventh-door frame before it could finish becoming anything. Warped, dangerous, and — for tonight, at least — inert."
+        ),
+        Item(
+            id = "ilsevets_blade",
+            name = "Ilsevet's Blade",
+            description = "Plain, unceremonial, exactly the kind of weapon someone carries when they've stopped caring about anything but whether it works. Taken, not surrendered."
         )
     ).associateBy { it.id }
 
