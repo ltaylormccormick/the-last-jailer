@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,8 +23,16 @@ import com.thelastjailer.app.BuildConfig
 import com.thelastjailer.app.data.EntitlementRepository
 
 @Composable
-fun OptionsScreen(entitlements: EntitlementRepository, modifier: Modifier = Modifier) {
+fun OptionsScreen(
+    entitlements: EntitlementRepository,
+    purchaseCompletedTick: Int,
+    onRequestUnlock: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     var unlocked by remember { mutableStateOf(entitlements.hasUnlockedFullStory()) }
+    LaunchedEffect(purchaseCompletedTick) {
+        unlocked = entitlements.hasUnlockedFullStory()
+    }
 
     Column(modifier = modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("OPTIONS", style = MaterialTheme.typography.labelLarge)
@@ -34,10 +43,7 @@ fun OptionsScreen(entitlements: EntitlementRepository, modifier: Modifier = Modi
                 style = MaterialTheme.typography.bodyLarge
             )
             if (!unlocked) {
-                Button(onClick = {
-                    entitlements.unlockFullStory()
-                    unlocked = true
-                }) {
+                Button(onClick = onRequestUnlock) {
                     Text("UNLOCK FULL STORY")
                 }
             }
