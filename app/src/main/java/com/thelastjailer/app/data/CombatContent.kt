@@ -180,6 +180,14 @@ object EnemyCatalog {
             minAttack = 28,
             maxAttack = 36,
             description = "Not a guardian defending the Sundering Ground, but the ground's own forgetting given shape — three centuries of insisting, with everything it has, that there was never anything here at all."
+        ),
+        Enemy(
+            id = "the_reclamation",
+            name = "The Reclamation",
+            maxHealth = 370,
+            minAttack = 29,
+            maxAttack = 37,
+            description = "A piece of the whole itself, deployed in person for the first time rather than persuading through a fragment or borrowing loyalty from stragglers. It isn't here to win. It's here to take back what was taken."
         )
     ).associateBy { it.id }
 
@@ -384,6 +392,15 @@ private val sunderingGroundEncounter = CombatEncounter(
     unlockTrophy = "Where It Began"
 )
 
+private val theReclamationEncounter = CombatEncounter(
+    id = "the_reclamation_encounter",
+    enemyId = "the_reclamation",
+    victoryNodeId = "what_the_thread_showed",
+    xpReward = 950,
+    goldReward = 220,
+    unlockTrophy = "What It Sent For the Thread"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -409,7 +426,8 @@ object CombatRepository {
             emberlowStragglersEncounter,
             greymoorUnravelingEncounter,
             duskmereThresholdEncounter,
-            sunderingGroundEncounter
+            sunderingGroundEncounter,
+            theReclamationEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)
