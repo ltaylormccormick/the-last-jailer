@@ -114,6 +114,11 @@ object ItemCatalog {
             id = "ilsevets_blade",
             name = "Ilsevet's Blade",
             description = "Plain, unceremonial, exactly the kind of weapon someone carries when they've stopped caring about anything but whether it works. Taken, not surrendered."
+        ),
+        Item(
+            id = "archivists_frame_notes",
+            name = "Archivist's Frame Notes",
+            description = "Five sets of plans in the same careful hand, addressed to people who hadn't been born when the ink dried. The fifth is addressed to Kaelen."
         )
     ).associateBy { it.id }
 
