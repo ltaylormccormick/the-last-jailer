@@ -104,6 +104,11 @@ object ItemCatalog {
             id = "record_of_ashwell",
             name = "Record of Ashwell",
             description = "Water-stained Order archive pages, fifteen years old. The closest thing to an answer for who Ilsevet was before she was the Cinder Marshal."
+        ),
+        Item(
+            id = "twisted_frame_component",
+            name = "Twisted Frame Component",
+            description = "Pulled loose from the seventh-door frame before it could finish becoming anything. Warped, dangerous, and — for tonight, at least — inert."
         )
     ).associateBy { it.id }
 
