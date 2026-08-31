@@ -132,6 +132,14 @@ object EnemyCatalog {
             minAttack = 22,
             maxAttack = 30,
             description = "No garrison behind her this time, no frame to finish, nothing left to spend but herself. She fights like someone who has already decided this is the last version of this argument she intends to have."
+        ),
+        Enemy(
+            id = "the_ghostwriter",
+            name = "The Ghostwriter",
+            maxHealth = 280,
+            minAttack = 23,
+            maxAttack = 31,
+            description = "No clean shape, just pressure and intent — something that finished another man's work rather than write its own, and clearly intends to keep doing exactly that."
         )
     ).associateBy { it.id }
 
@@ -282,6 +290,15 @@ private val ilsevetDuelEncounter = CombatEncounter(
     unlockTrophy = "No More Between Us"
 )
 
+private val ghostwriterEncounter = CombatEncounter(
+    id = "ghostwriter_encounter",
+    enemyId = "the_ghostwriter",
+    victoryNodeId = "the_last_page",
+    xpReward = 650,
+    goldReward = 160,
+    unlockTrophy = "Whoever Finished It"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -301,7 +318,8 @@ object CombatRepository {
             reprisalSquadEncounter,
             reliquaryThiefEncounter,
             chamberGuardianEncounter,
-            ilsevetDuelEncounter
+            ilsevetDuelEncounter,
+            ghostwriterEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)

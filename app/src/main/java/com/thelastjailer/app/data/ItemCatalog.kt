@@ -119,6 +119,11 @@ object ItemCatalog {
             id = "archivists_frame_notes",
             name = "Archivist's Frame Notes",
             description = "Five sets of plans in the same careful hand, addressed to people who hadn't been born when the ink dried. The fifth is addressed to Kaelen."
+        ),
+        Item(
+            id = "archivists_final_page",
+            name = "Archivist's Final Page",
+            description = "One line, in a hand gone suddenly uncertain: a message meant for \"the sixth,\" whoever that turns out to be."
         )
     ).associateBy { it.id }
 
