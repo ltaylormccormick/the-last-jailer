@@ -12,7 +12,8 @@ object StoryRepository {
             chapter1, chapter2, chapter3, chapter4, chapter5,
             chapter6, chapter7, chapter8, chapter9, chapter10,
             chapter11, chapter12, chapter13, chapter14, chapter15,
-            chapter16, chapter17, chapter18, chapter19, chapter20
+            chapter16, chapter17, chapter18, chapter19, chapter20,
+            chapter21
         )
 
     private val nodesById: Map<String, StoryNode> =
@@ -20,7 +21,8 @@ object StoryRepository {
             chapter1Nodes + chapter2Nodes + chapter3Nodes + chapter4Nodes + chapter5Nodes +
                 chapter6Nodes + chapter7Nodes + chapter8Nodes + chapter9Nodes + chapter10Nodes +
                 chapter11Nodes + chapter12Nodes + chapter13Nodes + chapter14Nodes + chapter15Nodes +
-                chapter16Nodes + chapter17Nodes + chapter18Nodes + chapter19Nodes + chapter20Nodes
+                chapter16Nodes + chapter17Nodes + chapter18Nodes + chapter19Nodes + chapter20Nodes +
+                chapter21Nodes
             ).associateBy { it.id }
 
     fun node(id: String): StoryNode = nodesById[id] ?: nodesById.getValue(chapter1.startNodeId)
