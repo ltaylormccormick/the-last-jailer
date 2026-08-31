@@ -79,6 +79,11 @@ object ItemCatalog {
             id = "halvards_warden_chain",
             name = "Halvard's Warden Chain",
             description = "Tarnished silver-iron, six links for six wardens who no longer stand watch. Wasn't ever really about the chain, he said. Kaelen isn't so sure that's entirely true."
+        ),
+        Item(
+            id = "fenmoor_ward_shard",
+            name = "Fenmoor Ward Shard",
+            description = "A fragment struck from Fenmoor's failing ward in the scuffle. Cold to the touch, and colder still where the crack runs through it."
         )
     ).associateBy { it.id }
 
