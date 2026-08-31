@@ -129,6 +129,11 @@ object ItemCatalog {
             id = "emberlow_wardens_token",
             name = "Emberlow Warden's Token",
             description = "Found untouched at the base of a gate nobody's guarded in eleven years — proof someone stood here once, before the silence started."
+        ),
+        Item(
+            id = "greymoor_wardens_ledger",
+            name = "Greymoor Warden's Ledger",
+            description = "Kestrel's watch-log, open to an entry she never finished. Whatever interrupted her, it happened between one sentence and the next."
         )
     ).associateBy { it.id }
 

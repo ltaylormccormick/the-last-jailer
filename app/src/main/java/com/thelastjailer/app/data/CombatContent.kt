@@ -156,6 +156,14 @@ object EnemyCatalog {
             minAttack = 25,
             maxAttack = 33,
             description = "Leaderless doesn't mean harmless. Weeks with nothing to do but get very good at defending a gate they don't fully understand."
+        ),
+        Enemy(
+            id = "greymoor_ward_wraith",
+            name = "Greymoor Ward-Wraith",
+            maxHealth = 325,
+            minAttack = 26,
+            maxAttack = 34,
+            description = "Grief given just enough shape to defend what's left of a failing ward. It isn't trying to kill him. It's trying to make sure nothing else gets taken."
         )
     ).associateBy { it.id }
 
@@ -333,6 +341,15 @@ private val emberlowStragglersEncounter = CombatEncounter(
     unlockTrophy = "Leaderless, Not Harmless"
 )
 
+private val greymoorUnravelingEncounter = CombatEncounter(
+    id = "greymoor_unraveling_encounter",
+    enemyId = "greymoor_ward_wraith",
+    victoryNodeId = "reaching_greymoor",
+    xpReward = 800,
+    goldReward = 190,
+    unlockTrophy = "The Second Silence"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -355,7 +372,8 @@ object CombatRepository {
             ilsevetDuelEncounter,
             ghostwriterEncounter,
             patientVoiceEncounter,
-            emberlowStragglersEncounter
+            emberlowStragglersEncounter,
+            greymoorUnravelingEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)
