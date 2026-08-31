@@ -74,6 +74,11 @@ object ItemCatalog {
             id = "ordruns_broken_blade",
             name = "Ordrun's Broken Blade",
             description = "Snapped clean at the crossguard. Cinder-forged steel, deep grey-black — command-rank, not rank-and-file."
+        ),
+        Item(
+            id = "halvards_warden_chain",
+            name = "Halvard's Warden Chain",
+            description = "Tarnished silver-iron, six links for six wardens who no longer stand watch. Wasn't ever really about the chain, he said. Kaelen isn't so sure that's entirely true."
         )
     ).associateBy { it.id }
 
