@@ -140,6 +140,14 @@ object EnemyCatalog {
             minAttack = 23,
             maxAttack = 31,
             description = "No clean shape, just pressure and intent — something that finished another man's work rather than write its own, and clearly intends to keep doing exactly that."
+        ),
+        Enemy(
+            id = "the_patient_voice",
+            name = "The Patient Voice",
+            maxHealth = 300,
+            minAttack = 24,
+            maxAttack = 32,
+            description = "Gentle rather than violent, which somehow makes it harder to refuse — every exchange feels like closing a door on an outstretched hand rather than parrying a blade."
         )
     ).associateBy { it.id }
 
@@ -299,6 +307,15 @@ private val ghostwriterEncounter = CombatEncounter(
     unlockTrophy = "Whoever Finished It"
 )
 
+private val patientVoiceEncounter = CombatEncounter(
+    id = "patient_voice_encounter",
+    enemyId = "the_patient_voice",
+    victoryNodeId = "what_it_costs_to_refuse",
+    xpReward = 700,
+    goldReward = 170,
+    unlockTrophy = "Refused Gently"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -319,7 +336,8 @@ object CombatRepository {
             reliquaryThiefEncounter,
             chamberGuardianEncounter,
             ilsevetDuelEncounter,
-            ghostwriterEncounter
+            ghostwriterEncounter,
+            patientVoiceEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)
