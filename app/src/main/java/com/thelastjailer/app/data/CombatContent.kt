@@ -148,6 +148,14 @@ object EnemyCatalog {
             minAttack = 24,
             maxAttack = 32,
             description = "Gentle rather than violent, which somehow makes it harder to refuse — every exchange feels like closing a door on an outstretched hand rather than parrying a blade."
+        ),
+        Enemy(
+            id = "cinder_straggler_captain",
+            name = "Cinder Straggler Captain",
+            maxHealth = 310,
+            minAttack = 25,
+            maxAttack = 33,
+            description = "Leaderless doesn't mean harmless. Weeks with nothing to do but get very good at defending a gate they don't fully understand."
         )
     ).associateBy { it.id }
 
@@ -316,6 +324,15 @@ private val patientVoiceEncounter = CombatEncounter(
     unlockTrophy = "Refused Gently"
 )
 
+private val emberlowStragglersEncounter = CombatEncounter(
+    id = "emberlow_stragglers_encounter",
+    enemyId = "cinder_straggler_captain",
+    victoryNodeId = "reaching_emberlow",
+    xpReward = 750,
+    goldReward = 180,
+    unlockTrophy = "Leaderless, Not Harmless"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -337,7 +354,8 @@ object CombatRepository {
             chamberGuardianEncounter,
             ilsevetDuelEncounter,
             ghostwriterEncounter,
-            patientVoiceEncounter
+            patientVoiceEncounter,
+            emberlowStragglersEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)
