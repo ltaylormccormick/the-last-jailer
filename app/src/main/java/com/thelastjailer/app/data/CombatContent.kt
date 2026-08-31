@@ -60,6 +60,14 @@ object EnemyCatalog {
             minAttack = 13,
             maxAttack = 20,
             description = "Armor quarried from the same black stone as the Sanctum's walls, moving like something built rather than born."
+        ),
+        Enemy(
+            id = "cinder_castellan",
+            name = "Castellan Ordrun",
+            maxHealth = 145,
+            minAttack = 14,
+            maxAttack = 21,
+            description = "Ilsevet's own hand, sent for exactly this. Twin blades, and nothing left to prove by holding back."
         )
     ).associateBy { it.id }
 
@@ -129,6 +137,15 @@ private val sanctumSentinelEncounter = CombatEncounter(
     unlockTrophy = "Out of the Ash"
 )
 
+private val rightHandEncounter = CombatEncounter(
+    id = "right_hand_encounter",
+    enemyId = "cinder_castellan",
+    victoryNodeId = "what_the_castellan_says",
+    xpReward = 220,
+    goldReward = 60,
+    unlockTrophy = "Ilsevet's Own Hand"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -139,7 +156,8 @@ object CombatRepository {
             cinderEnvoyEncounter,
             unboundEncounter,
             loyalistAmbushEncounter,
-            sanctumSentinelEncounter
+            sanctumSentinelEncounter,
+            rightHandEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)

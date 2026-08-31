@@ -69,6 +69,11 @@ object ItemCatalog {
             id = "torn_sanctum_plans",
             name = "Torn Sanctum Plans",
             description = "Half-burned schematics for a six-sided frame, each setting marked to match the wards of a different jailer's gate. Whatever it's for, it isn't finished."
+        ),
+        Item(
+            id = "ordruns_broken_blade",
+            name = "Ordrun's Broken Blade",
+            description = "Snapped clean at the crossguard. Cinder-forged steel, deep grey-black — command-rank, not rank-and-file."
         )
     ).associateBy { it.id }
 
