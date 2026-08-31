@@ -100,6 +100,14 @@ object EnemyCatalog {
             minAttack = 18,
             maxAttack = 25,
             description = "Not flesh, not quite ghost — the shape of a moment three centuries old, defending itself the only way memory knows how."
+        ),
+        Enemy(
+            id = "cinder_reprisal_leader",
+            name = "Cinder Reprisal Squad Leader",
+            maxHealth = 205,
+            minAttack = 19,
+            maxAttack = 26,
+            description = "Sent for Voss specifically — a debt Ilsevet apparently considers overdue, and entirely separate from anything to do with the gates."
         )
     ).associateBy { it.id }
 
@@ -214,6 +222,15 @@ private val memoryConfrontationEncounter = CombatEncounter(
     unlockTrophy = "What the Stone Remembers"
 )
 
+private val reprisalSquadEncounter = CombatEncounter(
+    id = "reprisal_squad_encounter",
+    enemyId = "cinder_reprisal_leader",
+    victoryNodeId = "after_the_reprisal",
+    xpReward = 410,
+    goldReward = 105,
+    unlockTrophy = "Not Today"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -229,7 +246,8 @@ object CombatRepository {
             stonebeardSiegeEncounter,
             fenmoorExtractionEncounter,
             unfinishedThingEncounter,
-            memoryConfrontationEncounter
+            memoryConfrontationEncounter,
+            reprisalSquadEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)
