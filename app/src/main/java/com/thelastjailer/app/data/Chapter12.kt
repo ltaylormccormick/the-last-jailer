@@ -10,19 +10,19 @@ import com.thelastjailer.app.StoryNode
  * Chapter XII — Four Settings.
  *
  * Ilsevet, denied both remaining gates in Chapter XI, tries activating the seventh-door frame with
- * only the four settings she already has — and it nearly destroys the Sanctum. Kaelen and Voss go
- * to help contain it, which puts them in the position of saving the woman who has tried twice to
- * take the brand by force. The chapter deliberately subverts the "siege" pattern of III/IV/V/VII/
- * IX/X: Ilsevet isn't attacking this time, she's overwhelmed, and the fight is against what tore
- * loose from her own failed device rather than against her people. Twelfth and toughest combat
- * encounter yet (The Unfinished, 175 HP — a non-humanoid threat, echoing VI's tonal shift). Ends
- * with proof, for both Kaelen and Ilsevet, of exactly what a completed seventh door would do.
- *
- * Judgment call flagged for review: this is a real, if brief, sympathetic beat for Ilsevet — she
- * asks for help rather than fighting, and Kaelen chooses to give it. It's a deliberate tonal
- * complication rather than a redemption arc (she remains the antagonist going into XIII), meant to
- * keep her a person making a catastrophic bet rather than a simple villain, and to let the
- * player's response to her genuinely vary by playstyle in the closing choice.
+ * only the four settings she already has — and it nearly destroys the Sanctum. Word reaches
+ * Stonebeard, and at "the_call_to_go" the player makes a genuine, unforced choice: go help contain
+ * it (which puts Kaelen in the position of saving the woman who has tried twice to take the brand
+ * by force), or refuse and let her face the consequences of her own gamble alone. The two branches
+ * diverge for the rest of the chapter and rejoin only at the chapter boundary (Chapter XIII's
+ * start), each with its own closing node, its own flag, and different rewards — helping is the only
+ * route to the twelfth combat encounter (The Unfinished, 175 HP, a non-humanoid threat echoing VI's
+ * tonal shift), the item it drops, and the stat-gated aftermath choice with Ilsevet; refusing skips
+ * all three and resolves the same "four settings nearly cost everything" beat secondhand, by report
+ * rather than by presence. Both paths still deliberately subvert the "siege" pattern of III/IV/V/
+ * VII/IX/X: Ilsevet isn't attacking this time, she's overwhelmed, and whichever way the player goes,
+ * both Kaelen and Ilsevet come out the other side knowing exactly what a completed seventh door
+ * would do.
  */
 val chapter12Nodes: List<StoryNode> = listOf(
     StoryNode(
@@ -64,15 +64,29 @@ val chapter12Nodes: List<StoryNode> = listOf(
         narrativeText = """
             Voss doesn't pretend the decision is simple. "She tried to kill you twice. Take your
             brand by force, once by knife and once by siege. And now something she built is loose
-            and she can't put it back." She doesn't finish the thought out loud. She doesn't have
-            to.
+            and she can't put it back." She lets that sit a moment before she says the rest. "I
+            won't tell you which way to go on this one."
 
-            Kaelen thinks of Halvard holding a gap shut with his whole body rather than let
-            anything through it, willing or not, enemy or not. That answer, at least, isn't
-            complicated.
+            Kaelen isn't sure himself, not yet — Halvard's voice and the shape of every enemy
+            who's come through that gate arguing for opposite answers at the same time.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Go.", nextNodeId = "back_to_the_ash")
+            Choice(
+                label = "Go. Whatever else she's done, this isn't a door that should open by accident.",
+                nextNodeId = "back_to_the_ash",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    setFlags = setOf("chose_to_help_ilsevet")
+                )
+            ),
+            Choice(
+                label = "Let her live with what she built. Warn Fenmoor, and wait.",
+                nextNodeId = "watched_from_a_distance",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.COURAGE to 1),
+                    setFlags = setOf("refused_to_help_ilsevet")
+                )
+            )
         )
     ),
     StoryNode(
@@ -145,7 +159,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "\"Then you already have your answer. Stop before six finishes the job.\"",
-                nextNodeId = "chapter12_end",
+                nextNodeId = "chapter12_end_helped",
                 requirements = ChoiceRequirement(minStats = mapOf(StatType.COURAGE to 10)),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
@@ -155,7 +169,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "\"Whatever this cost you, it isn't worth what it almost cost everyone else.\"",
-                nextNodeId = "chapter12_end",
+                nextNodeId = "chapter12_end_helped",
                 requirements = ChoiceRequirement(minStats = mapOf(StatType.HONOUR to 9)),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
@@ -165,7 +179,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "Say nothing. Take a fragment of the broken frame, and leave her to what's left.",
-                nextNodeId = "chapter12_end",
+                nextNodeId = "chapter12_end_helped",
                 consequences = Consequences(
                     grantItemIds = listOf("shard_of_the_seventh_door"),
                     setFlags = setOf("left_ilsevet_to_her_wreckage")
@@ -174,7 +188,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
         )
     ),
     StoryNode(
-        id = "chapter12_end",
+        id = "chapter12_end_helped",
         chapterId = "chapter_12",
         title = "End of Chapter XII — Four Settings",
         illustrationId = "chapter12_threshold",
@@ -192,6 +206,64 @@ val chapter12Nodes: List<StoryNode> = listOf(
             do next, she now knows exactly what happens if she gets what she's been asking for.
 
             That should feel like more of a victory than it does.
+
+            Chapter XIII awaits.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Go on.", nextNodeId = "fallen_knight")
+        )
+    ),
+    StoryNode(
+        id = "watched_from_a_distance",
+        chapterId = "chapter_12",
+        title = "Watched From a Distance",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            Voss doesn't argue with the decision, which somehow makes it heavier rather than
+            lighter. "She's had every chance to be someone worth risking your neck for," she says.
+            "She's used every one of them to come at you with a blade instead."
+
+            They send word to Fenmoor instead — brace for anything that might come out of the
+            ash-field — and wait at Stonebeard for news that isn't theirs to make happen.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Wait.", nextNodeId = "word_of_what_happened")
+        )
+    ),
+    StoryNode(
+        id = "word_of_what_happened",
+        chapterId = "chapter_12",
+        title = "Word of What Happened",
+        illustrationId = "word_of_what_happened",
+        narrativeText = """
+            It's four days before anyone reliable enough to trust brings word down from the
+            Ashfall reaches: the fire burned itself out on its own. Whatever tore loose from the
+            frame is gone now, one way or another — the messenger doesn't know which, and doesn't
+            seem eager to find out. Ilsevet is alive. Most of her garrison isn't.
+
+            Voss reads more into the silence around that report than Kaelen can. "Four settings
+            nearly cost her everything she has left standing," she says. "She knows that now,
+            whether either of us was there to watch it happen or not."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Let it be someone else's cost, this time.", nextNodeId = "chapter12_end_refused")
+        )
+    ),
+    StoryNode(
+        id = "chapter12_end_refused",
+        chapterId = "chapter_12",
+        title = "End of Chapter XII — Four Settings",
+        illustrationId = "chapter12_threshold",
+        narrativeText = """
+            Nobody comes to Stonebeard's gate in the days that follow. Nobody comes to Fenmoor's
+            either. Whatever's left of Ilsevet's people is busy with wreckage that isn't Kaelen's
+            problem to help clean up, this time.
+
+            Four settings very nearly ended everything in that chamber, and Kaelen only knows the
+            shape of it secondhand. Two settings remain unaccounted for by her hand, and Kaelen
+            has both of them. Whatever Ilsevet decides to do next, she now knows exactly what
+            happens if she gets what she's been asking for — and so, at a safer distance than he
+            expected to keep it, does he.
 
             Chapter XIII awaits.
         """.trimIndent(),
