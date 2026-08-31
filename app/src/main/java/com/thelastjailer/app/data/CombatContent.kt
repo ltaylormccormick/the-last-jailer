@@ -76,6 +76,14 @@ object EnemyCatalog {
             minAttack = 15,
             maxAttack = 22,
             description = "Armored head to foot in cinder black-grey, and utterly untroubled by the idea that Ilsevet herself is watching this fight rather than fighting it."
+        ),
+        Enemy(
+            id = "cinder_extraction_leader",
+            name = "Cinder Extraction Team Leader",
+            maxHealth = 165,
+            minAttack = 16,
+            maxAttack = 23,
+            description = "Ilsevet's people have stopped pretending diplomacy is anything but a formality reserved for jailers she'd rather not fight twice."
         )
     ).associateBy { it.id }
 
@@ -163,6 +171,15 @@ private val stonebeardSiegeEncounter = CombatEncounter(
     unlockTrophy = "What Was Lost"
 )
 
+private val fenmoorExtractionEncounter = CombatEncounter(
+    id = "fenmoor_extraction_encounter",
+    enemyId = "cinder_extraction_leader",
+    victoryNodeId = "what_thessaly_decides",
+    xpReward = 290,
+    goldReward = 75,
+    unlockTrophy = "The Marsh Holds"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -175,7 +192,8 @@ object CombatRepository {
             loyalistAmbushEncounter,
             sanctumSentinelEncounter,
             rightHandEncounter,
-            stonebeardSiegeEncounter
+            stonebeardSiegeEncounter,
+            fenmoorExtractionEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)

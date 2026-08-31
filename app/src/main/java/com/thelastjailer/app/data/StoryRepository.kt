@@ -10,13 +10,14 @@ object StoryRepository {
     val chapters: List<Chapter> =
         listOf(
             chapter1, chapter2, chapter3, chapter4, chapter5,
-            chapter6, chapter7, chapter8, chapter9, chapter10
+            chapter6, chapter7, chapter8, chapter9, chapter10, chapter11
         )
 
     private val nodesById: Map<String, StoryNode> =
         (
             chapter1Nodes + chapter2Nodes + chapter3Nodes + chapter4Nodes + chapter5Nodes +
-                chapter6Nodes + chapter7Nodes + chapter8Nodes + chapter9Nodes + chapter10Nodes
+                chapter6Nodes + chapter7Nodes + chapter8Nodes + chapter9Nodes + chapter10Nodes +
+                chapter11Nodes
             ).associateBy { it.id }
 
     fun node(id: String): StoryNode = nodesById[id] ?: nodesById.getValue(chapter1.startNodeId)
