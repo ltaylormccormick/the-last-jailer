@@ -92,6 +92,14 @@ object EnemyCatalog {
             minAttack = 17,
             maxAttack = 24,
             description = "It doesn't have a shape so much as an argument about what shape it should have — pieces of six different wards fighting over one body that was never meant to hold all of them at once."
+        ),
+        Enemy(
+            id = "the_memory_itself",
+            name = "The Memory Itself",
+            maxHealth = 190,
+            minAttack = 18,
+            maxAttack = 25,
+            description = "Not flesh, not quite ghost — the shape of a moment three centuries old, defending itself the only way memory knows how."
         )
     ).associateBy { it.id }
 
@@ -197,6 +205,15 @@ private val unfinishedThingEncounter = CombatEncounter(
     unlockTrophy = "What Four Settings Do"
 )
 
+private val memoryConfrontationEncounter = CombatEncounter(
+    id = "memory_confrontation_encounter",
+    enemyId = "the_memory_itself",
+    victoryNodeId = "what_kaelen_remembers",
+    xpReward = 370,
+    goldReward = 95,
+    unlockTrophy = "What the Stone Remembers"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -211,7 +228,8 @@ object CombatRepository {
             rightHandEncounter,
             stonebeardSiegeEncounter,
             fenmoorExtractionEncounter,
-            unfinishedThingEncounter
+            unfinishedThingEncounter,
+            memoryConfrontationEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)
