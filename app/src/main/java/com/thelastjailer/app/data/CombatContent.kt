@@ -68,6 +68,14 @@ object EnemyCatalog {
             minAttack = 14,
             maxAttack = 21,
             description = "Ilsevet's own hand, sent for exactly this. Twin blades, and nothing left to prove by holding back."
+        ),
+        Enemy(
+            id = "ilsevets_vanguard_captain",
+            name = "Ilsevet's Vanguard Captain",
+            maxHealth = 155,
+            minAttack = 15,
+            maxAttack = 22,
+            description = "Armored head to foot in cinder black-grey, and utterly untroubled by the idea that Ilsevet herself is watching this fight rather than fighting it."
         )
     ).associateBy { it.id }
 
@@ -146,6 +154,15 @@ private val rightHandEncounter = CombatEncounter(
     unlockTrophy = "Ilsevet's Own Hand"
 )
 
+private val stonebeardSiegeEncounter = CombatEncounter(
+    id = "stonebeard_siege_encounter",
+    enemyId = "ilsevets_vanguard_captain",
+    victoryNodeId = "halvard_falls",
+    xpReward = 260,
+    goldReward = 70,
+    unlockTrophy = "What Was Lost"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -157,7 +174,8 @@ object CombatRepository {
             unboundEncounter,
             loyalistAmbushEncounter,
             sanctumSentinelEncounter,
-            rightHandEncounter
+            rightHandEncounter,
+            stonebeardSiegeEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)
