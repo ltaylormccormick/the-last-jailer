@@ -188,6 +188,14 @@ object EnemyCatalog {
             minAttack = 29,
             maxAttack = 37,
             description = "A piece of the whole itself, deployed in person for the first time rather than persuading through a fragment or borrowing loyalty from stragglers. It isn't here to win. It's here to take back what was taken."
+        ),
+        Enemy(
+            id = "vigil_captain_of_wraithspire",
+            name = "Vigil-Captain of Wraithspire",
+            maxHealth = 385,
+            minAttack = 30,
+            maxAttack = 38,
+            description = "Not a fragment, not a manifestation, not a haunted ward — a person, extraordinarily skilled, defending three hundred unbroken years of a duty her order has never once failed."
         )
     ).associateBy { it.id }
 
@@ -401,6 +409,15 @@ private val theReclamationEncounter = CombatEncounter(
     unlockTrophy = "What It Sent For the Thread"
 )
 
+private val wraithspireVigilEncounter = CombatEncounter(
+    id = "wraithspire_vigil_encounter",
+    enemyId = "vigil_captain_of_wraithspire",
+    victoryNodeId = "what_wraithspire_reveals",
+    xpReward = 1000,
+    goldReward = 230,
+    unlockTrophy = "The Last Gate"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -427,7 +444,8 @@ object CombatRepository {
             greymoorUnravelingEncounter,
             duskmereThresholdEncounter,
             sunderingGroundEncounter,
-            theReclamationEncounter
+            theReclamationEncounter,
+            wraithspireVigilEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)

@@ -149,6 +149,11 @@ object ItemCatalog {
             id = "splinter_of_the_whole",
             name = "Splinter of the Whole",
             description = "Broken off in the fight over the thread — the first piece of the whole itself, rather than one of its fragments, that anyone has ever managed to take and keep."
+        ),
+        Item(
+            id = "sigil_of_the_unbroken_vigil",
+            name = "Sigil of the Unbroken Vigil",
+            description = "Given, not surrendered, by a captain whose order has stood watch over the sixth gate for three hundred unbroken years without ever once being found."
         )
     ).associateBy { it.id }
 
