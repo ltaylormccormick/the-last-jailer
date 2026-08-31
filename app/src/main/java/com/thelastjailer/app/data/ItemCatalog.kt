@@ -154,6 +154,11 @@ object ItemCatalog {
             id = "sigil_of_the_unbroken_vigil",
             name = "Sigil of the Unbroken Vigil",
             description = "Given, not surrendered, by a captain whose order has stood watch over the sixth gate for three hundred unbroken years without ever once being found."
+        ),
+        Item(
+            id = "broken_grasp_of_the_whole",
+            name = "Broken Grasp of the Whole",
+            description = "A fragment of the grip that tried to close around Kaelen's own binding by force — proof, for the first time in three centuries, that the whole can be refused even when it stops asking."
         )
     ).associateBy { it.id }
 

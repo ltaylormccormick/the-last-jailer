@@ -196,6 +196,14 @@ object EnemyCatalog {
             minAttack = 30,
             maxAttack = 38,
             description = "Not a fragment, not a manifestation, not a haunted ward — a person, extraordinarily skilled, defending three hundred unbroken years of a duty her order has never once failed."
+        ),
+        Enemy(
+            id = "the_whole_undisguised",
+            name = "The Whole, Undisguised",
+            maxHealth = 410,
+            minAttack = 31,
+            maxAttack = 39,
+            description = "Not a splinter, not a straggler, not a single fragment's dream — the whole itself, as close to its true scale as three centuries of scattering has left it able to take, done asking and trying, for the first time, simply to take."
         )
     ).associateBy { it.id }
 
@@ -418,6 +426,15 @@ private val wraithspireVigilEncounter = CombatEncounter(
     unlockTrophy = "The Last Gate"
 )
 
+private val theWholeEncounter = CombatEncounter(
+    id = "the_whole_encounter",
+    enemyId = "the_whole_undisguised",
+    victoryNodeId = "what_holding_the_line_costs",
+    xpReward = 1100,
+    goldReward = 250,
+    unlockTrophy = "The Whole, Undisguised"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -445,7 +462,8 @@ object CombatRepository {
             duskmereThresholdEncounter,
             sunderingGroundEncounter,
             theReclamationEncounter,
-            wraithspireVigilEncounter
+            wraithspireVigilEncounter,
+            theWholeEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)
