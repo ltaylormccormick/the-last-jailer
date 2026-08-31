@@ -159,6 +159,11 @@ object ItemCatalog {
             id = "broken_grasp_of_the_whole",
             name = "Broken Grasp of the Whole",
             description = "A fragment of the grip that tried to close around Kaelen's own binding by force — proof, for the first time in three centuries, that the whole can be refused even when it stops asking."
+        ),
+        Item(
+            id = "promise_of_the_six",
+            name = "Promise of the Six",
+            description = "What was left on the hillside once the reaching finally stopped — not a weapon, not a trophy, just proof that an argument three hundred years old can still end without anyone having to lose."
         )
     ).associateBy { it.id }
 
