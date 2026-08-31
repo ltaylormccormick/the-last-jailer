@@ -164,6 +164,14 @@ object EnemyCatalog {
             minAttack = 26,
             maxAttack = 34,
             description = "Grief given just enough shape to defend what's left of a failing ward. It isn't trying to kill him. It's trying to make sure nothing else gets taken."
+        ),
+        Enemy(
+            id = "the_answering_door",
+            name = "The Answering Door",
+            maxHealth = 340,
+            minAttack = 27,
+            maxAttack = 35,
+            description = "A threshold given just enough shape to defend what it's climbing out of. The first foothold the whole has managed to take with a body of its own, however small."
         )
     ).associateBy { it.id }
 
@@ -350,6 +358,15 @@ private val greymoorUnravelingEncounter = CombatEncounter(
     unlockTrophy = "The Second Silence"
 )
 
+private val duskmereThresholdEncounter = CombatEncounter(
+    id = "duskmere_threshold_encounter",
+    enemyId = "the_answering_door",
+    victoryNodeId = "what_yielding_cost",
+    xpReward = 850,
+    goldReward = 200,
+    unlockTrophy = "When Duskmere Answered"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -373,7 +390,8 @@ object CombatRepository {
             ghostwriterEncounter,
             patientVoiceEncounter,
             emberlowStragglersEncounter,
-            greymoorUnravelingEncounter
+            greymoorUnravelingEncounter,
+            duskmereThresholdEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)

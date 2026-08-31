@@ -134,6 +134,11 @@ object ItemCatalog {
             id = "greymoor_wardens_ledger",
             name = "Greymoor Warden's Ledger",
             description = "Kestrel's watch-log, open to an entry she never finished. Whatever interrupted her, it happened between one sentence and the next."
+        ),
+        Item(
+            id = "duskmere_keepers_journal",
+            name = "Duskmere Keeper's Journal",
+            description = "Wren's last entry, steady-handed and deliberate: a yes chosen freely after six years alone, in the hope it might spare someone else the same wait."
         )
     ).associateBy { it.id }
 
