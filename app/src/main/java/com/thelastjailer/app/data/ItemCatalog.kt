@@ -139,6 +139,11 @@ object ItemCatalog {
             id = "duskmere_keepers_journal",
             name = "Duskmere Keeper's Journal",
             description = "Wren's last entry, steady-handed and deliberate: a yes chosen freely after six years alone, in the hope it might spare someone else the same wait."
+        ),
+        Item(
+            id = "thread_of_the_sundering",
+            name = "Thread of the Sundering",
+            description = "A single filament, warm-cold and unremarkable, pulled from ordinary hillside soil where something tore itself into six pieces three hundred years ago."
         )
     ).associateBy { it.id }
 
