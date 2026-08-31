@@ -172,6 +172,14 @@ object EnemyCatalog {
             minAttack = 27,
             maxAttack = 35,
             description = "A threshold given just enough shape to defend what it's climbing out of. The first foothold the whole has managed to take with a body of its own, however small."
+        ),
+        Enemy(
+            id = "the_unremembering",
+            name = "The Unremembering",
+            maxHealth = 355,
+            minAttack = 28,
+            maxAttack = 36,
+            description = "Not a guardian defending the Sundering Ground, but the ground's own forgetting given shape — three centuries of insisting, with everything it has, that there was never anything here at all."
         )
     ).associateBy { it.id }
 
@@ -367,6 +375,15 @@ private val duskmereThresholdEncounter = CombatEncounter(
     unlockTrophy = "When Duskmere Answered"
 )
 
+private val sunderingGroundEncounter = CombatEncounter(
+    id = "sundering_ground_encounter",
+    enemyId = "the_unremembering",
+    victoryNodeId = "what_kaelen_offers_the_forgotten",
+    xpReward = 900,
+    goldReward = 210,
+    unlockTrophy = "Where It Began"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -391,7 +408,8 @@ object CombatRepository {
             patientVoiceEncounter,
             emberlowStragglersEncounter,
             greymoorUnravelingEncounter,
-            duskmereThresholdEncounter
+            duskmereThresholdEncounter,
+            sunderingGroundEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)
