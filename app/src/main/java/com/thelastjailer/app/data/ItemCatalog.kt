@@ -89,6 +89,11 @@ object ItemCatalog {
             id = "shard_of_the_seventh_door",
             name = "Shard of the Seventh Door",
             description = "A fragment struck from the failed frame — warm when it should be cold, and humming faintly the way the Sanctum's spire used to hum from a distance. Whatever it remembers being part of, it hasn't stopped trying to finish the job."
+        ),
+        Item(
+            id = "rubbing_of_halvards_mark",
+            name = "Rubbing of Halvard's Mark",
+            description = "Charcoal on cloth, pressed against the warden's mark carved into Stonebeard's gate. A keepsake, not a weapon."
         )
     ).associateBy { it.id }
 
