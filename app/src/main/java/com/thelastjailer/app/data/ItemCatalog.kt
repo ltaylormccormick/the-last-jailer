@@ -124,6 +124,11 @@ object ItemCatalog {
             id = "archivists_final_page",
             name = "Archivist's Final Page",
             description = "One line, in a hand gone suddenly uncertain: a message meant for \"the sixth,\" whoever that turns out to be."
+        ),
+        Item(
+            id = "emberlow_wardens_token",
+            name = "Emberlow Warden's Token",
+            description = "Found untouched at the base of a gate nobody's guarded in eleven years — proof someone stood here once, before the silence started."
         )
     ).associateBy { it.id }
 
