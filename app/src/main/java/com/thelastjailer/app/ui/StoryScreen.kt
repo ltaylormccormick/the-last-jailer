@@ -22,6 +22,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +47,8 @@ import com.thelastjailer.app.data.StoryRepository
 fun StoryScreen(
     state: GameState,
     entitlements: EntitlementRepository,
+    purchaseCompletedTick: Int,
+    onRequestUnlock: () -> Unit,
     onChoiceSelected: (Choice) -> Unit,
     onCombatResolved: (CombatEncounter, CombatOutcome) -> Unit,
     onOpenJournal: () -> Unit,
@@ -59,6 +62,9 @@ fun StoryScreen(
     val choices = StoryRepository.visibleChoices(node, state)
     var chapterUnlocked by remember(node.chapterId) {
         mutableStateOf(entitlements.isChapterUnlocked(node.chapterId))
+    }
+    LaunchedEffect(purchaseCompletedTick, node.chapterId) {
+        chapterUnlocked = entitlements.isChapterUnlocked(node.chapterId)
     }
     val encounter = node.combatEncounterId?.let { CombatRepository.encounter(it) }
     var inCombat by remember(node.id) { mutableStateOf(false) }
@@ -78,7 +84,8 @@ fun StoryScreen(
             LockedChapterScreen(
                 node = node,
                 entitlements = entitlements,
-                onUnlocked = { chapterUnlocked = true },
+                onRequestUnlock = onRequestUnlock,
+                onDebugUnlocked = { chapterUnlocked = true },
                 modifier = Modifier.fillMaxSize()
             )
             return@Column
@@ -245,7 +252,8 @@ private fun ChoiceList(choices: List<Choice>, onChoiceSelected: (Choice) -> Unit
 private fun LockedChapterScreen(
     node: StoryNode,
     entitlements: EntitlementRepository,
-    onUnlocked: () -> Unit,
+    onRequestUnlock: () -> Unit,
+    onDebugUnlocked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.Center) {
@@ -256,17 +264,14 @@ private fun LockedChapterScreen(
             style = MaterialTheme.typography.bodyLarge
         )
         Spacer(Modifier.height(20.dp))
-        Button(onClick = {
-            entitlements.unlockFullStory()
-            onUnlocked()
-        }) {
+        Button(onClick = onRequestUnlock) {
             Text("UNLOCK FULL STORY")
         }
         if (BuildConfig.DEBUG) {
             Spacer(Modifier.height(12.dp))
             OutlinedButton(onClick = {
                 entitlements.setDebugPurchaseSimulated(true)
-                onUnlocked()
+                onDebugUnlocked()
             }) {
                 Text("DEBUG: SIMULATE PURCHASE", color = JailerColors.Gold)
             }

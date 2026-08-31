@@ -1,5 +1,6 @@
 package com.thelastjailer.app
 
+import android.app.Activity
 import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -16,6 +17,7 @@ import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSiz
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
+import com.thelastjailer.app.data.BillingRepository
 import com.thelastjailer.app.data.LocalEntitlementRepository
 import com.thelastjailer.app.ui.AppScreen
 import com.thelastjailer.app.ui.CharacterScreen
@@ -60,6 +63,13 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
     val entitlements = remember(context) {
         LocalEntitlementRepository(context.getSharedPreferences("jailer_entitlements", Context.MODE_PRIVATE))
     }
+    val activity = context as Activity
+    val billing = remember(context) { BillingRepository(context, entitlements) }
+    DisposableEffect(billing) {
+        billing.start()
+        onDispose { billing.endConnection() }
+    }
+    val onRequestUnlock: () -> Unit = { billing.launchPurchaseFlow(activity) }
     var state by remember {
         val slot = store.currentActiveSlot() ?: 1
         mutableStateOf(store.load(slot) ?: GameState(activeSlot = slot))
@@ -91,6 +101,8 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                 AppScreen.STORY -> StoryScreen(
                     state = state,
                     entitlements = entitlements,
+                    purchaseCompletedTick = billing.purchaseCompletedTick,
+                    onRequestUnlock = onRequestUnlock,
                     onChoiceSelected = { choice ->
                         state = state.applyChoice(choice)
                         store.save(state.activeSlot, state)
@@ -114,7 +126,11 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                     state = state,
                     onStateChange = { state = it }
                 )
-                AppScreen.OPTIONS -> OptionsScreen(entitlements)
+                AppScreen.OPTIONS -> OptionsScreen(
+                    entitlements = entitlements,
+                    purchaseCompletedTick = billing.purchaseCompletedTick,
+                    onRequestUnlock = onRequestUnlock
+                )
                 AppScreen.JOURNAL -> JournalScreen(state)
             }
         }
