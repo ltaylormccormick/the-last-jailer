@@ -84,6 +84,14 @@ object EnemyCatalog {
             minAttack = 16,
             maxAttack = 23,
             description = "Ilsevet's people have stopped pretending diplomacy is anything but a formality reserved for jailers she'd rather not fight twice."
+        ),
+        Enemy(
+            id = "the_unfinished",
+            name = "The Unfinished",
+            maxHealth = 175,
+            minAttack = 17,
+            maxAttack = 24,
+            description = "It doesn't have a shape so much as an argument about what shape it should have — pieces of six different wards fighting over one body that was never meant to hold all of them at once."
         )
     ).associateBy { it.id }
 
@@ -180,6 +188,15 @@ private val fenmoorExtractionEncounter = CombatEncounter(
     unlockTrophy = "The Marsh Holds"
 )
 
+private val unfinishedThingEncounter = CombatEncounter(
+    id = "unfinished_thing_encounter",
+    enemyId = "the_unfinished",
+    victoryNodeId = "what_kaelen_does_with_her",
+    xpReward = 330,
+    goldReward = 85,
+    unlockTrophy = "What Four Settings Do"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -193,7 +210,8 @@ object CombatRepository {
             sanctumSentinelEncounter,
             rightHandEncounter,
             stonebeardSiegeEncounter,
-            fenmoorExtractionEncounter
+            fenmoorExtractionEncounter,
+            unfinishedThingEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)

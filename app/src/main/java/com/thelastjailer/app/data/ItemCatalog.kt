@@ -84,6 +84,11 @@ object ItemCatalog {
             id = "fenmoor_ward_shard",
             name = "Fenmoor Ward Shard",
             description = "A fragment struck from Fenmoor's failing ward in the scuffle. Cold to the touch, and colder still where the crack runs through it."
+        ),
+        Item(
+            id = "shard_of_the_seventh_door",
+            name = "Shard of the Seventh Door",
+            description = "A fragment struck from the failed frame — warm when it should be cold, and humming faintly the way the Sanctum's spire used to hum from a distance. Whatever it remembers being part of, it hasn't stopped trying to finish the job."
         )
     ).associateBy { it.id }
 
