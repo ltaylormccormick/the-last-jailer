@@ -94,6 +94,11 @@ object ItemCatalog {
             id = "rubbing_of_halvards_mark",
             name = "Rubbing of Halvard's Mark",
             description = "Charcoal on cloth, pressed against the warden's mark carved into Stonebeard's gate. A keepsake, not a weapon."
+        ),
+        Item(
+            id = "shard_of_the_first_ward",
+            name = "Shard of the First Ward",
+            description = "A fragment that shouldn't exist outside the vision it came from — proof, if proof were needed, that whatever happened to the six wards happened to all of them at once, a very long time ago."
         )
     ).associateBy { it.id }
 
