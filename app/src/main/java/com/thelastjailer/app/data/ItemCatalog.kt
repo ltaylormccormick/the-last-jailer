@@ -64,6 +64,11 @@ object ItemCatalog {
             id = "voss_seal",
             name = "Voss's Seal",
             description = "A signet ring bearing the Ashen Order's true mark, offered freely rather than seized. What it still opens, this far from anyone who answers to it, remains to be seen."
+        ),
+        Item(
+            id = "torn_sanctum_plans",
+            name = "Torn Sanctum Plans",
+            description = "Half-burned schematics for a six-sided frame, each setting marked to match the wards of a different jailer's gate. Whatever it's for, it isn't finished."
         )
     ).associateBy { it.id }
 

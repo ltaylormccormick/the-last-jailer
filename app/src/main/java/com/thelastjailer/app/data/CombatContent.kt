@@ -52,6 +52,14 @@ object EnemyCatalog {
             minAttack = 12,
             maxAttack = 19,
             description = "Marked twice over — Ilsevet's cinder brand, and Voss's name crossed through beneath it. Sent to clean up a problem, not negotiate with one."
+        ),
+        Enemy(
+            id = "sanctum_sentinel",
+            name = "Sanctum Sentinel",
+            maxHealth = 130,
+            minAttack = 13,
+            maxAttack = 20,
+            description = "Armor quarried from the same black stone as the Sanctum's walls, moving like something built rather than born."
         )
     ).associateBy { it.id }
 
@@ -112,6 +120,15 @@ private val loyalistAmbushEncounter = CombatEncounter(
     unlockTrophy = "An Uneasy Alliance"
 )
 
+private val sanctumSentinelEncounter = CombatEncounter(
+    id = "sanctum_sentinel_encounter",
+    enemyId = "sanctum_sentinel",
+    victoryNodeId = "the_price_of_escape",
+    xpReward = 190,
+    goldReward = 50,
+    unlockTrophy = "Out of the Ash"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -121,7 +138,8 @@ object CombatRepository {
             siegeEncounter,
             cinderEnvoyEncounter,
             unboundEncounter,
-            loyalistAmbushEncounter
+            loyalistAmbushEncounter,
+            sanctumSentinelEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)
