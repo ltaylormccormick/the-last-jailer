@@ -99,6 +99,11 @@ object ItemCatalog {
             id = "shard_of_the_first_ward",
             name = "Shard of the First Ward",
             description = "A fragment that shouldn't exist outside the vision it came from — proof, if proof were needed, that whatever happened to the six wards happened to all of them at once, a very long time ago."
+        ),
+        Item(
+            id = "record_of_ashwell",
+            name = "Record of Ashwell",
+            description = "Water-stained Order archive pages, fifteen years old. The closest thing to an answer for who Ilsevet was before she was the Cinder Marshal."
         )
     ).associateBy { it.id }
 
