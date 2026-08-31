@@ -204,6 +204,14 @@ object EnemyCatalog {
             minAttack = 31,
             maxAttack = 39,
             description = "Not a splinter, not a straggler, not a single fragment's dream — the whole itself, as close to its true scale as three centuries of scattering has left it able to take, done asking and trying, for the first time, simply to take."
+        ),
+        Enemy(
+            id = "the_whole_at_full_reach",
+            name = "The Whole, At Full Reach",
+            maxHealth = 450,
+            minAttack = 33,
+            maxAttack = 41,
+            description = "Everything three centuries of scattering has left it able to gather in one place, one last time, because it has finally understood there won't be a second chance to take what it wants by force."
         )
     ).associateBy { it.id }
 
@@ -435,6 +443,15 @@ private val theWholeEncounter = CombatEncounter(
     unlockTrophy = "The Whole, Undisguised"
 )
 
+private val theLastReachEncounter = CombatEncounter(
+    id = "the_last_reach_encounter",
+    enemyId = "the_whole_at_full_reach",
+    victoryNodeId = "what_the_whole_finally_hears",
+    xpReward = 1250,
+    goldReward = 280,
+    unlockTrophy = "Six, Not One"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -463,7 +480,8 @@ object CombatRepository {
             sunderingGroundEncounter,
             theReclamationEncounter,
             wraithspireVigilEncounter,
-            theWholeEncounter
+            theWholeEncounter,
+            theLastReachEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)
