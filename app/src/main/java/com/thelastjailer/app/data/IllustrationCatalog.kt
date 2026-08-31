@@ -12,7 +12,9 @@ object IllustrationCatalog {
         "root_tunnel_dwarven_path" to R.drawable.root_tunnel_dwarven_path,
         "dwarven_hold_gate" to R.drawable.dwarven_hold_gate,
         "cavern_ambush" to R.drawable.cavern_ambush,
-        "threshold_ahead" to R.drawable.threshold_ahead
+        "threshold_ahead" to R.drawable.threshold_ahead,
+        "roots_descent" to R.drawable.roots_descent,
+        "silent_forge" to R.drawable.silent_forge
     )
 
     fun get(illustrationId: String): Int? = illustrations[illustrationId]
