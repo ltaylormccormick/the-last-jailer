@@ -144,6 +144,11 @@ object ItemCatalog {
             id = "thread_of_the_sundering",
             name = "Thread of the Sundering",
             description = "A single filament, warm-cold and unremarkable, pulled from ordinary hillside soil where something tore itself into six pieces three hundred years ago."
+        ),
+        Item(
+            id = "splinter_of_the_whole",
+            name = "Splinter of the Whole",
+            description = "Broken off in the fight over the thread — the first piece of the whole itself, rather than one of its fragments, that anyone has ever managed to take and keep."
         )
     ).associateBy { it.id }
 
