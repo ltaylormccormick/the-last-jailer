@@ -124,6 +124,14 @@ object EnemyCatalog {
             minAttack = 21,
             maxAttack = 28,
             description = "Assembled the same desperate way the frame itself was — pieces that were never meant to share a single purpose, forced to anyway."
+        ),
+        Enemy(
+            id = "ilsevet_the_cinder_marshal",
+            name = "Ilsevet, the Cinder Marshal",
+            maxHealth = 260,
+            minAttack = 22,
+            maxAttack = 30,
+            description = "No garrison behind her this time, no frame to finish, nothing left to spend but herself. She fights like someone who has already decided this is the last version of this argument she intends to have."
         )
     ).associateBy { it.id }
 
@@ -265,6 +273,15 @@ private val chamberGuardianEncounter = CombatEncounter(
     unlockTrophy = "What Almost Finished"
 )
 
+private val ilsevetDuelEncounter = CombatEncounter(
+    id = "ilsevet_duel_encounter",
+    enemyId = "ilsevet_the_cinder_marshal",
+    victoryNodeId = "what_is_left_of_her",
+    xpReward = 600,
+    goldReward = 150,
+    unlockTrophy = "No More Between Us"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -283,7 +300,8 @@ object CombatRepository {
             memoryConfrontationEncounter,
             reprisalSquadEncounter,
             reliquaryThiefEncounter,
-            chamberGuardianEncounter
+            chamberGuardianEncounter,
+            ilsevetDuelEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)
