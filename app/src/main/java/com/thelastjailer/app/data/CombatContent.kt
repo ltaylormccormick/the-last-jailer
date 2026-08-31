@@ -116,6 +116,14 @@ object EnemyCatalog {
             minAttack = 20,
             maxAttack = 27,
             description = "Moves like something that was never meant to be caught, sent for exactly the kind of theft a siege could never manage."
+        ),
+        Enemy(
+            id = "sanctum_construct",
+            name = "The Chamber's Ward",
+            maxHealth = 235,
+            minAttack = 21,
+            maxAttack = 28,
+            description = "Assembled the same desperate way the frame itself was — pieces that were never meant to share a single purpose, forced to anyway."
         )
     ).associateBy { it.id }
 
@@ -248,6 +256,15 @@ private val reliquaryThiefEncounter = CombatEncounter(
     unlockTrophy = "Nearly Enough"
 )
 
+private val chamberGuardianEncounter = CombatEncounter(
+    id = "chamber_guardian_encounter",
+    enemyId = "sanctum_construct",
+    victoryNodeId = "what_must_be_broken",
+    xpReward = 500,
+    goldReward = 125,
+    unlockTrophy = "What Almost Finished"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -265,7 +282,8 @@ object CombatRepository {
             unfinishedThingEncounter,
             memoryConfrontationEncounter,
             reprisalSquadEncounter,
-            reliquaryThiefEncounter
+            reliquaryThiefEncounter,
+            chamberGuardianEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)
