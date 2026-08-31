@@ -108,6 +108,14 @@ object EnemyCatalog {
             minAttack = 19,
             maxAttack = 26,
             description = "Sent for Voss specifically — a debt Ilsevet apparently considers overdue, and entirely separate from anything to do with the gates."
+        ),
+        Enemy(
+            id = "cinder_reliquary_thief",
+            name = "Cinder Reliquary Thief",
+            maxHealth = 220,
+            minAttack = 20,
+            maxAttack = 27,
+            description = "Moves like something that was never meant to be caught, sent for exactly the kind of theft a siege could never manage."
         )
     ).associateBy { it.id }
 
@@ -231,6 +239,15 @@ private val reprisalSquadEncounter = CombatEncounter(
     unlockTrophy = "Not Today"
 )
 
+private val reliquaryThiefEncounter = CombatEncounter(
+    id = "reliquary_thief_encounter",
+    enemyId = "cinder_reliquary_thief",
+    victoryNodeId = "what_was_taken",
+    xpReward = 450,
+    goldReward = 115,
+    unlockTrophy = "Nearly Enough"
+)
+
 /** Every scripted fight in the game, keyed by [CombatEncounter.id]. */
 object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
@@ -247,7 +264,8 @@ object CombatRepository {
             fenmoorExtractionEncounter,
             unfinishedThingEncounter,
             memoryConfrontationEncounter,
-            reprisalSquadEncounter
+            reprisalSquadEncounter,
+            reliquaryThiefEncounter
         ).associateBy { it.id }
 
     fun encounter(id: String): CombatEncounter = encounters.getValue(id)
