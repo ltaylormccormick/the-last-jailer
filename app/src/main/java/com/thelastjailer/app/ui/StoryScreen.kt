@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -110,7 +112,7 @@ fun StoryScreen(
         if (isExpandedWidth) {
             Row(modifier = Modifier.fillMaxSize()) {
                 Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                    NarrativePanel(node)
+                    NarrativePanel(node, modifier = Modifier.fillMaxSize())
                 }
                 Spacer(Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.SpaceBetween) {
@@ -123,8 +125,11 @@ fun StoryScreen(
                 }
             }
         } else {
-            Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-                NarrativePanel(node)
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Weighted + internally scrollable so a long scene (illustration + several
+                // paragraphs) scrolls within its own space instead of pushing the choice
+                // buttons below it off-screen with no way to reach them.
+                NarrativePanel(node, modifier = Modifier.weight(1f))
                 Column(modifier = Modifier.fillMaxWidth()) {
                     StatsBar(state)
                     Spacer(Modifier.height(8.dp))
@@ -194,8 +199,19 @@ private fun ChapterThumbnailStrip(activeNode: StoryNode) {
 }
 
 @Composable
-private fun NarrativePanel(node: StoryNode) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+private fun NarrativePanel(node: StoryNode, modifier: Modifier = Modifier) {
+    val scrollState = rememberScrollState()
+    // Without this, scrolling down on one scene would leave the next scene's narrative
+    // panel starting mid-scroll instead of at the top, since ScrollState otherwise survives
+    // recomposition across node changes.
+    LaunchedEffect(node.id) {
+        scrollState.scrollTo(0)
+    }
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .verticalScroll(scrollState)
+    ) {
         SceneIllustration(node.illustrationId, Modifier.fillMaxWidth().height(220.dp))
         Spacer(Modifier.height(12.dp))
         Text(node.title, style = MaterialTheme.typography.headlineSmall)
