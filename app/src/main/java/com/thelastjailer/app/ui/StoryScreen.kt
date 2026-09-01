@@ -125,19 +125,29 @@ fun StoryScreen(
                 }
             }
         } else {
-            Column(modifier = Modifier.fillMaxSize()) {
-                // Weighted + internally scrollable so a long scene (illustration + several
-                // paragraphs) scrolls within its own space instead of pushing the choice
-                // buttons below it off-screen with no way to reach them.
-                NarrativePanel(node, modifier = Modifier.weight(1f))
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    StatsBar(state)
-                    Spacer(Modifier.height(8.dp))
-                    ActionArea(encounter, choices, onEngage = { inCombat = true }, onChoiceSelected)
-                    Spacer(Modifier.height(8.dp))
-                    CharacterSummaryCard(state)
-                    Spacer(Modifier.height(8.dp))
-                }
+            val phoneScrollState = rememberScrollState()
+            LaunchedEffect(node.id) { phoneScrollState.scrollTo(0) }
+            // The whole scene (illustration, text, stats, choices, character card) scrolls as
+            // one unit, rather than splitting the screen with weight() between the narrative
+            // panel and the section below it: giving the narrative panel a fixed share of the
+            // screen meant a tall stats/choices/character-card section could squeeze it down to
+            // barely more than the illustration's height, leaving the title and body text
+            // scrolled into a sliver too thin to notice, let alone read. Scrolling the full
+            // column guarantees both the full narrative text and the choices below it render at
+            // their natural size and stay reachable regardless of how long the scene is.
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(phoneScrollState)
+            ) {
+                NarrativeContent(node)
+                Spacer(Modifier.height(8.dp))
+                StatsBar(state)
+                Spacer(Modifier.height(8.dp))
+                ActionArea(encounter, choices, onEngage = { inCombat = true }, onChoiceSelected)
+                Spacer(Modifier.height(8.dp))
+                CharacterSummaryCard(state)
+                Spacer(Modifier.height(8.dp))
             }
         }
     }
@@ -198,6 +208,13 @@ private fun ChapterThumbnailStrip(activeNode: StoryNode) {
     }
 }
 
+/**
+ * The tablet side-by-side layout gives this its own full-height column with no sibling to
+ * compete with, so it can safely scroll within that space via [NarrativePanel]. The phone
+ * layout instead scrolls this content as part of one larger column (see [StoryScreen]) and
+ * uses [NarrativeContent] directly, unscrolled, to avoid splitting the screen's height between
+ * this and the stats/choices/character-card section below it.
+ */
 @Composable
 private fun NarrativePanel(node: StoryNode, modifier: Modifier = Modifier) {
     val scrollState = rememberScrollState()
@@ -207,11 +224,12 @@ private fun NarrativePanel(node: StoryNode, modifier: Modifier = Modifier) {
     LaunchedEffect(node.id) {
         scrollState.scrollTo(0)
     }
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .verticalScroll(scrollState)
-    ) {
+    NarrativeContent(node, modifier = modifier.verticalScroll(scrollState))
+}
+
+@Composable
+private fun NarrativeContent(node: StoryNode, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
         SceneIllustration(node.illustrationId, Modifier.fillMaxWidth().height(220.dp))
         Spacer(Modifier.height(12.dp))
         Text(node.title, style = MaterialTheme.typography.headlineSmall)
