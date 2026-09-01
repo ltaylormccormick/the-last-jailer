@@ -74,4 +74,4 @@ If this policy ever changes, an updated version will be posted here with a new e
 
 ## Contact
 
-Questions about this policy can be sent to: **[ADD YOUR CONTACT EMAIL HERE]**
+Questions about this policy can be sent to: **tinkerlanternstudio@gmail.com**
