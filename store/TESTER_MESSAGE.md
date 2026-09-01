@@ -1,8 +1,9 @@
 # Message for closed-testing testers
 
-Draft only. Fill in the two bracketed placeholders before sending, and trim/personalize the
-greeting however feels natural for family/friends — this is written to be copy-pasted into a
-text, email, or group chat as-is otherwise.
+Draft only. The opt-in link still needs to be filled in once the Play Console testing track is
+set up — feedback channel is set to "just reply to this text/WhatsApp message directly," per
+your call. Trim/personalize the greeting however feels natural for family/friends — this is
+written to be copy-pasted into a text or WhatsApp message as-is otherwise.
 
 ---
 
@@ -28,7 +29,7 @@ even better, but the 14 days is the part I actually need from everyone.
 - Anywhere you got confused about what to do next
 - Honestly, just whether you enjoyed it or got bored — that matters more than the bug list
 
-No pressure to write anything formal — just send me a message whenever something stands out.
-You can reach me at **[ADD YOUR PREFERRED FEEDBACK CHANNEL — EMAIL/TEXT/GROUP CHAT]**.
+No pressure to write anything formal — just reply directly to this text/WhatsApp message
+whenever something stands out. No separate form or channel, just message me.
 
 Thank you for doing this — it means a lot to have real eyes on it before strangers do.
