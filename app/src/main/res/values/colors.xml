@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches the black background baked into ic_launcher_foreground.png, so the adaptive
+         icon mask shows no seam between the foreground art and this background layer. -->
+    <color name="ic_launcher_background">#000000</color>
+</resources>
