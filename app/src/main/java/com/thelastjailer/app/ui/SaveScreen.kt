@@ -32,7 +32,7 @@ fun SaveScreen(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("SAVE SLOTS", style = MaterialTheme.typography.labelLarge)
+        Text("SAVE SLOTS", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
         Text(
             "${entitlements.maxSaveSlots()} slot${if (entitlements.maxSaveSlots() == 1) "" else "s"} available" +
                 if (!entitlements.hasUnlockedFullStory()) " · unlock the full story for more" else "",

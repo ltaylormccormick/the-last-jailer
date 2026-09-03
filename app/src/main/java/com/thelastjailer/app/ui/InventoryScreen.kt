@@ -21,7 +21,7 @@ import com.thelastjailer.app.data.ItemCatalog
 fun InventoryScreen(state: GameState, modifier: Modifier = Modifier) {
     val items = ItemCatalog.resolve(state.inventory)
     Column(modifier = modifier.fillMaxSize().padding(14.dp)) {
-        Text("INVENTORY", style = MaterialTheme.typography.labelLarge)
+        Text("INVENTORY", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
         Spacer(Modifier.height(8.dp))
         if (items.isEmpty()) {
             OrnatePanel(modifier = Modifier.fillMaxWidth()) {

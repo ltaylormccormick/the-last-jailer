@@ -29,6 +29,15 @@ object JailerColors {
     val HonourBlue = Color(0xFF8AA7C2)
 }
 
+/**
+ * [labelLarge] deliberately has no hardcoded `color`: Material3's `Button`/`OutlinedButton`/
+ * `TextButton` all apply this style to their content by default, and a `TextStyle`'s own color
+ * always wins over the button's `contentColor` (which is what gives filled, outlined and text
+ * buttons their correct, different, contrast-safe text colors). Hardcoding gold here previously
+ * made every button's label render gold regardless of its background - invisible on the many
+ * buttons whose container is also gold. Any non-button usage that wants labelLarge in gold
+ * (section headers, etc.) passes `color = JailerColors.Gold` explicitly at that call site.
+ */
 private val JailerTypography = Typography(
     headlineSmall = TextStyle(
         fontWeight = FontWeight.Bold,
@@ -55,8 +64,7 @@ private val JailerTypography = Typography(
     labelLarge = TextStyle(
         fontWeight = FontWeight.Bold,
         fontSize = 12.sp,
-        letterSpacing = 1.sp,
-        color = JailerColors.Gold
+        letterSpacing = 1.sp
     ),
     labelSmall = TextStyle(
         fontSize = 10.sp,

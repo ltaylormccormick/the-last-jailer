@@ -19,13 +19,13 @@ import com.thelastjailer.app.data.StoryRepository
 @Composable
 fun MapScreen(entitlements: EntitlementRepository, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("MAP", style = MaterialTheme.typography.labelLarge)
+        Text("MAP", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
         StoryRepository.chapters.forEach { chapter ->
             val unlocked = entitlements.isChapterUnlocked(chapter.id)
             OrnatePanel(modifier = Modifier.fillMaxWidth()) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(chapter.title, style = MaterialTheme.typography.bodyLarge)
-                    Text(if (unlocked) "UNLOCKED" else "LOCKED", style = MaterialTheme.typography.labelLarge)
+                    Text(if (unlocked) "UNLOCKED" else "LOCKED", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
                 }
             }
         }
