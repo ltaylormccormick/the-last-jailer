@@ -17,7 +17,7 @@ import com.thelastjailer.app.GameState
 @Composable
 fun CharacterScreen(state: GameState, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("CHARACTER", style = MaterialTheme.typography.labelLarge)
+        Text("CHARACTER", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
 
         OrnatePanel(modifier = Modifier.fillMaxWidth()) {
             Text("Kaelen, the Fallen Knight", style = MaterialTheme.typography.headlineSmall)
@@ -27,7 +27,7 @@ fun CharacterScreen(state: GameState, modifier: Modifier = Modifier) {
         StatsBar(state)
 
         OrnatePanel(modifier = Modifier.fillMaxWidth()) {
-            Text("TROPHIES", style = MaterialTheme.typography.labelLarge)
+            Text("TROPHIES", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
             if (state.trophies.isEmpty()) {
                 Text("None earned yet.", style = MaterialTheme.typography.bodyMedium)
             } else {

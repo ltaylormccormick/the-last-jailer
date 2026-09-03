@@ -35,7 +35,7 @@ fun OptionsScreen(
     }
 
     Column(modifier = modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("OPTIONS", style = MaterialTheme.typography.labelLarge)
+        Text("OPTIONS", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
 
         OrnatePanel(modifier = Modifier.fillMaxWidth()) {
             Text(
@@ -51,7 +51,7 @@ fun OptionsScreen(
 
         if (BuildConfig.DEBUG) {
             OrnatePanel(modifier = Modifier.fillMaxWidth()) {
-                Text("DEBUG", style = MaterialTheme.typography.labelLarge)
+                Text("DEBUG", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text("Simulate purchased", style = MaterialTheme.typography.bodyMedium)
                     Switch(

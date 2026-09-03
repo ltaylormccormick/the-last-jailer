@@ -3,6 +3,7 @@ package com.thelastjailer.app.ui
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,10 +12,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -181,27 +184,34 @@ private fun StoryHeader(
     }
 }
 
+/**
+ * A non-spoiler progress cue for where the player is in the current chapter. Deliberately shows
+ * no scene titles: [StoryRepository.nodesInChapter] returns every node belonging to the chapter
+ * regardless of whether the player has actually reached it yet, so the previous title-card strip
+ * revealed the names (and by extension the existence/order) of scenes the player hadn't visited.
+ * A dot per scene, plus a plain "scene X of Y" count, carries none of that.
+ */
 @Composable
 private fun ChapterThumbnailStrip(activeNode: StoryNode) {
     val nodes = StoryRepository.nodesInChapter(activeNode.chapterId)
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(nodes) { n ->
-            val active = n.id == activeNode.id
-            Column(
-                modifier = Modifier
-                    .width(72.dp)
-                    .background(
-                        if (active) JailerColors.GoldSoft.copy(alpha = .35f) else JailerColors.Panel,
-                        RoundedCornerShape(6.dp)
-                    )
-                    .padding(6.dp)
-            ) {
-                Text(
-                    n.title,
-                    color = if (active) JailerColors.Gold else JailerColors.TextPrimary.copy(alpha = .7f),
-                    fontSize = 9.sp,
-                    fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
-                    maxLines = 3
+    val activeIndex = nodes.indexOfFirst { it.id == activeNode.id }.coerceAtLeast(0)
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            "SCENE ${activeIndex + 1} OF ${nodes.size}",
+            color = JailerColors.TextPrimary.copy(alpha = .7f),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            items(nodes) { n ->
+                val active = n.id == activeNode.id
+                Box(
+                    modifier = Modifier
+                        .size(if (active) 9.dp else 6.dp)
+                        .background(
+                            if (active) JailerColors.Gold else JailerColors.TextPrimary.copy(alpha = .3f),
+                            CircleShape
+                        )
                 )
             }
         }
@@ -291,7 +301,7 @@ private fun LockedChapterScreen(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.Center) {
-        Text("CHAPTER LOCKED", style = MaterialTheme.typography.labelLarge)
+        Text("CHAPTER LOCKED", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
         Spacer(Modifier.height(12.dp))
         Text(
             "${node.title} is part of the full story. Unlock it with a one-time purchase to continue Kaelen's tale beyond Chapter III.",

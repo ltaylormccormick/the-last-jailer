@@ -52,7 +52,7 @@ fun CombatScreen(
     val enemy = remember(encounter.id) { EnemyCatalog.get(encounter.enemyId) }
 
     Column(modifier = modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("⚔ ${enemy.name.uppercase()}", style = MaterialTheme.typography.labelLarge)
+        Text("⚔ ${enemy.name.uppercase()}", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
 
         OrnatePanel(modifier = Modifier.fillMaxWidth()) {
             Text(enemy.name, style = MaterialTheme.typography.titleMedium)
@@ -77,13 +77,14 @@ fun CombatScreen(
                 Button(modifier = Modifier.weight(1f), onClick = { engine.attack() }) { Text("ATTACK") }
                 OutlinedButton(modifier = Modifier.weight(1f), onClick = { engine.defend() }) { Text("DEFEND") }
                 if (engine.remainingDraughts > 0) {
-                    OutlinedButton(modifier = Modifier.weight(1f), onClick = { engine.useDraught() }) { Text("DRAUGHT") }
+                    OutlinedButton(modifier = Modifier.weight(1f), onClick = { engine.useDraught() }) { Text("DRINK DRAUGHT (+HP)") }
                 }
             }
         } else {
             Text(
                 if (currentOutcome.victory) "VICTORY" else "YOU SURVIVE, BATTERED",
-                style = MaterialTheme.typography.labelLarge
+                style = MaterialTheme.typography.labelLarge,
+                color = JailerColors.Gold
             )
             Button(modifier = Modifier.fillMaxWidth(), onClick = { onResolved(currentOutcome) }) {
                 Text("CONTINUE")

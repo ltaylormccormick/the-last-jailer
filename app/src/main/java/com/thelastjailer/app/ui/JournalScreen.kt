@@ -14,7 +14,7 @@ import com.thelastjailer.app.GameState
 @Composable
 fun JournalScreen(state: GameState, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize().padding(14.dp)) {
-        Text("JOURNAL", style = MaterialTheme.typography.labelLarge)
+        Text("JOURNAL", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
         OrnatePanel(modifier = Modifier.padding(top = 8.dp)) {
             if (state.flags.isEmpty()) {
                 Text("Nothing recorded yet.", style = MaterialTheme.typography.bodyMedium)
