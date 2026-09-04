@@ -95,7 +95,11 @@ val chapter2Nodes: List<StoryNode> = listOf(
             to give.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Go back down, better armed for it.", nextNodeId = "the_warded_gate")
+            Choice(
+                label = "Go back down, better armed for it.",
+                nextNodeId = "the_warded_gate",
+                consequences = Consequences(grantItemIds = listOf("stonebeard_lantern"))
+            )
         )
     ),
     StoryNode(
