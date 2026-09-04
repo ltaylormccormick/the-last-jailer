@@ -13,11 +13,12 @@ import com.thelastjailer.app.StoryNode
  * Ashen Order's official position (bury the door), the Marshal's envoy represents a splinter that
  * wants the thing behind the gate understood and used rather than destroyed — and is willing to
  * talk first, which makes the eventual betrayal land harder than a straightforward siege would.
- * Arc: a parley that isn't what it looks like, an offer aimed specifically at the jailer's brand,
- * a fourth and toughest combat encounter yet, a stat-gated aftermath choice (mirroring III and IV),
- * and a chapter-ending reveal that raises the stakes past "one door" — the Marshal, named for the
- * first time, is going after every warded gate like this one at once. Ends on an escalation hook
- * rather than a resolution, same as II and III.
+ * Arc: a parley that isn't what it looks like and plays out differently depending on whether
+ * Kaelen meets the envoy alone or brings Halvard as a witness, an offer aimed specifically at the
+ * jailer's brand, a fourth and toughest combat encounter yet, a stat-gated aftermath choice
+ * (mirroring III and IV), and a chapter-ending reveal that raises the stakes past "one door" — the
+ * Marshal, named for the first time, is going after every warded gate like this one at once. Ends
+ * on an escalation hook rather than a resolution, same as II and III.
  */
 val chapter5Nodes: List<StoryNode> = listOf(
     StoryNode(
@@ -28,8 +29,8 @@ val chapter5Nodes: List<StoryNode> = listOf(
         narrativeText = """
             The weeks after the siege pass slower than any before them. Halvard's wound closes
             crooked, and he curses the cold more than he used to, but he mends. Stonebeard Hold's
-            gate does not — cracked twice now, patched with iron that doesn't quite match the
-            stone around it.
+            gate does not: cracked twice now, patched with iron that doesn't quite match the stone
+            around it, a scar that isn't going to fade the way a warden's wounds eventually do.
 
             Then, on a morning gray enough that Kaelen almost misses it, a single rider comes up
             the ruined road to the black door beneath the tree. No banner. No column behind him
@@ -41,7 +42,7 @@ val chapter5Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "Meet him at the door yourself.",
-                nextNodeId = "the_envoys_offer",
+                nextNodeId = "the_envoys_offer_alone",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     setFlags = setOf("met_envoy_alone")
@@ -49,7 +50,7 @@ val chapter5Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "Bring Halvard up to stand with you.",
-                nextNodeId = "the_envoys_offer",
+                nextNodeId = "the_envoys_offer_with_halvard",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     setFlags = setOf("brought_halvard")
@@ -58,22 +59,76 @@ val chapter5Nodes: List<StoryNode> = listOf(
         )
     ),
     StoryNode(
-        id = "the_envoys_offer",
+        id = "the_envoys_offer_alone",
         chapterId = "chapter_5",
         title = "The Envoy's Offer",
         illustrationId = "cinder_envoy",
         narrativeText = """
-            Up close he looks younger than Voss, and considerably less certain of himself — a man
-            reciting words he half-believes. "The Ashen Order sent Voss to bury your door," he
-            says. "The Cinder Marshal sent me to tell you Voss was wrong to try. What's behind
-            that gate isn't refuse to be swept up. It's a resource nobody has had the nerve to
-            actually use in three centuries."
+            Kaelen goes to the door alone, and the envoy notices that immediately, the way a man
+            notices an opening he wasn't sure he'd get. Up close he looks younger than Voss, and
+            considerably less certain of himself: someone reciting words he half-believes, testing
+            each one against a listener who isn't giving him anything back to work with.
 
-            He glances at the brand on Kaelen's palm and doesn't pretend he hasn't noticed it.
-            "The Marshal doesn't want it destroyed. Doesn't even need it opened, not right away.
-            Just wants to understand what a jailer's binding actually does — starting with yours.
+            "The Ashen Order sent Voss to bury your door," he says. "The Cinder Marshal sent me to
+            tell you Voss was wrong to try. What's behind that gate isn't refuse to be swept up.
+            It's a resource nobody has had the nerve to actually use in three centuries."
+
+            He glances at the brand on Kaelen's palm and doesn't pretend he hasn't noticed it, or
+            that he came here for any other reason. "No warden watching. No witnesses. Just you
+            and me, and an honest question: what's it worth to you, really, holding this alone?
+            The Marshal doesn't want it destroyed. Doesn't even need it opened, not right away.
+            Just wants to understand what a jailer's binding actually does, starting with yours.
             Cooperate, and Stonebeard's kin get the Order's protection instead of its blade.
             Refuse, and Voss's failure becomes someone else's problem to fix. Permanently."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "\"Whatever the Marshal wants with the brand, the answer is no.\"",
+                nextNodeId = "the_envoys_mask_slips",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    setFlags = setOf("refused_envoy")
+                )
+            ),
+            Choice(
+                label = "\"Keep talking. I'm listening.\"",
+                nextNodeId = "the_envoys_mask_slips",
+                consequences = Consequences(setFlags = setOf("heard_envoy_offer"))
+            ),
+            Choice(
+                label = "\"The thing behind that gate already told me what it wants. Did the Marshal send you to finish what it started?\"",
+                nextNodeId = "the_envoys_mask_slips",
+                requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid")),
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.COURAGE to 1),
+                    setFlags = setOf("confronted_envoy_with_prisoners_words")
+                )
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_envoys_offer_with_halvard",
+        chapterId = "chapter_5",
+        title = "The Envoy's Offer",
+        illustrationId = "cinder_envoy",
+        narrativeText = """
+            Kaelen brings Halvard up with him, and the envoy's easy composure slips a fraction at
+            the sight of a second, older set of eyes he now has to account for. Up close he looks
+            younger than Voss, and considerably less certain of himself: someone reciting words
+            he's rehearsed for one listener, not two.
+
+            "The Ashen Order sent Voss to bury your door," he says, choosing his words more
+            carefully now. "The Cinder Marshal sent me to tell you Voss was wrong to try. What's
+            behind that gate isn't refuse to be swept up. It's a resource nobody has had the nerve
+            to actually use in three centuries."
+
+            Halvard makes a small, unimpressed sound at that and doesn't bother hiding it. The
+            envoy presses on regardless, though he glances at the brand on Kaelen's palm like a
+            man checking his footing before a long fall. "The Marshal doesn't want it destroyed.
+            Doesn't even need it opened, not right away. Just wants to understand what a jailer's
+            binding actually does, starting with yours. Cooperate, and Stonebeard's kin get the
+            Order's protection instead of its blade. Refuse, and Voss's failure becomes someone
+            else's problem to fix. Permanently."
         """.trimIndent(),
         choices = listOf(
             Choice(
@@ -106,14 +161,15 @@ val chapter5Nodes: List<StoryNode> = listOf(
         title = "The Mask Slips",
         illustrationId = "envoy_reveals_guard",
         narrativeText = """
-            Whatever answer Kaelen gives, something in the envoy's face changes — the recitation
+            Whatever answer Kaelen gives, something in the envoy's face changes: the recitation
             drops away, and what's underneath is colder and far better prepared than the empty
-            hands suggested.
+            hands ever suggested.
 
             "That's unfortunate," he says, and doesn't sound like he means it as an apology. He
             doesn't reach for a weapon. He doesn't need to. Along the treeline, shapes that
-            weren't there a moment ago straighten out of the undergrowth — an escort that walked
-            the last mile of the ruined road in absolute silence, waiting for exactly this word.
+            weren't there a moment ago straighten out of the undergrowth, an escort that walked
+            the last mile of the ruined road in absolute silence, waiting the entire time for
+            exactly this word.
         """.trimIndent(),
         choices = listOf(
             Choice(label = "Stand your ground.", nextNodeId = "the_marshals_warning")
@@ -125,9 +181,10 @@ val chapter5Nodes: List<StoryNode> = listOf(
         title = "The Marshal's Warning",
         illustrationId = "cinder_adept_ambush",
         narrativeText = """
-            One of them steps forward alone — cinder-grey robes over something harder underneath,
-            a mark on the back of each hand that isn't the Ashen Order's sigil at all. Whatever the
-            Cinder Marshal branded onto this one, it wasn't mercy.
+            One of them steps forward alone, cinder-grey robes over something harder underneath, a
+            mark on the back of each hand that isn't the Ashen Order's sigil at all. Whatever the
+            Cinder Marshal branded onto this one, it wasn't mercy, and it shows in the way he
+            moves, like a blade that's already decided how the fight ends.
 
             "The Marshal did warn me you might refuse," the adept says, almost fondly, and comes
             on fast.
@@ -142,13 +199,14 @@ val chapter5Nodes: List<StoryNode> = listOf(
         illustrationId = "aftermath_of_betrayal",
         narrativeText = """
             The adept goes down hard, and whatever nerve held the rest of the escort together goes
-            with them — they scatter back down the ruined road faster than they arrived. The envoy
-            himself never drew a blade. He's already gone, horse and all, by the time Kaelen gets
-            his breath back.
+            with them: they scatter back down the ruined road faster than they arrived, boots
+            slipping on wet stone. The envoy himself never drew a blade. He's already gone, horse
+            and all, by the time Kaelen gets his breath back.
 
-            Halvard took a graze along the ribs holding the line beside him — not enough to fell
-            him, more than enough to slow him down for a week he doesn't have. Someone left
-            something behind in the retreat: a dispatch case, half-buried where the adept fell.
+            Halvard took a graze along the ribs holding the line beside him, not enough to fell
+            him, more than enough to slow him down for a week he doesn't have to spare. Someone
+            left something behind in the retreat, though: a dispatch case, half-buried where the
+            adept fell.
         """.trimIndent(),
         choices = listOf(
             Choice(
@@ -187,15 +245,15 @@ val chapter5Nodes: List<StoryNode> = listOf(
         title = "What the Missive Says",
         illustrationId = "cinder_marshal_missive_read",
         narrativeText = """
-            The dispatch case holds one folded page, sealed in black wax stamped with a closed fist
-            wrapped around a flame. The handwriting inside is precise, unhurried, and signed with a
-            single name Kaelen has never heard spoken aloud: Ilsevet.
+            The dispatch case holds one folded page, sealed in black wax stamped with a closed
+            fist wrapped around a flame. The handwriting inside is precise, unhurried, and signed
+            with a single name Kaelen has never heard spoken aloud: Ilsevet.
 
             The orders aren't about one gate. They name five others like it, scattered across
-            ground Kaelen once swore to protect as a King's Guard, each with its own warden running
-            as thin as Halvard. Voss's siege wasn't a punishment. It was a rehearsal — for
-            unmaking every ward like this one, all at once, and seeing what answers when they fall
-            together instead of one at a time.
+            ground Kaelen once swore to protect as a King's Guard, each with its own warden
+            running as thin as Halvard. Voss's siege wasn't a punishment, reading it now. It was a
+            rehearsal, for unmaking every ward like this one at once and seeing what answers when
+            they fall together instead of one at a time.
         """.trimIndent(),
         choices = listOf(
             Choice(label = "Bring this to Halvard.", nextNodeId = "chapter5_end")
@@ -210,12 +268,13 @@ val chapter5Nodes: List<StoryNode> = listOf(
             Halvard reads the missive twice before he says anything, and when he does, his voice
             has lost the dry patience Kaelen has gotten used to. "Six wards," he says. "Six
             jailers, when the office was whole. I always assumed the others fell the way mine
-            nearly did — one at a time, one door at a time, forgotten." He folds the page shut.
-            "I never considered someone might be counting."
+            nearly did: one at a time, one door at a time, forgotten." He folds the page shut. "I
+            never considered someone might be counting."
 
             Outside, the ruined road is empty again, rain filling in the tracks the escort left
             behind. It won't stay empty. Kaelen knows that now with a certainty that has nothing
-            to do with the ache in his branded palm.
+            to do with the ache in his branded palm, and everything to do with a name he's
+            already decided he isn't going to forget.
 
             Chapter VI awaits.
         """.trimIndent(),
