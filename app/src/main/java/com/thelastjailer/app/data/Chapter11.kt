@@ -13,13 +13,15 @@ import com.thelastjailer.app.StoryNode
  * does. The warden's chain he inherited from Halvard gives him a dream of its location (Fenmoor, a
  * drowned marsh gate), which Voss corroborates from old Order garrison records — a deliberate
  * narrative rhyme with Chapter II, where Halvard was the one holding a failing gate alone and
- * Kaelen was the outsider who chose to help. Here Kaelen and Voss arrive just ahead of an Ilsevet
- * extraction team already trying to force Fenmoor's living warden, Thessaly, to give up her own
- * binding. Arc: the vision, Voss's confirmation, the road to Fenmoor, the standoff, an eleventh and
- * toughest-yet combat encounter, and a stat-gated choice about what Kaelen owes Thessaly going
- * forward — echoing III/IV/V/VI/VII/VIII/IX's aftermath-choice pattern (X deliberately skipped it).
- * Ends on the first real tactical win in the Ilsevet arc: for the first time since the missive, the
- * math favors Kaelen rather than her.
+ * Kaelen was the outsider who chose to help. Whether Kaelen speaks up about the vision at once or
+ * sits with it first changes how quickly Voss takes it seriously, not just which stat moves. Here
+ * Kaelen and Voss arrive just ahead of an Ilsevet extraction team already trying to force
+ * Fenmoor's living warden, Thessaly, to give up her own binding. Arc: the vision, Voss's
+ * confirmation, the road to Fenmoor, the standoff, an eleventh and toughest-yet combat encounter,
+ * and a stat-gated choice about what Kaelen owes Thessaly going forward — echoing
+ * III/IV/V/VI/VII/VIII/IX's aftermath-choice pattern (X deliberately skipped it). Ends on the
+ * first real tactical win in the Ilsevet arc: for the first time since the missive, the math
+ * favors Kaelen rather than her.
  */
 val chapter11Nodes: List<StoryNode> = listOf(
     StoryNode(
@@ -29,18 +31,19 @@ val chapter11Nodes: List<StoryNode> = listOf(
         illustrationId = "dwarven_hold_gate",
         narrativeText = """
             Kaelen doesn't mean to fall asleep wearing it. The warden's chain isn't heavy, not
-            really, but it sits differently than any weight he's carried before — six links, six
+            really, but it sits differently than any weight he's carried before: six links, six
             names Halvard never got to teach him.
 
-            He dreams anyway. Not of Halvard. Of water — grey, tidal, wrapping around black stone
+            He dreams anyway. Not of Halvard. Of water, grey, tidal, wrapping around black stone
             the same shape as the door beneath the ancient tree, except this one stands
             half-drowned in a marsh that has no business being this far from any coast. When he
-            wakes, the shape of it hasn't faded the way dreams usually do.
+            wakes, the shape of it hasn't faded the way dreams usually do, and his hand finds the
+            chain at his throat before he's even fully awake, as though checking it's still real.
         """.trimIndent(),
         choices = listOf(
             Choice(
                 label = "\"I think I know where the last gate is.\"",
-                nextNodeId = "voss_confirms_it",
+                nextNodeId = "voss_confirms_it_trusted",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     setFlags = setOf("trusted_the_vision")
@@ -48,7 +51,7 @@ val chapter11Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "Sit with it a while longer before saying anything.",
-                nextNodeId = "voss_confirms_it",
+                nextNodeId = "voss_confirms_it_doubted",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     setFlags = setOf("doubted_the_vision")
@@ -57,18 +60,42 @@ val chapter11Nodes: List<StoryNode> = listOf(
         )
     ),
     StoryNode(
-        id = "voss_confirms_it",
+        id = "voss_confirms_it_trusted",
         chapterId = "chapter_11",
         title = "Voss Confirms It",
         illustrationId = "voss_confirms_it",
         narrativeText = """
-            She doesn't laugh at a vision the way he half-expects her to. "Fenmoor," she says
+            She doesn't laugh at a vision the way he half-expects her to, and something in the
+            speed of his certainty seems to earn its own kind of respect. "Fenmoor," she says
             instead, the name landing like she's been waiting for someone else to say it first.
-            "There's an old Order garrison posted near there, or there was. We always wondered why
-            headquarters kept funding a watch on a marsh nobody wanted. Now I suppose we know."
+            "There's an old Order garrison posted near there, or there was. We always wondered
+            why headquarters kept funding a watch on a marsh nobody wanted. Now I suppose we
+            know."
 
-            If Kaelen dreamed it and Voss half-remembers funding it, that's more agreement than
-            either of them expected to get.
+            If Kaelen dreamed it and said so without hesitating, and Voss half-remembers funding
+            it without needing convincing, that's more agreement than either of them expected to
+            get this easily.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Go to Fenmoor.", nextNodeId = "the_road_to_fenmoor")
+        )
+    ),
+    StoryNode(
+        id = "voss_confirms_it_doubted",
+        chapterId = "chapter_11",
+        title = "Voss Confirms It",
+        illustrationId = "voss_confirms_it",
+        narrativeText = """
+            When he finally does say it, hours later and phrased more like a question than a
+            claim, Voss doesn't laugh at a vision the way he half-expects her to. If anything,
+            his hesitation seems to make her take it more seriously rather than less. "Fenmoor,"
+            she says, the name landing like she's been waiting for someone else to say it first.
+            "There's an old Order garrison posted near there, or there was. We always wondered
+            why headquarters kept funding a watch on a marsh nobody wanted. Now I suppose we
+            know."
+
+            "You waited to tell me," she adds, watching him a moment longer than the statement
+            needs. "Good. I'd trust it less if you hadn't."
         """.trimIndent(),
         choices = listOf(
             Choice(label = "Go to Fenmoor.", nextNodeId = "the_road_to_fenmoor")
@@ -80,13 +107,14 @@ val chapter11Nodes: List<StoryNode> = listOf(
         title = "The Road to Fenmoor",
         illustrationId = "road_away_from_tree",
         narrativeText = """
-            Fenmoor turns out to be exactly as unwelcoming as its name promises — flat grey water
+            Fenmoor turns out to be exactly as unwelcoming as its name promises: flat grey water
             under a flatter grey sky, reeds taller than a man, and a smell that never quite goes
             away. Somewhere in the middle of it, if the dream is worth trusting, the last gate
             that isn't Kaelen's own is still standing.
 
             They're not the only ones who came looking. Fresh tracks, too many of them, cut
-            straight through the reeds toward the water's heart.
+            straight through the reeds toward the water's heart, and neither Kaelen nor Voss
+            needs to say out loud who they belong to.
         """.trimIndent(),
         choices = listOf(
             Choice(label = "Follow them.", nextNodeId = "the_drowned_ward")
@@ -98,14 +126,14 @@ val chapter11Nodes: List<StoryNode> = listOf(
         title = "The Drowned Ward",
         illustrationId = "the_drowned_ward",
         narrativeText = """
-            The gate stands exactly where the dream put it — half-sunk, wards guttering weakly
+            The gate stands exactly where the dream put it, half-sunk, wards guttering weakly
             above the waterline, and a lone warden standing between it and four cinder-grey
             figures who clearly didn't come to ask permission. She's holding, barely, a spear in
             one hand and something that might be a prayer in the other.
 
             "Thessaly," she snaps, not turning, when Kaelen and Voss come crashing through the
             reeds behind her. "Warden of Fenmoor. You're either here to help or you're the next
-            problem — pick fast."
+            problem. Pick fast."
         """.trimIndent(),
         choices = listOf(
             Choice(label = "Fight beside her.", nextNodeId = "the_marsh_holds")
@@ -117,10 +145,11 @@ val chapter11Nodes: List<StoryNode> = listOf(
         title = "The Marsh Holds",
         illustrationId = "the_marsh_holds",
         narrativeText = """
-            Their leader doesn't bother with words either — Ilsevet's people have stopped
-            pretending diplomacy is anything but a formality reserved for jailers she'd rather not
-            fight twice. Whatever's in the case on her back, she's not putting it down until
-            Fenmoor's ward is inside it.
+            Their leader doesn't bother with words either: Ilsevet's people have stopped
+            pretending diplomacy is anything but a formality reserved for jailers she'd rather
+            not fight twice. Whatever's in the case on her back, she's not putting it down until
+            Fenmoor's ward is inside it, and the look on her face says she considers that a
+            formality too.
         """.trimIndent(),
         choices = emptyList(),
         combatEncounterId = "fenmoor_extraction_encounter"
@@ -131,7 +160,7 @@ val chapter11Nodes: List<StoryNode> = listOf(
         title = "What Thessaly Decides",
         illustrationId = "what_thessaly_decides",
         narrativeText = """
-            They win the marsh, if not the war — the extraction team breaks and scatters into the
+            They win the marsh, if not the war: the extraction team breaks and scatters into the
             reeds rather than press a fight that's turned against them. Thessaly doesn't thank
             anyone. She just watches the water settle and asks the only question that matters.
             "That's twice today someone's tried to take what I'm holding. What happens the third
@@ -179,9 +208,10 @@ val chapter11Nodes: List<StoryNode> = listOf(
             rather than against it: both remaining gates held, both wardens warned, both doors
             still shut.
 
-            It isn't victory. Ilsevet has four settings and two names left she can't reach easily
-            anymore, which only means the easy part of her plan is over. Voss says as much,
-            quietly, somewhere past the halfway point home. Kaelen doesn't disagree.
+            It isn't victory. Ilsevet has four settings and two names left she can't reach
+            easily anymore, which only means the easy part of her plan is over. Voss says as
+            much, quietly, somewhere past the halfway point home. Kaelen doesn't disagree, and
+            doesn't let himself enjoy the win longer than the walk allows.
 
             Chapter XII awaits.
         """.trimIndent(),

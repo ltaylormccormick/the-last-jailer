@@ -12,7 +12,9 @@ import com.thelastjailer.app.StoryNode
  * Delivers on Chapter VII's destination and reframes the entire threat. Recon at the Ashfall
  * Sanctum reveals Ilsevet isn't trying to open or destroy the six warded gates — she's building a
  * seventh, artificial one out of pieces taken from all six, which retroactively explains why she
- * wanted access to Kaelen's brand specifically back in V (it's a component, not a curiosity). The
+ * wanted access to Kaelen's brand specifically back in V (it's a component, not a curiosity), and
+ * how the two of them approach the Sanctum (fast and stealthy versus slower and better-scouted)
+ * changes what the recon actually looks like on the page, not just which flag gets set. The
  * chapter ends on a personal cost rather than a combat trophy: Voss stays behind to buy Kaelen's
  * escape and is taken alive, turning "four gates left" into a rescue Kaelen now owes. Arc: the
  * road to Ashfall, first sight of the Sanctum, the stolen schematic reveal, a seventh and
@@ -33,12 +35,14 @@ val chapter8Nodes: List<StoryNode> = listOf(
             Stonebeard.
 
             "If this goes wrong, it's my name that hangs for it as well as yours. I want that
-            said plainly, once, before we're close enough that saying it stops mattering."
+            said plainly, once, before we're close enough that saying it stops mattering." She
+            doesn't look at him when she says it, eyes fixed on the grey horizon like the words
+            are easier to spend on the road than on a person.
         """.trimIndent(),
         choices = listOf(
             Choice(
                 label = "\"Then we make sure it doesn't go wrong.\"",
-                nextNodeId = "the_sanctum_from_afar",
+                nextNodeId = "the_sanctum_from_afar_reassured",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     setFlags = setOf("reassured_voss")
@@ -46,7 +50,7 @@ val chapter8Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "\"I know what I'm risking. Let's move.\"",
-                nextNodeId = "the_sanctum_from_afar",
+                nextNodeId = "the_sanctum_from_afar_acknowledged",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     setFlags = setOf("acknowledged_the_risk")
@@ -55,14 +59,19 @@ val chapter8Nodes: List<StoryNode> = listOf(
         )
     ),
     StoryNode(
-        id = "the_sanctum_from_afar",
+        id = "the_sanctum_from_afar_reassured",
         chapterId = "chapter_8",
         title = "The Sanctum, From Afar",
         illustrationId = "ashfall_sanctum_vista",
         narrativeText = """
-            The Ashfall Sanctum isn't a fortress so much as a wound with walls built around it —
-            black stone quarried from somewhere that clearly wasn't meant to be quarried, arranged
-            around a central spire that hums faintly even from this distance, felt more than heard.
+            Something in Voss's shoulders loosens, fractionally, at the certainty in his voice,
+            even if neither of them quite believes certainty is worth much out here. She doesn't
+            say thank you. She just nods once and keeps walking.
+
+            The Ashfall Sanctum isn't a fortress so much as a wound with walls built around it:
+            black stone quarried from somewhere that clearly wasn't meant to be quarried,
+            arranged around a central spire that hums faintly even from this distance, felt more
+            than heard.
 
             Voss goes still beside him. "Three months ago that spire wasn't finished. Whatever
             she's building, she's close."
@@ -70,7 +79,7 @@ val chapter8Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "Move in under cover of the ash-fall itself.",
-                nextNodeId = "what_they_see",
+                nextNodeId = "what_they_see_stealthy",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     setFlags = setOf("moved_in_stealthily")
@@ -78,7 +87,7 @@ val chapter8Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "Circle wide and find a safer vantage first.",
-                nextNodeId = "what_they_see",
+                nextNodeId = "what_they_see_wide",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     setFlags = setOf("circled_wide")
@@ -87,19 +96,94 @@ val chapter8Nodes: List<StoryNode> = listOf(
         )
     ),
     StoryNode(
-        id = "what_they_see",
+        id = "the_sanctum_from_afar_acknowledged",
+        chapterId = "chapter_8",
+        title = "The Sanctum, From Afar",
+        illustrationId = "ashfall_sanctum_vista",
+        narrativeText = """
+            Voss gives him a long look, the kind that measures a man rather than thanks him, and
+            something in it settles whatever she'd been carrying better than reassurance would
+            have. "Good," is all she says. "Then we don't need to have this conversation twice."
+
+            The Ashfall Sanctum isn't a fortress so much as a wound with walls built around it:
+            black stone quarried from somewhere that clearly wasn't meant to be quarried,
+            arranged around a central spire that hums faintly even from this distance, felt more
+            than heard.
+
+            Voss goes still beside him. "Three months ago that spire wasn't finished. Whatever
+            she's building, she's close."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Move in under cover of the ash-fall itself.",
+                nextNodeId = "what_they_see_stealthy",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.COURAGE to 1),
+                    setFlags = setOf("moved_in_stealthily")
+                )
+            ),
+            Choice(
+                label = "Circle wide and find a safer vantage first.",
+                nextNodeId = "what_they_see_wide",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    setFlags = setOf("circled_wide")
+                )
+            )
+        )
+    ),
+    StoryNode(
+        id = "what_they_see_stealthy",
         chapterId = "chapter_8",
         title = "What They See",
         illustrationId = "the_device_glimpsed",
         narrativeText = """
-            Close enough to risk it, Voss steals a set of half-burned plans from an unguarded
-            worktable while Kaelen keeps watch — and what they show stops them both cold. Not a
-            weapon, not exactly. A frame, six-sided, six empty settings marked in a hand that
-            matches the wards on Kaelen's own gate.
+            They go in fast, using the ash-fall itself as cover, grey flakes settling on Kaelen's
+            shoulders like a sky quietly grieving something. Close enough to risk it, Voss steals
+            a set of half-burned plans from an unguarded worktable while Kaelen keeps watch,
+            close enough to hear voices through a wall that shouldn't be this thin, and neither
+            of them breathes easy until they're clear of the table.
+
+            What the plans show stops them both cold anyway. Not a weapon, not exactly. A frame,
+            six-sided, six empty settings marked in a hand that matches the wards on Kaelen's own
+            gate.
 
             "Six jailers," Voss murmurs, reading the same margin notes Kaelen can't quite parse.
             "She's not trying to free what's behind any of the doors. She's trying to build a
-            seventh one — using pieces of the six that already exist." Her eyes go to the brand on
+            seventh one, using pieces of the six that already exist." Her eyes go to the brand on
+            Kaelen's palm without meaning to. He doesn't need her to finish the thought.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Get out. Now, before anyone notices what's missing.",
+                nextNodeId = "sentinels_close_in",
+                consequences = Consequences(
+                    grantItemIds = listOf("torn_sanctum_plans"),
+                    setFlags = setOf("stole_the_schematic")
+                )
+            )
+        )
+    ),
+    StoryNode(
+        id = "what_they_see_wide",
+        chapterId = "chapter_8",
+        title = "What They See",
+        illustrationId = "the_device_glimpsed",
+        narrativeText = """
+            They circle wide instead, losing the better part of an hour finding a rise that
+            gives them sight of the whole compound without putting either of them inside a
+            patrol's easy reach. From here, Voss can pick out the guard rotations, the unfinished
+            sections of wall, the single worktable near the spire's base that nobody seems to be
+            watching closely enough.
+
+            Close enough to risk it once they've mapped the gap, Voss steals a set of half-burned
+            plans from that table while Kaelen keeps watch, and what they show stops them both
+            cold. Not a weapon, not exactly. A frame, six-sided, six empty settings marked in a
+            hand that matches the wards on Kaelen's own gate.
+
+            "Six jailers," Voss murmurs, reading the same margin notes Kaelen can't quite parse.
+            "She's not trying to free what's behind any of the doors. She's trying to build a
+            seventh one, using pieces of the six that already exist." Her eyes go to the brand on
             Kaelen's palm without meaning to. He doesn't need her to finish the thought.
         """.trimIndent(),
         choices = listOf(
@@ -120,11 +204,12 @@ val chapter8Nodes: List<StoryNode> = listOf(
         illustrationId = "sentinels_close_in",
         narrativeText = """
             Someone notices. A horn sounds somewhere inside the walls, low and unhurried in a way
-            that's somehow worse than an alarm would be — the sound of people who have drilled for
+            that's somehow worse than an alarm would be: the sound of people who have drilled for
             exactly this and don't need to rush.
 
             The first sentinel finds them before they clear the ash-field, armor the same black
-            stone as the walls behind it, moving like it was quarried rather than born.
+            stone as the walls behind it, moving like it was quarried rather than born, each step
+            grinding like stone settling into stone.
         """.trimIndent(),
         choices = emptyList(),
         combatEncounterId = "sanctum_sentinel_encounter"
@@ -143,8 +228,8 @@ val chapter8Nodes: List<StoryNode> = listOf(
             chase, putting herself between them and him, and there isn't time left to argue about
             it.
 
-            Kaelen runs. He hears her taken, not killed — shouted orders, not a killing blow —
-            and that's the only mercy the wasteland offers him on the way out.
+            Kaelen runs. He hears her taken, not killed, shouted orders, not a killing blow, and
+            that's the only mercy the wasteland offers him on the way out, thin as it is.
         """.trimIndent(),
         choices = listOf(
             Choice(
@@ -162,9 +247,10 @@ val chapter8Nodes: List<StoryNode> = listOf(
             Alone on the wasteland road, the schematic Voss stole burning a hole in his coat
             pocket, Kaelen has exactly one certainty left: whatever the Sanctum wants those six
             settings for, it isn't finished yet. That's the only reason Voss is worth anything to
-            them alive.
+            them alive, and it's a colder comfort than he'd like to admit out loud.
 
-            It isn't much of a comfort. It's what he's got.
+            It isn't much. It's what he's got, and the road doesn't leave him time to look for
+            more.
         """.trimIndent(),
         choices = listOf(
             Choice(
@@ -200,13 +286,13 @@ val chapter8Nodes: List<StoryNode> = listOf(
         narrativeText = """
             The road south is longer alone than it was with company, even company as guarded as
             Voss's. Kaelen reaches Stonebeard with the schematic, four gates still unaccounted
-            for, and a debt he didn't ask to owe.
+            for, and a debt he didn't ask to owe but isn't about to set down either.
 
-            Halvard reads the stolen plans in silence, longer than he's ever taken over anything,
-            and when he finally looks up, the dry patience is entirely gone from his face. "A
-            seventh door," he says. "Built from pieces of the six. She's not trying to free what's
-            behind any of them, Kaelen. She's trying to build something new out of all of you at
-            once."
+            Halvard reads the stolen plans in silence, longer than he's ever taken over
+            anything, and when he finally looks up, the dry patience is entirely gone from his
+            face. "A seventh door," he says. "Built from pieces of the six. She's not trying to
+            free what's behind any of them, Kaelen. She's trying to build something new out of
+            all of you at once."
 
             Chapter IX awaits.
         """.trimIndent(),

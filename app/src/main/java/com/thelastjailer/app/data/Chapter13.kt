@@ -15,9 +15,15 @@ import com.thelastjailer.app.StoryNode
  * threat in III/IV) sends a ranking official to judge Voss's standing after everything since VII,
  * Stonebeard finally holds proper rites for Halvard instead of the hasty burial after X, and the
  * chapter closes on the first real question of what comes next for the "Last Jailer" title beyond
- * pure survival. Ends on a quiet, unsettling hook rather than another siege: the pressure behind
- * Kaelen's own gate speaks again for the first time since III, aware that Ilsevet's four-setting
- * activation in XII reached all the way to it.
+ * pure survival — and the answer Kaelen gives (training new wardens, standing watch personally
+ * beside volunteers, or deferring the question entirely) now colors how the chapter's final quiet
+ * night actually feels, not just which flag it sets. `what_voss_answers` is deliberately left as a
+ * true convergence, same reasoning as Chapter IX's opening: only one of its two lines is ever seen
+ * in a given playthrough, gated by which stance Kaelen took earlier this chapter, so there's no
+ * real choice being made there, just an acknowledgment of one already made. Ends on a quiet,
+ * unsettling hook rather than another siege: the pressure behind Kaelen's own gate speaks again for
+ * the first time since III, aware that Ilsevet's four-setting activation in XII reached all the way
+ * to it.
  */
 val chapter13Nodes: List<StoryNode> = listOf(
     StoryNode(
@@ -27,12 +33,12 @@ val chapter13Nodes: List<StoryNode> = listOf(
         illustrationId = "threshold_ahead",
         narrativeText = """
             Halvard's grave is barely a season old when the second rider in as many months comes
-            up the ruined road to the black door — Order colours again, but not Voss's, and not
+            up the ruined road to the black door: Order colours again, but not Voss's, and not
             Ilsevet's cinder-grey either. An actual delegation this time, banners and all, the
             kind Voss says the real Order hasn't bothered sending anywhere in years.
 
-            "They're not here for you," Voss says, reading Kaelen's face. "Not directly. They're
-            here for me."
+            "They're not here for you," Voss says, reading Kaelen's face before he's said a
+            word. "Not directly. They're here for me."
         """.trimIndent(),
         choices = listOf(
             Choice(
@@ -59,12 +65,12 @@ val chapter13Nodes: List<StoryNode> = listOf(
         title = "The Inquisitor-General",
         illustrationId = "the_inquisitor_general",
         narrativeText = """
-            She doesn't look like Voss, or move like her either — older, slower, entirely
+            She doesn't look like Voss, or move like her either: older, slower, entirely
             unhurried in a way that has nothing to do with confidence and everything to do with
-            rank. "Inquisitor Voss," she says, and doesn't offer a hand. "Or should I say, former
-            Inquisitor. You've been reported dead twice and traitor once since Stonebeard's gate
-            stopped being a rumour. I'm inclined to believe the second report over the first two,
-            unless you give me a reason not to."
+            rank. "Inquisitor Voss," she says, and doesn't offer a hand. "Or should I say,
+            former Inquisitor. You've been reported dead twice and traitor once since
+            Stonebeard's gate stopped being a rumour. I'm inclined to believe the second report
+            over the first two, unless you give me a reason not to."
         """.trimIndent(),
         choices = listOf(
             Choice(label = "Let Voss answer.", nextNodeId = "what_voss_answers")
@@ -117,7 +123,7 @@ val chapter13Nodes: List<StoryNode> = listOf(
             you be the ones standing between six and seven."
 
             It isn't forgiveness. It isn't quite a truce, either. It's something colder and more
-            useful than both.
+            useful than both, and Voss seems to know better than to ask for more.
         """.trimIndent(),
         choices = listOf(
             Choice(label = "Let them ride out.", nextNodeId = "halvards_rites")
@@ -131,12 +137,13 @@ val chapter13Nodes: List<StoryNode> = listOf(
         narrativeText = """
             With Selvane's riders gone and no new siege on the horizon, Stonebeard finally has
             room to grieve properly instead of just quickly. The dwarves who still call the hold
-            home carve Halvard's name into the stone above the gate he died holding — not a grave
+            home carve Halvard's name into the stone above the gate he died holding, not a grave
             marker, they explain, a warden's mark, the same honor given to five names Kaelen's
             never heard spoken and one, now, that he has.
 
             Kaelen adds his own words when it's his turn, and finds he doesn't have as many as he
-            expected. Just: he held. That was always going to be enough, coming from Halvard.
+            expected. Just: he held. That was always going to be enough, coming from Halvard, and
+            saying more would only dress it up as something it doesn't need to be.
         """.trimIndent(),
         choices = listOf(
             Choice(
@@ -155,13 +162,14 @@ val chapter13Nodes: List<StoryNode> = listOf(
             Word of Selvane's uneasy truce spreads faster than Kaelen expects. Within the week, a
             handful of Stonebeard's kin who never trained for anything but mining ask, awkwardly,
             whether a warden's chain only fits dwarven hands or whether Halvard just never got
-            around to asking anyone else. Thessaly's answer, when word reaches Fenmoor, is blunter
-            than the question deserved.
+            around to asking anyone else. Thessaly's answer, when word reaches Fenmoor, is
+            blunter than the question deserved, and Kaelen finds he has to answer for
+            Stonebeard's own kin himself.
         """.trimIndent(),
         choices = listOf(
             Choice(
                 label = "\"Anyone willing to hold a gate can be taught to hold it well. Start training them.\"",
-                nextNodeId = "chapter13_end",
+                nextNodeId = "chapter13_end_training",
                 requirements = ChoiceRequirement(minStats = mapOf(StatType.COURAGE to 11)),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
@@ -170,7 +178,7 @@ val chapter13Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "\"The chain isn't mine to hand out. But I'll stand watch beside anyone who picks it up.\"",
-                nextNodeId = "chapter13_end",
+                nextNodeId = "chapter13_end_watch",
                 requirements = ChoiceRequirement(minStats = mapOf(StatType.HONOUR to 10)),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
@@ -179,24 +187,71 @@ val chapter13Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "\"One gate, one jailer, for now. There will be time to decide the rest later.\"",
-                nextNodeId = "chapter13_end",
+                nextNodeId = "chapter13_end_deferred",
                 consequences = Consequences(setFlags = setOf("deferred_the_question"))
             )
         )
     ),
     StoryNode(
-        id = "chapter13_end",
+        id = "chapter13_end_training",
         chapterId = "chapter_13",
         title = "End of Chapter XIII — What the Order Allows",
         illustrationId = "chapter13_threshold",
         narrativeText = """
             Life at Stonebeard doesn't return to normal so much as it settles into a new, wearier
-            shape — grief worn in like a groove in stone, work still needing doing regardless.
-            Kaelen finds himself standing watch at the gate more nights than he needs to, chain
-            and brand both aching faintly in a way neither used to.
+            shape, grief worn in like a groove in stone, work still needing doing regardless.
+            Three of Stonebeard's kin start drilling with Kaelen most mornings now, clumsy with a
+            spear but stubborn about it in exactly the way that makes a warden eventually, and
+            their mistakes are the first thing in weeks that's made him laugh instead of ache.
 
             That night, for the first time since the binding rite, the thing behind the black
-            door speaks again — not asking for anything this time. Just one sentence, pressed
+            door speaks again, not asking for anything this time. Just one sentence, pressed
+            against the wards like a held breath finally let out: "Four settings. It felt four
+            settings, and it isn't finished waiting for the rest."
+
+            Chapter XIV awaits.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Listen.", nextNodeId = "what_waits_speaks")
+        )
+    ),
+    StoryNode(
+        id = "chapter13_end_watch",
+        chapterId = "chapter_13",
+        title = "End of Chapter XIII — What the Order Allows",
+        illustrationId = "chapter13_threshold",
+        narrativeText = """
+            Life at Stonebeard doesn't return to normal so much as it settles into a new, wearier
+            shape, grief worn in like a groove in stone, work still needing doing regardless.
+            Kaelen finds himself standing watch at the gate more nights than he needs to, and
+            more than a few of Stonebeard's kin start finding reasons to stand there with him,
+            chain or no chain, learning the shape of the door by simply keeping it company.
+
+            That night, for the first time since the binding rite, the thing behind the black
+            door speaks again, not asking for anything this time. Just one sentence, pressed
+            against the wards like a held breath finally let out: "Four settings. It felt four
+            settings, and it isn't finished waiting for the rest."
+
+            Chapter XIV awaits.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Listen.", nextNodeId = "what_waits_speaks")
+        )
+    ),
+    StoryNode(
+        id = "chapter13_end_deferred",
+        chapterId = "chapter_13",
+        title = "End of Chapter XIII — What the Order Allows",
+        illustrationId = "chapter13_threshold",
+        narrativeText = """
+            Life at Stonebeard doesn't return to normal so much as it settles into a new, wearier
+            shape, grief worn in like a groove in stone, work still needing doing regardless.
+            Kaelen finds himself standing watch at the gate more nights than he needs to, chain
+            and brand both aching faintly in a way neither used to, the question of who else
+            might someday share that watch left open for a later day that hasn't arrived yet.
+
+            That night, for the first time since the binding rite, the thing behind the black
+            door speaks again, not asking for anything this time. Just one sentence, pressed
             against the wards like a held breath finally let out: "Four settings. It felt four
             settings, and it isn't finished waiting for the rest."
 
