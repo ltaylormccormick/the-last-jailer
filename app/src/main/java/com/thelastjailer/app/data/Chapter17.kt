@@ -11,14 +11,16 @@ import com.thelastjailer.app.StoryNode
  *
  * Where XII's four-setting activation was an accident Ilsevet was still testing the edges of, this
  * chapter is deliberate: with the stolen shards from XVI patched in as substitutes for the two
- * settings she can't take outright, she moves to finish the frame on purpose. Kaelen and Voss race
- * to the Sanctum with whatever Stonebeard can spare rather than an army, culminating in a
- * seventeenth and toughest combat encounter yet (a non-humanoid guardian assembled the same
- * desperate way the frame itself was) and a stat-gated choice about *how* to stop the activation —
- * outright destruction versus careful disruption — that deliberately calls back to the prisoner's
- * fear from XIV about being violently unmade rather than freed. Ends having prevented the immediate
- * crisis without resolving the larger one: Ilsevet herself is never seen, and "tonight" turns out
- * not to have been the deadline that mattered.
+ * settings she can't take outright, she moves to finish the frame on purpose. Asking the prisoner
+ * how much time is left versus simply moving before it finishes speaking now changes the mood of
+ * the scramble that follows, not just which stat moves. Kaelen and Voss race to the Sanctum with
+ * whatever Stonebeard can spare rather than an army, culminating in a seventeenth and toughest
+ * combat encounter yet (a non-humanoid guardian assembled the same desperate way the frame itself
+ * was) and a stat-gated choice about *how* to stop the activation — outright destruction versus
+ * careful disruption — that deliberately calls back to the prisoner's fear from XIV about being
+ * violently unmade rather than freed. Ends having prevented the immediate crisis without resolving
+ * the larger one: Ilsevet herself is never seen, and "tonight" turns out not to have been the
+ * deadline that mattered.
  */
 val chapter17Nodes: List<StoryNode> = listOf(
     StoryNode(
@@ -31,12 +33,12 @@ val chapter17Nodes: List<StoryNode> = listOf(
             says, mid-afternoon, pressing against the wards hard enough that Kaelen feels it
             through the stone before he even reaches the gate. "Four true settings, whatever she
             took from you, and she's stopped being careful about the difference. She means to
-            finish it. Soon."
+            finish it. Soon." Its urgency alone tells him more than the words do.
         """.trimIndent(),
         choices = listOf(
             Choice(
                 label = "\"How soon?\"",
-                nextNodeId = "gathering_what_they_have",
+                nextNodeId = "gathering_what_they_have_asked",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     setFlags = setOf("asked_how_soon")
@@ -44,7 +46,7 @@ val chapter17Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "\"Then we don't wait to find out.\"",
-                nextNodeId = "gathering_what_they_have",
+                nextNodeId = "gathering_what_they_have_moved",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     setFlags = setOf("moved_without_waiting")
@@ -53,15 +55,42 @@ val chapter17Nodes: List<StoryNode> = listOf(
         )
     ),
     StoryNode(
-        id = "gathering_what_they_have",
+        id = "gathering_what_they_have_asked",
         chapterId = "chapter_17",
         title = "Gathering What They Have",
         illustrationId = "gathering_what_they_have",
         narrativeText = """
+            "I don't know exactly," it admits, and something in the admission costs it visibly.
+            "Days, not weeks. Maybe less." That uncertainty is its own kind of answer, and Kaelen
+            spends the time he does have making sure every hour of it counts rather than wasting
+            any of it wondering.
+
             There isn't time to build an army, and Kaelen doesn't have one to build regardless.
-            What he has is Voss, healed enough to hold a blade properly again, whatever Stonebeard
-            can spare without leaving its own gate undefended, and word sent to Fenmoor that may
-            or may not arrive before this is decided one way or the other.
+            What he has is Voss, healed enough to hold a blade properly again, whatever
+            Stonebeard can spare without leaving its own gate undefended, and word sent to
+            Fenmoor that may or may not arrive before this is decided one way or the other.
+
+            It will have to be enough. It's what "enough" has meant since the day the black door
+            first opened.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Move out.", nextNodeId = "the_road_to_ashfall_again")
+        )
+    ),
+    StoryNode(
+        id = "gathering_what_they_have_moved",
+        chapterId = "chapter_17",
+        title = "Gathering What They Have",
+        illustrationId = "gathering_what_they_have",
+        narrativeText = """
+            There's no time spent asking how soon is soon enough. Kaelen is already moving before
+            the prisoner finishes the thought, and whatever hours that saves him, he intends to
+            spend all of them on the road rather than on questions with no comfortable answer.
+
+            There isn't time to build an army, and Kaelen doesn't have one to build regardless.
+            What he has is Voss, healed enough to hold a blade properly again, whatever
+            Stonebeard can spare without leaving its own gate undefended, and word sent to
+            Fenmoor that may or may not arrive before this is decided one way or the other.
 
             It will have to be enough. It's what "enough" has meant since the day the black door
             first opened.
@@ -77,11 +106,11 @@ val chapter17Nodes: List<StoryNode> = listOf(
         illustrationId = "road_away_from_tree",
         narrativeText = """
             The Ashfall reaches have changed since the last two times Kaelen crossed them. The
-            Sanctum's spire doesn't just hum now — it's visible for a day's travel in every
+            Sanctum's spire doesn't just hum now; it's visible for a day's travel in every
             direction, a wrongness on the horizon that doesn't need darkness to be seen.
 
             Whatever's left of Ilsevet's garrison isn't hiding it anymore. There's nothing left to
-            hide it from.
+            hide it from, and no one left who'd believe the lie if they tried.
         """.trimIndent(),
         choices = listOf(
             Choice(label = "Get to the chamber.", nextNodeId = "the_chamber_defended")
@@ -93,7 +122,7 @@ val chapter17Nodes: List<StoryNode> = listOf(
         title = "The Chamber, Defended",
         illustrationId = "the_chamber_defended",
         narrativeText = """
-            Whatever guards the frame chamber now isn't cinder-grey soldiers — Ilsevet doesn't
+            Whatever guards the frame chamber now isn't cinder-grey soldiers: Ilsevet doesn't
             have enough of those left to spare, not after Fenmoor, not after the reprisal squad,
             not after the reliquary theft. What she's put in front of the door is something built
             rather than born, assembled the same desperate way the frame itself was, and it
@@ -109,12 +138,13 @@ val chapter17Nodes: List<StoryNode> = listOf(
         illustrationId = "what_must_be_broken",
         narrativeText = """
             The frame itself is worse up close than the vision back at Stonebeard's own gate ever
-            managed to convey — six settings, four of them dark and humming with something that
-            isn't light, two of them fitted with fragments too broken to properly belong. It isn't
-            finished. It's close enough to almost not matter.
+            managed to convey: six settings, four of them dark and humming with something that
+            isn't light, two of them fitted with fragments too broken to properly belong. It
+            isn't finished. It's close enough to almost not matter.
 
             Kaelen has exactly as long as it takes Ilsevet's remaining people to notice the
-            chamber's gone quiet to decide what "stopping this" actually means.
+            chamber's gone quiet to decide what "stopping this" actually means, and not one
+            second longer.
         """.trimIndent(),
         choices = listOf(
             Choice(
@@ -153,15 +183,15 @@ val chapter17Nodes: List<StoryNode> = listOf(
         title = "End of Chapter XVII — What Almost Finished",
         illustrationId = "chapter17_threshold",
         narrativeText = """
-            Whatever Kaelen does to the frame, it stops being a threat tonight — Ilsevet's voice,
+            Whatever Kaelen does to the frame, it stops being a threat tonight: Ilsevet's voice,
             somewhere beyond the chamber, goes from giving orders to something closer to silence
             once the humming cuts out. He doesn't see her. He isn't sure, afterward, whether that
             was mercy or just bad timing.
 
             They make it out with Voss's cut arm reopened and nothing else worse than that, which
             counts as the best outcome any of Ilsevet's plans has produced yet. The frame won't
-            finish tonight. Kaelen has a growing, specific fear that "tonight" was never really the
-            deadline that mattered.
+            finish tonight. Kaelen has a growing, specific fear that "tonight" was never really
+            the deadline that mattered.
 
             Chapter XVIII awaits.
         """.trimIndent(),
