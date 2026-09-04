@@ -14,11 +14,13 @@ import com.thelastjailer.app.StoryNode
  * chapters built — Emberlow, Greymoor, and Duskmere were all lost through loneliness, through nobody
  * being sent to relieve an isolated keeper. Wraithspire was never lost at all. It has been guarded in
  * total secrecy, uninterrupted, for three centuries, by a hidden order nobody — not the Ashen Order,
- * not Ilsevet, not even the whole itself — ever found. The toughest combat yet (Vigil-Captain of
- * Wraithspire, 385 HP) is, for the first time since the game's opening chapters, a human elite
- * guardian rather than a fragment, a manifestation, or a haunted ward — a deliberate structural
- * callback to the dwarven-hold roots of the story. Sets up the true final act: with all six fragments
- * now accounted for, the endgame confrontation with the whole itself is the only thing left.
+ * not Ilsevet, not even the whole itself — ever found. Whether Kaelen braces for the hidden guardians
+ * to be dangerous or hopes they've simply done the job well changes the mood of the climb up the
+ * mountain, not just a stat. The toughest combat yet (Vigil-Captain of Wraithspire, 385 HP) is, for
+ * the first time since the game's opening chapters, a human elite guardian rather than a fragment, a
+ * manifestation, or a haunted ward — a deliberate structural callback to the dwarven-hold roots of
+ * the story. Sets up the true final act: with all six fragments now accounted for, the endgame
+ * confrontation with the whole itself is the only thing left.
  */
 val chapter28Nodes: List<StoryNode> = listOf(
     StoryNode(
@@ -28,15 +30,15 @@ val chapter28Nodes: List<StoryNode> = listOf(
         illustrationId = "black_door_beneath_the_tree",
         narrativeText = """
             Three days on the road and the thread still hasn't wavered, pointing steady and
-            certain toward a name none of them have ever heard spoken. "Wraithspire," the prisoner
-            says, testing the word like it might be wrong. "Three hundred years, and I've never
-            once sensed a sixth gate. Not lost, not lonely, not silent. Just... never there to
-            begin with, as far as I could tell."
+            certain toward a name none of them have ever heard spoken. "Wraithspire," the
+            prisoner says, testing the word like it might be wrong. "Three hundred years, and
+            I've never once sensed a sixth gate. Not lost, not lonely, not silent. Just... never
+            there to begin with, as far as I could tell."
         """.trimIndent(),
         choices = listOf(
             Choice(
                 label = "\"Then whatever's kept it hidden is stronger than anything we've faced.\"",
-                nextNodeId = "the_road_to_wraithspire",
+                nextNodeId = "the_road_to_wraithspire_dangerous",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     setFlags = setOf("expected_wraithspire_to_be_dangerous")
@@ -44,7 +46,7 @@ val chapter28Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "\"Or someone's been doing our job for us this whole time, and doing it well.\"",
-                nextNodeId = "the_road_to_wraithspire",
+                nextNodeId = "the_road_to_wraithspire_well_kept",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     setFlags = setOf("hoped_wraithspire_was_well_kept")
@@ -53,16 +55,36 @@ val chapter28Nodes: List<StoryNode> = listOf(
         )
     ),
     StoryNode(
-        id = "the_road_to_wraithspire",
+        id = "the_road_to_wraithspire_dangerous",
         chapterId = "chapter_28",
         title = "The Road to Wraithspire",
         illustrationId = "road_away_from_tree",
         narrativeText = """
-            The road climbs somewhere the maps stop agreeing with each other, switchbacking up
-            through stone that starts to feel less like hillside and more like the roof of
-            something buried. Kaelen has walked into enough of these places by now to recognize
-            the specific quiet of a threshold that's still standing. This one feels different —
-            not failing, not keening, not forgetting. Watched.
+            He says it like a warning to himself as much as to the others, and it colors the
+            whole climb that follows: every shadow checked twice, every silence tested before he
+            trusts it. The road climbs somewhere the maps stop agreeing with each other,
+            switchbacking up through stone that starts to feel less like hillside and more like
+            the roof of something buried. Kaelen has walked into enough of these places by now to
+            recognize the specific quiet of a threshold that's still standing. This one feels
+            different, not failing, not keening, not forgetting. Watched.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Keep climbing.", nextNodeId = "what_guards_wraithspire")
+        )
+    ),
+    StoryNode(
+        id = "the_road_to_wraithspire_well_kept",
+        chapterId = "chapter_28",
+        title = "The Road to Wraithspire",
+        illustrationId = "road_away_from_tree",
+        narrativeText = """
+            He says it hoping to be right, and something in the hope makes the climb feel lighter
+            even though the ground doesn't. The road climbs somewhere the maps stop agreeing with
+            each other, switchbacking up through stone that starts to feel less like hillside and
+            more like the roof of something buried. Kaelen has walked into enough of these places
+            by now to recognize the specific quiet of a threshold that's still standing. This one
+            feels different, not failing, not keening, not forgetting. Watched, in a way that
+            almost feels like care rather than threat.
         """.trimIndent(),
         choices = listOf(
             Choice(label = "Keep climbing.", nextNodeId = "what_guards_wraithspire")
@@ -74,9 +96,9 @@ val chapter28Nodes: List<StoryNode> = listOf(
         title = "What Guards Wraithspire",
         illustrationId = "what_guards_wraithspire",
         narrativeText = """
-            They're waiting before Kaelen's party is halfway up the last rise — a disciplined
-            line of sentries in plain, unmarked grey, weapons ready but not yet raised, standing
-            like people who have done this exact thing, calmly and without panic, more times than
+            They're waiting before Kaelen's party is halfway up the last rise, a disciplined line
+            of sentries in plain, unmarked grey, weapons ready but not yet raised, standing like
+            people who have done this exact thing, calmly and without panic, more times than
             anyone outside this mountain will ever know about.
 
             "Turn back," their captain says, not unkindly. "Whatever you think you found here,
@@ -99,7 +121,8 @@ val chapter28Nodes: List<StoryNode> = listOf(
             The captain doesn't look convinced, and three centuries of a duty kept perfectly is
             not about to be undone by one traveler's word. "Then you'll forgive us for not taking
             that on faith," she says, and the line of sentries finally raises its weapons in
-            unison. Whatever Kaelen intended to say next, it's going to have to wait until after.
+            unison. Whatever Kaelen intended to say next, it's going to have to wait until after,
+            if there's still an after worth waiting for.
         """.trimIndent(),
         choices = emptyList(),
         combatEncounterId = "wraithspire_vigil_encounter"
@@ -116,11 +139,11 @@ val chapter28Nodes: List<StoryNode> = listOf(
             anger in it at all. "Come and see what we've been keeping, then. You've more than
             earned the answer to why nobody ever found it."
 
-            What waits past the sentries isn't ruin or grief or forgetting. It's a gate as carefully
-            tended as any shrine, six generations of an order nobody outside this mountain ever
-            knew existed, still standing watch exactly as their ancestors did the night the
-            Sundering happened — because, the captain says quietly, they were the ones who helped
-            do it.
+            What waits past the sentries isn't ruin or grief or forgetting. It's a gate as
+            carefully tended as any shrine, six generations of an order nobody outside this
+            mountain ever knew existed, still standing watch exactly as their ancestors did the
+            night the Sundering happened, because, the captain says quietly, they were the ones
+            who helped do it.
         """.trimIndent(),
         choices = listOf(
             Choice(
@@ -162,7 +185,7 @@ val chapter28Nodes: List<StoryNode> = listOf(
             Six fragments, Kaelen realizes, standing in a chamber nobody outside a mountain has
             stood in for three hundred years. His own. Emberlow's, still deciding. Greymoor's,
             still keening down to quiet. Duskmere's, already gone. The Sundering Ground's,
-            forgetting on purpose. And this one — the only one, out of all six, that was never
+            forgetting on purpose. And this one, the only one, out of all six, that was never
             once left alone.
 
             The prisoner is very quiet, taking that in. "Six," it finally says. "All six,

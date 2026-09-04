@@ -11,17 +11,19 @@ import com.thelastjailer.app.StoryNode
  *
  * Major structural pivot, flagged clearly in the PR: this chapter closes the primary conflict the
  * entire game has built toward since the opening chapters — the whole's three-century campaign to
- * reassemble itself, whether by persuasion (XXII, XXIII, XXV) or by force (XXIX). It does not close
- * every thread the story has raised (Ilsevet's ultimate fate, the Cinder faction's future, Emberlow
- * and Greymoor's still-undecided fragments, and Kaelen and Voss's own future are all left open,
- * mirroring how XVIII closed the "hunt Ilsevet" arc while deliberately leaving other threads
- * unresolved) — but the core antagonist force's arc reaches a real, considered resolution here rather
- * than being left open indefinitely. The resolution is deliberately not a kill: consistent with the
- * story's established theme that refusal and consent, not violence, are what actually work against
- * the whole (XXII inverted temptation into supported refusal; XXVIII's Wraithspire succeeded through
- * presence, not force), the ending offers the whole a genuine alternative to both eternal loneliness
- * and coerced reunion — six fragments choosing to stay in each other's lives without losing what each
- * has separately become. Final and toughest combat of the arc (The Whole, At Full Reach, 450 HP) comes
+ * reassemble itself, whether by persuasion (XXII, XXIII, XXV) or by force (XXIX). Choosing to seek
+ * the ending outright versus insisting on an alternative to a killing blow changes how directly the
+ * prisoner answers where to find it, not just a stat. It does not close every thread the story has
+ * raised (Ilsevet's ultimate fate, the Cinder faction's future, Emberlow and Greymoor's
+ * still-undecided fragments, and Kaelen and Voss's own future are all left open, mirroring how XVIII
+ * closed the "hunt Ilsevet" arc while deliberately leaving other threads unresolved) — but the core
+ * antagonist force's arc reaches a real, considered resolution here rather than being left open
+ * indefinitely. The resolution is deliberately not a kill: consistent with the story's established
+ * theme that refusal and consent, not violence, are what actually work against the whole (XXII
+ * inverted temptation into supported refusal; XXVIII's Wraithspire succeeded through presence, not
+ * force), the ending offers the whole a genuine alternative to both eternal loneliness and coerced
+ * reunion — six fragments choosing to stay in each other's lives without losing what each has
+ * separately become. Final and toughest combat of the arc (The Whole, At Full Reach, 450 HP) comes
  * first, because the offer only means anything once the whole knows, directly, that it can no longer
  * simply take what it wants.
  */
@@ -35,12 +37,13 @@ val chapter30Nodes: List<StoryNode> = listOf(
             "It reached all the way into you and lost," the prisoner says, the morning after. "It
             has never once done that before, not in three hundred years. Whatever it is now, it
             isn't done being afraid of that. I don't think it can afford to just wait us out
-            anymore."
+            anymore." There's something almost like hope threaded through the observation, thin
+            but unmistakably there.
         """.trimIndent(),
         choices = listOf(
             Choice(
                 label = "\"Then we don't wait either. We find it, and we finish this.\"",
-                nextNodeId = "where_it_can_be_found",
+                nextNodeId = "where_it_can_be_found_seek",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     setFlags = setOf("chose_to_seek_the_ending")
@@ -48,7 +51,7 @@ val chapter30Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "\"Finish it how? I won't spend this on a killing blow if there's another way.\"",
-                nextNodeId = "where_it_can_be_found",
+                nextNodeId = "where_it_can_be_found_another_way",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     setFlags = setOf("insisted_on_another_way")
@@ -57,16 +60,35 @@ val chapter30Nodes: List<StoryNode> = listOf(
         )
     ),
     StoryNode(
-        id = "where_it_can_be_found",
+        id = "where_it_can_be_found_seek",
         chapterId = "chapter_30",
         title = "Where It Can Be Found",
         illustrationId = "where_it_can_be_found",
         narrativeText = """
-            "The Sundering Ground," the prisoner says. "That's where it's rooted deepest — the
-            forgetting we fought there was always just the outermost layer of it. If it's
-            anywhere close to a single place after three centuries of being scattered on purpose,
-            it's there. Where it started. Where it still, somewhere underneath everything else,
-            remembers being whole."
+            The prisoner doesn't flinch from his readiness to end this, and answers with the same
+            directness he offered it. "The Sundering Ground," it says. "That's where it's rooted
+            deepest, the forgetting we fought there was always just the outermost layer of it. If
+            it's anywhere close to a single place after three centuries of being scattered on
+            purpose, it's there. Where it started. Where it still, somewhere underneath
+            everything else, remembers being whole."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Go back to where it began.", nextNodeId = "the_road_back_to_the_sundering_ground")
+        )
+    ),
+    StoryNode(
+        id = "where_it_can_be_found_another_way",
+        chapterId = "chapter_30",
+        title = "Where It Can Be Found",
+        illustrationId = "where_it_can_be_found",
+        narrativeText = """
+            The prisoner takes the demand seriously enough to answer it before it answers the
+            first question at all. "I don't know yet, either. But I know where to start looking
+            for an answer that isn't a killing blow." "The Sundering Ground," it says. "That's
+            where it's rooted deepest, the forgetting we fought there was always just the
+            outermost layer of it. If it's anywhere close to a single place after three centuries
+            of being scattered on purpose, it's there. Where it started. Where it still,
+            somewhere underneath everything else, remembers being whole."
         """.trimIndent(),
         choices = listOf(
             Choice(label = "Go back to where it began.", nextNodeId = "the_road_back_to_the_sundering_ground")
@@ -79,7 +101,7 @@ val chapter30Nodes: List<StoryNode> = listOf(
         illustrationId = "road_away_from_tree",
         narrativeText = """
             Voss rides beside him without needing to be asked, the way she has since Fenmoor. The
-            prisoner is quieter than Kaelen has ever known it, holding — he suspects — every
+            prisoner is quieter than Kaelen has ever known it, holding, he suspects, every
             conversation it's had with every other fragment these past weeks somewhere behind its
             silence, turning them over one more time before whatever happens next.
         """.trimIndent(),
@@ -94,11 +116,11 @@ val chapter30Nodes: List<StoryNode> = listOf(
         illustrationId = "what_gathers_at_the_ground",
         narrativeText = """
             They aren't alone when they reach the hillside. A rider from Wraithspire is waiting
-            with a message from the Vigil-Captain, brief and plainly meant: whatever happens here,
-            the sixth gate stands with whoever's trying to end this without erasing anyone to do
-            it. Emberlow and Greymoor send nothing, because they still haven't decided anything to
-            send — and for the first time, that silence doesn't feel like failure. It feels like
-            two people still being allowed to take their time.
+            with a message from the Vigil-Captain, brief and plainly meant: whatever happens
+            here, the sixth gate stands with whoever's trying to end this without erasing anyone
+            to do it. Emberlow and Greymoor send nothing, because they still haven't decided
+            anything to send, and for the first time, that silence doesn't feel like failure. It
+            feels like two people still being allowed to take their time.
 
             Only Duskmere is entirely absent, and everyone standing on this hillside feels the
             shape of that absence exactly as sharply as they should.
@@ -115,8 +137,8 @@ val chapter30Nodes: List<StoryNode> = listOf(
         narrativeText = """
             It doesn't hide this time, doesn't send a splinter or a shape wearing borrowed grief.
             The whole meets them at full reach, everything three centuries of scattering has left
-            it able to gather in one place, one last time, because it has finally understood there
-            won't be a second chance to take what it wants by force.
+            it able to gather in one place, one last time, because it has finally understood
+            there won't be a second chance to take what it wants by force.
         """.trimIndent(),
         choices = emptyList(),
         combatEncounterId = "the_last_reach_encounter"
@@ -127,7 +149,7 @@ val chapter30Nodes: List<StoryNode> = listOf(
         title = "What the Whole Finally Hears",
         illustrationId = "what_the_whole_finally_hears",
         narrativeText = """
-            It doesn't break so much as stop reaching — the fight simply goes out of it, all at
+            It doesn't break so much as stop reaching, the fight simply goes out of it, all at
             once, the way it must have felt three hundred years ago when six pieces first
             realized fighting each other wasn't the same as fighting to stay whole. For the first
             time since any of this began, it isn't asking, persuading, or taking. It's listening.
@@ -144,7 +166,8 @@ val chapter30Nodes: List<StoryNode> = listOf(
         narrativeText = """
             Kaelen has spent three years learning exactly one thing well enough to bet everything
             on it now: that being separate was never the whole's real enemy. Being alone was. He
-            says the only thing he has left to offer, and means every word of it.
+            says the only thing he has left to offer, and means every word of it, aware this is
+            likely the only chance he'll ever get to say it.
         """.trimIndent(),
         choices = listOf(
             Choice(
@@ -183,24 +206,24 @@ val chapter30Nodes: List<StoryNode> = listOf(
         title = "End of Chapter XXX — Six, Not One",
         illustrationId = "chapter30_threshold",
         narrativeText = """
-            It doesn't answer in words. It answers by letting go — of the hillside, of the
+            It doesn't answer in words. It answers by letting go: of the hillside, of the
             forgetting, of three hundred years spent believing wholeness and solitude were the
             only two choices anyone ever really had. Whatever it is now, scattered by design and
             no longer scrambling to undo that, it settles into something Kaelen doesn't have a
             name for and doesn't feel any urgent need to find one for tonight.
 
             The prisoner is the last to speak, once the hillside is ordinary again. "Six," it
-            says. "Still six. Just — six who know each other's names now, instead of six keeping
+            says. "Still six. Just, six who know each other's names now, instead of six keeping
             watch alone in the dark. I didn't know that was allowed to be the ending. I don't
             think it did either, until just now."
 
             Voss looks at Kaelen the way she's looked at him since Fenmoor, since Ashfall, since
             every gate they've stood at together that didn't have to be faced alone. Ilsevet is
             still out there somewhere, and the Cinder faction with her, and Emberlow and Greymoor
-            still haven't decided anything at all — the world doesn't tie itself into a single
-            bow just because one very old argument finally ended. But for tonight, on a hillside
-            that was once the loneliest place in the world, that feels like enough to be getting
-            on with.
+            still haven't decided anything at all, the world doesn't tie itself into a single bow
+            just because one very old argument finally ended. But for tonight, on a hillside that
+            was once the loneliest place in the world, that feels like enough to be getting on
+            with.
 
             Chapter XXXI awaits.
         """.trimIndent(),

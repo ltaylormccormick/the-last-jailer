@@ -14,12 +14,16 @@ import com.thelastjailer.app.StoryNode
  * interrupted, Wraithspire successfully defended, only Duskmere actually yielded — the whole abandons
  * gentleness entirely and makes its most direct move of the entire story: reaching straight for
  * Kaelen's own fragment, the one it has always had the closest access to, through three years of
- * proximity and the vision-combat connection XIV first opened. Rather than asking, this time it
- * simply tries to take. Reuses the vision-combat device (XIV, XXII) for by far the toughest encounter
- * yet (The Whole, Undisguised, 410 HP — the first time facing the whole at anything close to its true
- * scale, not a splinter, a straggler, or a single fragment's dream). Deliberately does not end the
- * overarching conflict here: Kaelen holding the line is a genuine turning point, not the finale, and
- * the chapter closes by setting up a true final confrontation still to come.
+ * proximity and the vision-combat connection XIV first opened. Standing defiant versus asking the
+ * prisoner exactly what it needs changes how much comfort the prisoner is able to offer before the
+ * fight, not just a stat; and afterward, whether Kaelen resolves to hunt the whole down, to prioritize
+ * warning the fragments still deciding, or simply to rest before choosing, colors the chapter's quiet
+ * close differently each way. Rather than asking, this time it simply tries to take. Reuses the
+ * vision-combat device (XIV, XXII) for by far the toughest encounter yet (The Whole, Undisguised, 410
+ * HP — the first time facing the whole at anything close to its true scale, not a splinter, a
+ * straggler, or a single fragment's dream). Deliberately does not end the overarching conflict here:
+ * Kaelen holding the line is a genuine turning point, not the finale, and the chapter closes by
+ * setting up a true final confrontation still to come.
  */
 val chapter29Nodes: List<StoryNode> = listOf(
     StoryNode(
@@ -29,7 +33,7 @@ val chapter29Nodes: List<StoryNode> = listOf(
         illustrationId = "black_door_beneath_the_tree",
         narrativeText = """
             It doesn't come through the prisoner this time. Kaelen feels it directly, for the
-            first time in three years — not a request, not a memory, not a gentle asking. A hand,
+            first time in three years, not a request, not a memory, not a gentle asking. A hand,
             closing around the branded mark on his palm from the inside, patient no longer.
 
             The prisoner's voice is suddenly very small. "It's done asking anyone else. It's
@@ -38,7 +42,7 @@ val chapter29Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "\"Then it picked the wrong door to force.\"",
-                nextNodeId = "what_the_prisoner_says_before",
+                nextNodeId = "what_the_prisoner_says_before_defiant",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     setFlags = setOf("stood_defiant_before_the_whole")
@@ -46,7 +50,7 @@ val chapter29Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "\"Tell me what you need from me. Exactly.\"",
-                nextNodeId = "what_the_prisoner_says_before",
+                nextNodeId = "what_the_prisoner_says_before_asked",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     setFlags = setOf("asked_what_it_needed_before")
@@ -55,15 +59,32 @@ val chapter29Nodes: List<StoryNode> = listOf(
         )
     ),
     StoryNode(
-        id = "what_the_prisoner_says_before",
+        id = "what_the_prisoner_says_before_defiant",
         chapterId = "chapter_29",
         title = "What the Prisoner Says Before",
         illustrationId = "what_the_prisoner_says_before",
         narrativeText = """
-            "Every other fragment, it could only ask. Yours, it's touched a hundred times over —
-            every vision, every fight, every night I've spent behind your eyes instead of my own
-            door. It thinks that's the same as a way in. I need you to prove it wrong, and I
-            can't do that part for you. Nobody can, this time."
+            Something in Kaelen's defiance seems to steady it, if only for a moment. "Every
+            other fragment, it could only ask. Yours, it's touched a hundred times over: every
+            vision, every fight, every night I've spent behind your eyes instead of my own door.
+            It thinks that's the same as a way in. I need you to prove it wrong, and I can't do
+            that part for you. Nobody can, this time. But I believe you might."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Meet it.", nextNodeId = "into_the_undisguised")
+        )
+    ),
+    StoryNode(
+        id = "what_the_prisoner_says_before_asked",
+        chapterId = "chapter_29",
+        title = "What the Prisoner Says Before",
+        illustrationId = "what_the_prisoner_says_before",
+        narrativeText = """
+            It answers the question with something almost like relief at being asked plainly for
+            once, rather than reassured. "Every other fragment, it could only ask. Yours, it's
+            touched a hundred times over: every vision, every fight, every night I've spent
+            behind your eyes instead of my own door. It thinks that's the same as a way in. I
+            need you to prove it wrong, and I can't do that part for you. Nobody can, this time."
         """.trimIndent(),
         choices = listOf(
             Choice(label = "Meet it.", nextNodeId = "into_the_undisguised")
@@ -75,12 +96,12 @@ val chapter29Nodes: List<StoryNode> = listOf(
         title = "Into the Undisguised",
         illustrationId = "into_the_undisguised",
         narrativeText = """
-            Kaelen presses his branded palm to nothing at all this time — no black iron, no
+            Kaelen presses his branded palm to nothing at all this time, no black iron, no
             ward-stone, no threshold to cross. The vision simply opens around him, and what's
             waiting isn't a memory, a wraith, or a patient voice anymore. It's the whole itself,
             as close to its true shape as three centuries of scattering has left it able to take,
-            filling the space where a fair fight would be with the sheer, undisguised size of what
-            it actually is.
+            filling the space where a fair fight would be with the sheer, undisguised size of
+            what it actually is.
         """.trimIndent(),
         choices = emptyList(),
         combatEncounterId = "the_whole_encounter"
@@ -91,13 +112,13 @@ val chapter29Nodes: List<StoryNode> = listOf(
         title = "What Holding the Line Costs",
         illustrationId = "what_holding_the_line_costs",
         narrativeText = """
-            It doesn't withdraw so much as recoil — genuinely startled, Kaelen realizes, in a way
+            It doesn't withdraw so much as recoil, genuinely startled, Kaelen realizes, in a way
             nothing this size should be able to afford. Three centuries of never being refused by
             force, and it clearly never planned for the one door it thought it already owned to
             hold anyway.
 
             When Kaelen comes back to himself, his hand is closed around something that wasn't
-            there before — a fragment of the grip that tried to close around him, left behind the
+            there before, a fragment of the grip that tried to close around him, left behind the
             way the splinter was left behind at the camp, except this time it isn't a piece taken
             in a fight over an object. It's a piece of the attempt itself.
         """.trimIndent(),
@@ -115,15 +136,16 @@ val chapter29Nodes: List<StoryNode> = listOf(
         title = "What Kaelen Decides After",
         illustrationId = "what_kaelen_decides_after",
         narrativeText = """
-            Voss finds him still shaking an hour later and doesn't ask if he's all right, because
-            the answer is written plainly enough on his face. "It tried to just take you," she
-            says, working it through out loud. "Not ask. Not persuade. Take. That's not the move
-            of something that thinks it's winning."
+            Voss finds him still shaking an hour later and doesn't ask if he's all right,
+            because the answer is written plainly enough on his face. "It tried to just take
+            you," she says, working it through out loud. "Not ask. Not persuade. Take. That's
+            not the move of something that thinks it's winning, whatever it wants us to
+            believe."
         """.trimIndent(),
         choices = listOf(
             Choice(
                 label = "\"Then we stop waiting for it to come to us. We take the fight to whatever's left of it.\"",
-                nextNodeId = "chapter29_end",
+                nextNodeId = "chapter29_end_seek",
                 requirements = ChoiceRequirement(minStats = mapOf(StatType.COURAGE to 27)),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
@@ -132,7 +154,7 @@ val chapter29Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "\"Then we make sure everyone still deciding knows it can be refused. That matters more right now than chasing it.\"",
-                nextNodeId = "chapter29_end",
+                nextNodeId = "chapter29_end_prioritized",
                 requirements = ChoiceRequirement(minStats = mapOf(StatType.HONOUR to 26)),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
@@ -141,13 +163,13 @@ val chapter29Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "Say nothing yet. Just rest, and let tomorrow decide what comes next.",
-                nextNodeId = "chapter29_end",
+                nextNodeId = "chapter29_end_rested",
                 consequences = Consequences(setFlags = setOf("rested_before_deciding"))
             )
         )
     ),
     StoryNode(
-        id = "chapter29_end",
+        id = "chapter29_end_seek",
         chapterId = "chapter_29",
         title = "End of Chapter XXIX — The Whole, Undisguised",
         illustrationId = "chapter29_threshold",
@@ -155,12 +177,60 @@ val chapter29Nodes: List<StoryNode> = listOf(
             The prisoner doesn't say much for the rest of the night, but what it does say, right
             before Kaelen finally sleeps, stays with him longer than anything else that happened
             today. "Three hundred years," it says, "and that's the first time I've ever seen it
-            afraid of losing. I didn't know it could be. I don't know what it does with that,
-            now that it knows."
+            afraid of losing. I didn't know it could be. I don't know what it does with that, now
+            that it knows." Kaelen's resolve to seek it out doesn't make that answer any less
+            unsettling. It just makes the next step his to choose instead of its.
+
+            Neither does Kaelen, fully. But for the first time since this began, the fight in
+            front of him feels less like six separate doors to defend, and more like one long
+            argument they might actually be close to winning, and this time he intends to be the
+            one who decides where it happens next.
+
+            Chapter XXX awaits.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Go on.", nextNodeId = "what_must_happen_next")
+        )
+    ),
+    StoryNode(
+        id = "chapter29_end_prioritized",
+        chapterId = "chapter_29",
+        title = "End of Chapter XXIX — The Whole, Undisguised",
+        illustrationId = "chapter29_threshold",
+        narrativeText = """
+            The prisoner doesn't say much for the rest of the night, but what it does say, right
+            before Kaelen finally sleeps, stays with him longer than anything else that happened
+            today. "Three hundred years," it says, "and that's the first time I've ever seen it
+            afraid of losing. I didn't know it could be. I don't know what it does with that, now
+            that it knows." Kaelen thinks of Emberlow and Greymoor, still deciding somewhere out
+            there, and hopes the word reaches them before the fear does.
 
             Neither does Kaelen. But for the first time since this began, the fight in front of
             him feels less like six separate doors to defend, and more like one long argument
             they might actually be close to winning.
+
+            Chapter XXX awaits.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Go on.", nextNodeId = "what_must_happen_next")
+        )
+    ),
+    StoryNode(
+        id = "chapter29_end_rested",
+        chapterId = "chapter_29",
+        title = "End of Chapter XXIX — The Whole, Undisguised",
+        illustrationId = "chapter29_threshold",
+        narrativeText = """
+            The prisoner doesn't say much for the rest of the night, but what it does say, right
+            before Kaelen finally sleeps, stays with him longer than anything else that happened
+            today. "Three hundred years," it says, "and that's the first time I've ever seen it
+            afraid of losing. I didn't know it could be. I don't know what it does with that, now
+            that it knows."
+
+            Neither does Kaelen, and for once he doesn't try to decide what to do about it
+            tonight. But for the first time since this began, the fight in front of him feels
+            less like six separate doors to defend, and more like one long argument they might
+            actually be close to winning.
 
             Chapter XXX awaits.
         """.trimIndent(),
