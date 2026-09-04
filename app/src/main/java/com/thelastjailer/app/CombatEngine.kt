@@ -27,6 +27,7 @@ class CombatEngine(
     private val playerMaxHealth: Int,
     private val playerCourage: Int,
     private val availableDraughts: Int,
+    private val damageReduction: Int = 0,
     private val random: Random = Random.Default
 ) {
     private val startingPlayerHealth = startingPlayerHealth
@@ -85,7 +86,8 @@ class CombatEngine(
     /** Enemy strikes back; returns the log line and finalizes [outcome] on a knockout. */
     private fun enemyStrikes(reduced: Boolean): String {
         val raw = random.nextInt(enemy.minAttack, enemy.maxAttack + 1)
-        val dmg = if (reduced) raw / 2 else raw
+        val halved = if (reduced) raw / 2 else raw
+        val dmg = (halved - damageReduction).coerceAtLeast(0)
         playerHealth = (playerHealth - dmg).coerceAtLeast(0)
         if (playerHealth <= 0) finish(victory = false)
         return "The ${enemy.name} hits you for $dmg damage."

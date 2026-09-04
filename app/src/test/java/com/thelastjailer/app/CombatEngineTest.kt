@@ -66,6 +66,52 @@ class CombatEngineTest {
     }
 
     @Test
+    fun `damageReduction lowers incoming damage, floored at zero`() {
+        val seed = 123L
+        val enemy = testEnemy()
+        val engine = CombatEngine(
+            enemy = enemy,
+            startingPlayerHealth = 100,
+            playerMaxHealth = 100,
+            playerCourage = 4,
+            availableDraughts = 0,
+            damageReduction = 2,
+            random = Random(seed)
+        )
+        val expected = Random(seed)
+        val playerDamage = expected.nextInt(8, 15) + (4 / 2)
+        val rawEnemyDamage = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
+
+        engine.attack()
+
+        assertEquals(enemy.maxHealth - playerDamage, engine.enemyHealth)
+        assertEquals(100 - (rawEnemyDamage - 2).coerceAtLeast(0), engine.playerHealth)
+    }
+
+    @Test
+    fun `damageReduction stacks with defend's halving`() {
+        // minAttack 4 halved is 2, which a damageReduction of 2 should cancel out entirely.
+        val seed = 55L
+        val enemy = testEnemy()
+        val engine = CombatEngine(
+            enemy = enemy,
+            startingPlayerHealth = 100,
+            playerMaxHealth = 100,
+            playerCourage = 0,
+            availableDraughts = 0,
+            damageReduction = 2,
+            random = Random(seed)
+        )
+        val expected = Random(seed)
+        val rawEnemyDamage = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
+
+        engine.defend()
+
+        assertEquals(100 - (rawEnemyDamage / 2 - 2).coerceAtLeast(0), engine.playerHealth)
+        assertTrue(engine.log.any { it.contains("hits you for") })
+    }
+
+    @Test
     fun `draught heals the player, consumes one item, then the enemy still attacks`() {
         val seed = 7L
         val enemy = testEnemy()

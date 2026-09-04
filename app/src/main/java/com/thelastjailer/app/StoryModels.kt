@@ -9,11 +9,17 @@ enum class StatType {
     XP
 }
 
+/** A passive bonus an [Item] grants automatically whenever it's carried into a fight. */
+data class ItemCombatEffect(
+    val damageReduction: Int = 0
+)
+
 /** An inventory item definition, looked up by id from [com.thelastjailer.app.data.ItemCatalog]. */
 data class Item(
     val id: String,
     val name: String,
-    val description: String
+    val description: String,
+    val combatEffect: ItemCombatEffect? = null
 )
 
 /** Gates whether a [Choice] is shown/selectable for the current [GameState]. */

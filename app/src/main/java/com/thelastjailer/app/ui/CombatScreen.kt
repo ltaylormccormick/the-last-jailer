@@ -24,6 +24,7 @@ import com.thelastjailer.app.CombatEngine
 import com.thelastjailer.app.CombatOutcome
 import com.thelastjailer.app.GameState
 import com.thelastjailer.app.data.EnemyCatalog
+import com.thelastjailer.app.data.ItemCatalog
 
 private const val HEALING_DRAUGHT_ID = "healing_draught"
 
@@ -46,7 +47,9 @@ fun CombatScreen(
             startingPlayerHealth = playerState.health,
             playerMaxHealth = playerState.maxHealth,
             playerCourage = playerState.courage,
-            availableDraughts = playerState.inventory.count { it == HEALING_DRAUGHT_ID }
+            availableDraughts = playerState.inventory.count { it == HEALING_DRAUGHT_ID },
+            damageReduction = ItemCatalog.resolve(playerState.inventory)
+                .sumOf { it.combatEffect?.damageReduction ?: 0 }
         )
     }
     val enemy = remember(encounter.id) { EnemyCatalog.get(encounter.enemyId) }
