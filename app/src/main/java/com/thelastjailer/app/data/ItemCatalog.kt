@@ -1,6 +1,7 @@
 package com.thelastjailer.app.data
 
 import com.thelastjailer.app.Item
+import com.thelastjailer.app.ItemCombatEffect
 
 /**
  * Canonical definitions for every item id that can appear in a [com.thelastjailer.app.GameState]
@@ -48,7 +49,8 @@ object ItemCatalog {
         Item(
             id = "sturdy_buckler",
             name = "Sturdy Buckler",
-            description = "Dwarven-forged and dented from use. Given, not lent, by a smith who expects nothing back."
+            description = "Dwarven-forged and dented from use. Given, not lent, by a smith who expects nothing back.",
+            combatEffect = ItemCombatEffect(damageReduction = 2)
         ),
         Item(
             id = "warden_sigil",
