@@ -9,16 +9,24 @@ import com.thelastjailer.app.StoryNode
 /**
  * Chapter III — What the Door Remembers.
  *
- * Resolves Chapter II's cliffhanger (does Kaelen take the office, and does he take it fully or
- * reluctantly, each with its own binding scene), gives the thing behind the gate its first real
- * voice instead of just a knock (and Kaelen's reaction to what happens next differs depending on
- * whether he listened to it or refused it outright), and introduces the first external antagonist
- * — someone from Kaelen's own world, above ground, who has heard that a jailer has been named and
- * does not consider that good news. The chapter-ending confrontation with her is a genuine
- * three-way fork: standing his ground, arguing for mercy, and stalling for time each earn a
- * distinct reaction from Voss, not just a distinct stat. This is the last free chapter, so it ends
- * on a real hook rather than a resolution: a named threat now knows Kaelen exists, and knows what
- * he's guarding.
+ * Resolves Chapter II's cliffhanger (does Kaelen take the office, and does he take it fully,
+ * reluctantly, or only after walking away from it first). The third option is a genuine detour,
+ * not a parallel storyline: refusing at `the_answer` sends Kaelen back up through the tunnels to
+ * Stonebeard Hold to actually sit with the decision (`the_walk_away`, `what_the_road_offers`),
+ * until a tremor in the stone — the same kind of ward failure felt in Chapter II, not a voice or a
+ * vision, since Kaelen isn't bound yet and has no way to be reached directly — pulls him back
+ * (`the_ground_remembers`, `the_return`) to a third binding-rite variant (`the_binding_rite_returned`)
+ * that rejoins the other two paths at the same next scene. Sets `refused_once`, a flag no later
+ * choice requires but that's there for future dialogue to reference for texture, the same role
+ * `accepted_fully`/`accepted_reluctantly` already play. Also gives the thing behind the gate its
+ * first real voice instead of just a knock (and Kaelen's reaction to what happens next differs
+ * depending on whether he listened to it or refused it outright), and introduces the first external
+ * antagonist — someone from Kaelen's own world, above ground, who has heard that a jailer has been
+ * named and does not consider that good news. The chapter-ending confrontation with her is a genuine
+ * three-way fork: standing his ground, arguing for mercy, and stalling for time each earn a distinct
+ * reaction from Voss, not just a distinct stat. This is the last free chapter, so it ends on a real
+ * hook rather than a resolution: a named threat now knows Kaelen exists, and knows what he's
+ * guarding.
  */
 val chapter3Nodes: List<StoryNode> = listOf(
     StoryNode(
@@ -53,6 +61,11 @@ val chapter3Nodes: List<StoryNode> = listOf(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     setFlags = setOf("accepted_reluctantly")
                 )
+            ),
+            Choice(
+                label = "\"I need time. This isn't something I can just say yes to.\"",
+                nextNodeId = "the_walk_away",
+                consequences = Consequences(setFlags = setOf("refused_once"))
             )
         )
     ),
@@ -111,6 +124,135 @@ val chapter3Nodes: List<StoryNode> = listOf(
             When Halvard lifts his hand away, there is a mark on Kaelen's palm that was not there
             before, small and precise as a brand. Kaelen flexes his hand once, testing the ache of
             it, and says nothing. Some promises don't need saying twice to be kept.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Endure it without a sound.",
+                nextNodeId = "the_first_true_knock",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.COURAGE to 1),
+                    grantItemIds = listOf("jailers_brand"),
+                    setFlags = setOf("bound_to_the_gate"),
+                    unlockTrophy = "The Last Jailer"
+                )
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_walk_away",
+        chapterId = "chapter_3",
+        title = "The Walk Away",
+        illustrationId = "root_tunnel_dwarven_path",
+        narrativeText = """
+            Halvard doesn't call after him. That's somehow worse than if he had.
+
+            Kaelen climbs back through the tended dark the way he came, past the warded gate,
+            past the first seal still humming faint and unsteady behind him, and doesn't let
+            himself look back until the passage narrows enough that looking back wouldn't show
+            him anything anyway. He tells himself this is only a delay. He isn't sure yet whether
+            he believes it.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Keep walking.", nextNodeId = "what_the_road_offers")
+        )
+    ),
+    StoryNode(
+        id = "what_the_road_offers",
+        chapterId = "chapter_3",
+        title = "What the Road Offers",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            Stonebeard Hold is quiet by the time he reaches it, the dwarves who survived First
+            Blood already back at work rebuilding what the fight cost them, and none of them ask
+            why the man who helped hold their gate looks like he's carrying something heavier
+            than a sword. He finds a corner to sit in and lets himself, for the first time since
+            the black door, simply not decide anything for a while.
+
+            He thinks of the cloak he doesn't wear anymore, and what accepting Halvard's offer
+            would actually mean: not a new cloak, no colours to replace the old ones, only a debt
+            with no ending date and no one left to relieve him of it. He thinks, too, of Halvard's
+            voice, six wardens down to one, and what it cost the old dwarf to ask a stranger
+            instead of no one at all. Neither thought makes the decision for him. He lets both
+            sit.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Rest, for now.", nextNodeId = "the_ground_remembers")
+        )
+    ),
+    StoryNode(
+        id = "the_ground_remembers",
+        chapterId = "chapter_3",
+        title = "The Ground Remembers",
+        illustrationId = "warded_gate",
+        narrativeText = """
+            It isn't a voice that changes his mind. It's the floor.
+
+            A tremor rolls up through Stonebeard's stone in the depth of the night, faint but
+            unmistakable, the same low shudder Kaelen felt once already when a ward gave out
+            beneath his hands. It passes in a few seconds. Nobody else in the hold seems to
+            notice, or if they do, they've learned not to react to a mountain settling. Kaelen
+            has felt this specific kind of settling before, close enough to it to know exactly
+            what it means: something down there is losing ground, and there's exactly one dwarf
+            left standing between it and the surface.
+
+            He's on his feet before he's decided to be.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Go back.",
+                nextNodeId = "the_return",
+                consequences = Consequences(statDeltas = mapOf(StatType.HONOUR to 1))
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_return",
+        chapterId = "chapter_3",
+        title = "The Return",
+        illustrationId = "warded_gate",
+        narrativeText = """
+            Halvard doesn't look surprised to see him climbing back down through the tended
+            dark, though something in his shoulders eases all the same. The seal is worse than
+            when Kaelen left it, a fresh crack spidering out from the same place that failed once
+            already, and Halvard's hands are shaking with more than just age by the time Kaelen
+            reaches him.
+
+            "You came back," the old warden says, not quite a question.
+
+            "I needed to know I was choosing it. Not just falling into it because a door happened
+            to knock on the right night." Kaelen means it more than he expected to, once he's
+            said it out loud.
+
+            Halvard studies him a moment longer, then nods, once, like a man closing a ledger
+            he'd half expected to stay open. "Then choose it properly this time."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Give him your answer, for real this time.", nextNodeId = "the_binding_rite_returned")
+        )
+    ),
+    StoryNode(
+        id = "the_binding_rite_returned",
+        chapterId = "chapter_3",
+        title = "The Binding Rite",
+        illustrationId = "the_binding_rite",
+        narrativeText = """
+            There is no ceremony to it, not really: no crown, no witnesses but one tired dwarf
+            and a gate full of dying light. Halvard opens Kaelen's palm with a blade no longer
+            than a finger and presses it flat against the black stone, and this time Kaelen
+            doesn't need to brace himself for it the way he expected to. Choosing it twice, it
+            turns out, is easier than choosing it once.
+
+            The wards that still hold drink the offering like they've been thirsty for it. For
+            one heartbeat, Kaelen feels the full weight of the thing on the other side of the
+            gate: not its shape, not its name, only its patience, vast and undiminished by
+            however many centuries it has spent waiting for exactly this, and utterly indifferent
+            to how long it took him to arrive. He doesn't resent that. He walked away once
+            already knowing this was waiting either way.
+
+            When Halvard lifts his hand away, there is a mark on Kaelen's palm that was not there
+            before, small and precise as a brand. It doesn't feel like the ending of anything. It
+            feels, for the first time since the black door, like the start of something he
+            actually chose.
         """.trimIndent(),
         choices = listOf(
             Choice(
