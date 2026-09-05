@@ -224,11 +224,32 @@ val chapter30Nodes: List<StoryNode> = listOf(
             just because one very old argument finally ended. But for tonight, on a hillside that
             was once the loneliest place in the world, that feels like enough to be getting on
             with.
-
-            Chapter XXXI awaits.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Go on.", nextNodeId = "fallen_knight")
+            Choice(label = "Rest, for now.", nextNodeId = "the_watch_continues")
+        )
+    ),
+    StoryNode(
+        id = "the_watch_continues",
+        chapterId = "chapter_30",
+        title = "End of Chapter XXX — For Now",
+        illustrationId = "chapter30_threshold",
+        narrativeText = """
+            This is where Kaelen's part of the story rests, for now — Ilsevet unaccounted for,
+            Emberlow and Greymoor still weighing an answer nobody can weigh for them, and a sixth
+            door at Duskmere that has yet to open on anyone. The last jailer's watch isn't over.
+            It's just, for the first time in three years, not a watch he's keeping alone.
+
+            The rest of it — whatever Emberlow decides, whatever Ilsevet still intends, whatever
+            waits at Duskmere — is a tale still being told, not yet finished being written.
+            Kaelen's journal and trophy case hold everything the road has given him so far.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Begin the tale again, and see where this telling leads.",
+                nextNodeId = "fallen_knight",
+                consequences = Consequences(unlockTrophy = "The Watch Goes On")
+            )
         )
     )
 )
