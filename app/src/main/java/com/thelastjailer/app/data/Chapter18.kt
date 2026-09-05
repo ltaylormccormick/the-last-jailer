@@ -11,11 +11,13 @@ import com.thelastjailer.app.StoryNode
  *
  * The first direct duel between Kaelen and Ilsevet. With the frame destroyed or disrupted in XVII
  * and nothing left to send in her place, she comes to Stonebeard alone to settle this personally —
- * a deliberate escalation past every squad, captain, and construct sent in her stead since V. The
- * eighteenth combat encounter is the first true jump in scale (Ilsevet herself, 260 HP), and the
- * chapter's real weight sits after the fight rather than during it: a three-way stat-gated choice
- * about what to do with a defeated Ilsevet (capture, mercy, or deferral), each paired to the
- * courage/honour throughlines established since III.
+ * a deliberate escalation past every squad, captain, and construct sent in her stead since V.
+ * Whether Kaelen accepts the terms at once or makes her explain herself first, and whether he
+ * speaks before drawing or answers with silence, now earns a distinct beat from Ilsevet going into
+ * the fight, not just a flag. The eighteenth combat encounter is the first true jump in scale
+ * (Ilsevet herself, 260 HP), and the chapter's real weight sits after the fight rather than during
+ * it: a three-way stat-gated choice about what to do with a defeated Ilsevet (capture, mercy, or
+ * deferral), each paired to the courage/honour throughlines established since III.
  *
  * Judgment call flagged for review: resolving Ilsevet's personal threat-arc in direct combat this
  * decisively is the biggest structural swing since Halvard's death in X — it closes the "villain
@@ -32,7 +34,7 @@ val chapter18Nodes: List<StoryNode> = listOf(
         illustrationId = "threshold_ahead",
         narrativeText = """
             She comes back to the black door three days after the Sanctum, alone this time in
-            every sense that matters — no vanguard, no captain, no reliquary thief. Just Ilsevet,
+            every sense that matters: no vanguard, no captain, no reliquary thief. Just Ilsevet,
             on foot, a fresh scar along one arm that wasn't there the last time Kaelen saw her up
             close.
 
@@ -42,7 +44,7 @@ val chapter18Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "\"Then let's make it.\"",
-                nextNodeId = "her_own_terms",
+                nextNodeId = "her_own_terms_readily",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     setFlags = setOf("accepted_the_duel_readily")
@@ -50,7 +52,7 @@ val chapter18Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "\"Say what you actually came to say first.\"",
-                nextNodeId = "her_own_terms",
+                nextNodeId = "her_own_terms_pressed",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     setFlags = setOf("made_her_say_it_first")
@@ -59,16 +61,36 @@ val chapter18Nodes: List<StoryNode> = listOf(
         )
     ),
     StoryNode(
-        id = "her_own_terms",
+        id = "her_own_terms_readily",
         chapterId = "chapter_18",
         title = "Her Own Terms",
         illustrationId = "her_own_terms",
         narrativeText = """
-            "You beat what I sent to guard the frame. You've beaten everything I've sent since
-            Ashfall, one way or another. I've run out of things to send." She draws a single
-            blade, plain, nothing ceremonial about it. "So: me, you, and whichever of us is still
-            standing decides what happens to the brand. No garrison. No prisoner behind your door
-            getting a vote. Just the two people this has actually been about since the beginning."
+            Something in her posture eases at the speed of the answer, the particular relief of a
+            woman who came expecting an argument and didn't get one. "Good," she says. "You beat
+            what I sent to guard the frame. You've beaten everything I've sent since Ashfall, one
+            way or another. I've run out of things to send." She draws a single blade, plain,
+            nothing ceremonial about it. "So: me, you, and whichever of us is still standing
+            decides what happens to the brand. No garrison. No prisoner behind your door getting
+            a vote. Just the two people this has actually been about since the beginning."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Accept.", nextNodeId = "what_kaelen_says_first")
+        )
+    ),
+    StoryNode(
+        id = "her_own_terms_pressed",
+        chapterId = "chapter_18",
+        title = "Her Own Terms",
+        illustrationId = "her_own_terms",
+        narrativeText = """
+            She doesn't rush the answer, and something in her expression suggests she respects
+            being made to earn it. "You beat what I sent to guard the frame. You've beaten
+            everything I've sent since Ashfall, one way or another. I've run out of things to
+            send." She draws a single blade, plain, nothing ceremonial about it, only once she's
+            said her piece in full. "So: me, you, and whichever of us is still standing decides
+            what happens to the brand. No garrison. No prisoner behind your door getting a vote.
+            Just the two people this has actually been about since the beginning."
         """.trimIndent(),
         choices = listOf(
             Choice(label = "Accept.", nextNodeId = "what_kaelen_says_first")
@@ -80,34 +102,56 @@ val chapter18Nodes: List<StoryNode> = listOf(
         title = "What Kaelen Says First",
         illustrationId = "what_kaelen_says_first",
         narrativeText = """
-            There's a version of this where Kaelen has something clever to say — about Ashwell,
-            about Halvard, about everything four settings and a stolen shard and a reliquary thief
-            have cost people who never chose to be part of her arithmetic. He finds, when it
-            actually comes to it, that he doesn't much feel like making a speech.
+            There's a version of this where Kaelen has something clever to say, about Ashwell,
+            about Halvard, about everything four settings and a stolen shard and a reliquary
+            thief have cost people who never chose to be part of her arithmetic. He finds, when
+            it actually comes to it, that he doesn't much feel like making a speech.
         """.trimIndent(),
         choices = listOf(
             Choice(
                 label = "\"I'm not doing this because I hate you.\"",
-                nextNodeId = "the_duel",
+                nextNodeId = "the_duel_spoke",
                 consequences = Consequences(setFlags = setOf("spoke_before_the_duel"))
             ),
             Choice(
                 label = "Say nothing. Draw your sword instead.",
-                nextNodeId = "the_duel",
+                nextNodeId = "the_duel_silent",
                 consequences = Consequences(setFlags = setOf("answered_with_silence"))
             )
         )
     ),
     StoryNode(
-        id = "the_duel",
+        id = "the_duel_spoke",
         chapterId = "chapter_18",
         title = "The Duel",
         illustrationId = "the_duel",
         narrativeText = """
-            She's better than anyone who's fought for her before — faster, colder, entirely
-            unhurried even now, the same way she was unhurried walking into Stonebeard's broken
-            gate the first time. This isn't a garrison holding a line. This is Ilsevet herself,
-            and she isn't holding anything back.
+            Something flickers across her face at that, quick enough to be gone before Kaelen can
+            name it, and for just a moment the duel feels like it might not be the only thing
+            happening between them. Then it passes, and she's Ilsevet again, faster and colder
+            and entirely unhurried, the same way she was unhurried walking into Stonebeard's
+            broken gate the first time.
+
+            This isn't a garrison holding a line. This is Ilsevet herself, and whatever Kaelen's
+            words cost her, she isn't holding anything back for it.
+        """.trimIndent(),
+        choices = emptyList(),
+        combatEncounterId = "ilsevet_duel_encounter"
+    ),
+    StoryNode(
+        id = "the_duel_silent",
+        chapterId = "chapter_18",
+        title = "The Duel",
+        illustrationId = "the_duel",
+        narrativeText = """
+            She waits half a beat for words that don't come, and something almost like respect
+            crosses her face at their absence, as if silence were the one answer she hadn't
+            already rehearsed a counter for. She's better than anyone who's fought for her
+            before: faster, colder, entirely unhurried even now, the same way she was unhurried
+            walking into Stonebeard's broken gate the first time.
+
+            This isn't a garrison holding a line. This is Ilsevet herself, and she isn't holding
+            anything back.
         """.trimIndent(),
         choices = emptyList(),
         combatEncounterId = "ilsevet_duel_encounter"
@@ -118,7 +162,7 @@ val chapter18Nodes: List<StoryNode> = listOf(
         title = "What Is Left of Her",
         illustrationId = "what_is_left_of_her",
         narrativeText = """
-            She goes down eventually — not killed, not quite broken, just finally, finally out of
+            She goes down eventually, not killed, not quite broken, just finally, finally out of
             whatever kept her upright through four settings and a burned garrison and every
             failure since Ashwell. Kaelen stands over her with a blade he doesn't lower right
             away, and for the first time since any of this started, Ilsevet looks like exactly
@@ -138,7 +182,7 @@ val chapter18Nodes: List<StoryNode> = listOf(
         title = "What Kaelen Chooses",
         illustrationId = "what_kaelen_chooses",
         narrativeText = """
-            It isn't a clean choice. It was never going to be — not after Ashwell, not after
+            It isn't a clean choice. It was never going to be, not after Ashwell, not after
             Halvard, not after everyone else who paid for the space between what she's afraid of
             and what she's willing to do about it.
         """.trimIndent(),

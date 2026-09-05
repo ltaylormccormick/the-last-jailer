@@ -13,13 +13,16 @@ import com.thelastjailer.app.StoryNode
  * seventh-door frame's design wasn't hers — she found it already complete in a dead archivist's
  * workshop eleven years before the story began, in a hand that "got surer of the frame the longer
  * it worked on it," which the prisoner (continuing its role since XIV) reads as a description of
- * something remembering rather than someone learning. Selvane's investigation into the workshop
- * finds five more sets of plans addressed by name to people who hadn't been born when they were
- * written — including Kaelen's own name, tying directly back to Ilsevet's "like they'd met before"
- * greeting in Chapter X and reframing the entire Ilsevet arc as a symptom of something older and
- * still active. Deliberately no new combat encounter — a lore/investigation chapter matching the
- * pacing pattern established by III, XIII, and XVI, giving the reveal room after XVIII's duel
- * rather than immediately escalating into another fight.
+ * something remembering rather than someone learning. Pressing her for the archivist's identity
+ * versus letting her tell it in her own order changes how that confession actually unfolds, and how
+ * Kaelen answers discovering his own name in the dead archivist's notes (defiance, ownership, or
+ * silence) now colors the chapter's close, not just which flag it sets. Selvane's investigation
+ * into the workshop finds five more sets of plans addressed by name to people who hadn't been born
+ * when they were written — including Kaelen's own name, tying directly back to Ilsevet's "like
+ * they'd met before" greeting in Chapter X and reframing the entire Ilsevet arc as a symptom of
+ * something older and still active. Deliberately no new combat encounter — a lore/investigation
+ * chapter matching the pacing pattern established by III, XIII, and XVI, giving the reveal room
+ * after XVIII's duel rather than immediately escalating into another fight.
  *
  * Judgment call flagged for review: this reframes the entire story's antagonist structure —
  * Ilsevet's arc, just closed in XVIII, becomes a first movement rather than the whole piece, and
@@ -44,7 +47,7 @@ val chapter19Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "\"Who drew them, if not you?\"",
-                nextNodeId = "the_dead_archivist",
+                nextNodeId = "the_dead_archivist_pressed",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     setFlags = setOf("pressed_about_the_archive")
@@ -52,7 +55,7 @@ val chapter19Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "Let her finish in her own order.",
-                nextNodeId = "the_dead_archivist",
+                nextNodeId = "the_dead_archivist_patient",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     setFlags = setOf("let_her_finish")
@@ -61,17 +64,36 @@ val chapter19Nodes: List<StoryNode> = listOf(
         )
     ),
     StoryNode(
-        id = "the_dead_archivist",
+        id = "the_dead_archivist_pressed",
         chapterId = "chapter_19",
         title = "The Dead Archivist",
         illustrationId = "the_dead_archivist",
         narrativeText = """
-            "I don't know. I never found a name, only a workshop nobody local remembered him
-            keeping, and notes in a hand that got smaller and more certain the deeper into the
-            design it went — like whoever wrote them understood the frame better the longer they
-            spent almost finishing it." She looks at Kaelen directly for the first time since the
-            duel. "I used to think I found him. I've started to think it's closer to the truth
-            that I was allowed to."
+            She answers the demand at once, words coming out clipped, like she's relieved to have
+            the question forced rather than volunteered. "I don't know. I never found a name,
+            only a workshop nobody local remembered him keeping, and notes in a hand that got
+            smaller and more certain the deeper into the design it went, like whoever wrote them
+            understood the frame better the longer they spent almost finishing it." She looks at
+            Kaelen directly for the first time since the duel. "I used to think I found him. I've
+            started to think it's closer to the truth that I was allowed to."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Bring this to the prisoner.", nextNodeId = "the_prisoners_reaction")
+        )
+    ),
+    StoryNode(
+        id = "the_dead_archivist_patient",
+        chapterId = "chapter_19",
+        title = "The Dead Archivist",
+        illustrationId = "the_dead_archivist",
+        narrativeText = """
+            She takes her time getting to it, the way a person does when a story has been sitting
+            unspoken for eleven years and finally has somewhere to go. "I don't know. I never
+            found a name, only a workshop nobody local remembered him keeping, and notes in a
+            hand that got smaller and more certain the deeper into the design it went, like
+            whoever wrote them understood the frame better the longer they spent almost finishing
+            it." She looks at Kaelen directly for the first time since the duel. "I used to think
+            I found him. I've started to think it's closer to the truth that I was allowed to."
         """.trimIndent(),
         choices = listOf(
             Choice(label = "Bring this to the prisoner.", nextNodeId = "the_prisoners_reaction")
@@ -88,8 +110,8 @@ val chapter19Nodes: List<StoryNode> = listOf(
             it says finally, "is not a description of a person learning. It's a description of
             something remembering."
 
-            It doesn't finish the thought. For the first time, Kaelen gets the distinct sense it's
-            afraid of finishing it.
+            It doesn't finish the thought. For the first time, Kaelen gets the distinct sense
+            it's afraid of finishing it, and doesn't press for the rest.
         """.trimIndent(),
         choices = listOf(
             Choice(label = "Send word to Selvane.", nextNodeId = "what_selvane_finds")
@@ -101,13 +123,13 @@ val chapter19Nodes: List<StoryNode> = listOf(
         title = "What Selvane Finds",
         illustrationId = "what_selvane_finds",
         narrativeText = """
-            Selvane, when word reaches her, doesn't waste time being skeptical — not after
+            Selvane, when word reaches her, doesn't waste time being skeptical, not after
             Ashfall, not after everything her own archives already confirmed about Ashwell. What
             her people find at the dead archivist's old workshop, three weeks and a hard ride
             later, isn't proof of a person at all.
 
-            It's five more sets of frame notes, in the same hand, each one addressed — by name, in
-            careful, deliberate script — to someone who hadn't been born yet when the ink dried.
+            It's five more sets of frame notes, in the same hand, each one addressed, by name, in
+            careful, deliberate script, to someone who hadn't been born yet when the ink dried.
         """.trimIndent(),
         choices = listOf(
             Choice(
@@ -124,17 +146,18 @@ val chapter19Nodes: List<StoryNode> = listOf(
         illustrationId = "the_addressed_names",
         narrativeText = """
             Voss reads the names aloud, one at a time, and stops cold on the fourth. Thessaly's
-            isn't a surprise — Fenmoor was always going to be found eventually. It's the fifth
+            isn't a surprise; Fenmoor was always going to be found eventually. It's the fifth
             name that stops the room: Kaelen's own, written in ink dry a decade before he ever
             stood in front of the black door.
 
             Whoever drew those plans didn't just anticipate the seventh door. They anticipated
-            him, specifically, standing exactly where he's standing now.
+            him, specifically, standing exactly where he's standing now, and the room goes quiet
+            in a way that has nothing to do with respect.
         """.trimIndent(),
         choices = listOf(
             Choice(
                 label = "\"Then whoever it is, they've been waiting on me specifically. Let them keep waiting.\"",
-                nextNodeId = "chapter19_end",
+                nextNodeId = "chapter19_end_defied",
                 requirements = ChoiceRequirement(minStats = mapOf(StatType.COURAGE to 17)),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
@@ -143,7 +166,7 @@ val chapter19Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "\"If I was always meant to stand here, I intend to make sure I'm the one who decides what that means.\"",
-                nextNodeId = "chapter19_end",
+                nextNodeId = "chapter19_end_claimed",
                 requirements = ChoiceRequirement(minStats = mapOf(StatType.HONOUR to 16)),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
@@ -152,26 +175,75 @@ val chapter19Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "Say nothing. There isn't an answer that fits in a sentence.",
-                nextNodeId = "chapter19_end",
+                nextNodeId = "chapter19_end_unanswered",
                 consequences = Consequences(setFlags = setOf("left_it_unanswered"))
             )
         )
     ),
     StoryNode(
-        id = "chapter19_end",
+        id = "chapter19_end_defied",
         chapterId = "chapter_19",
         title = "End of Chapter XIX — Already Written",
         illustrationId = "chapter19_threshold",
         narrativeText = """
             Ilsevet's arithmetic is finished, one way or another. Whatever's left of her faction
-            without her to run it is Selvane's problem now, or the Order's, or nobody's — Kaelen
+            without her to run it is Selvane's problem now, or the Order's, or nobody's; Kaelen
             finds he genuinely doesn't know which, and isn't sure it matters as much as he once
             thought it would.
 
-            What matters is five names, one workshop, and a hand that got surer of the frame the
-            longer it worked on something it wouldn't live to see finished. Ilsevet spent fifteen
-            years thinking she chose this. Kaelen isn't sure anymore that either of them ever
-            really did.
+            Defiance doesn't make the ink any less dry, or the workshop any less real, but it
+            gives Kaelen somewhere to put the unease instead of just carrying it. What matters is
+            five names, one workshop, and a hand that got surer of the frame the longer it worked
+            on something it wouldn't live to see finished. Ilsevet spent fifteen years thinking
+            she chose this. Kaelen isn't sure anymore that either of them ever really did, and he
+            intends to make whoever's waiting regret the wait regardless.
+
+            Chapter XX awaits.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Go on.", nextNodeId = "the_workshop")
+        )
+    ),
+    StoryNode(
+        id = "chapter19_end_claimed",
+        chapterId = "chapter_19",
+        title = "End of Chapter XIX — Already Written",
+        illustrationId = "chapter19_threshold",
+        narrativeText = """
+            Ilsevet's arithmetic is finished, one way or another. Whatever's left of her faction
+            without her to run it is Selvane's problem now, or the Order's, or nobody's; Kaelen
+            finds he genuinely doesn't know which, and isn't sure it matters as much as he once
+            thought it would.
+
+            Claiming his own meaning doesn't make the ink any less dry, or the workshop any less
+            real, but it changes what he does with knowing. What matters is five names, one
+            workshop, and a hand that got surer of the frame the longer it worked on something it
+            wouldn't live to see finished. Ilsevet spent fifteen years thinking she chose this.
+            Kaelen isn't sure anymore that either of them ever really did. He intends to be the
+            one exception to that, whatever it costs to insist on it.
+
+            Chapter XX awaits.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Go on.", nextNodeId = "the_workshop")
+        )
+    ),
+    StoryNode(
+        id = "chapter19_end_unanswered",
+        chapterId = "chapter_19",
+        title = "End of Chapter XIX — Already Written",
+        illustrationId = "chapter19_threshold",
+        narrativeText = """
+            Ilsevet's arithmetic is finished, one way or another. Whatever's left of her faction
+            without her to run it is Selvane's problem now, or the Order's, or nobody's; Kaelen
+            finds he genuinely doesn't know which, and isn't sure it matters as much as he once
+            thought it would.
+
+            Not answering doesn't make the question go away. It just means Kaelen carries it a
+            while longer before he has to. What matters is five names, one workshop, and a hand
+            that got surer of the frame the longer it worked on something it wouldn't live to see
+            finished. Ilsevet spent fifteen years thinking she chose this. Kaelen isn't sure
+            anymore that either of them ever really did.
 
             Chapter XX awaits.
         """.trimIndent(),
