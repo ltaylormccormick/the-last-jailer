@@ -2,7 +2,17 @@ package com.thelastjailer.app.data
 
 import com.thelastjailer.app.Item
 
-/** Canonical definitions for every item id that can appear in a [com.thelastjailer.app.GameState] inventory. */
+/**
+ * Canonical definitions for every item id that can appear in a [com.thelastjailer.app.GameState]
+ * inventory.
+ *
+ * TODO: `stonebeard_lantern` (Chapter II) was narrative-only text with no catalog entry until this
+ * was added — an object described as changing hands but never actually granted via
+ * [com.thelastjailer.app.Consequences.grantItemIds]. Audit the rest of the story for other
+ * "described but not registered" objects like it (something a scene explicitly hands Kaelen that
+ * never shows up in [com.thelastjailer.app.ui.InventoryScreen]) and register them properly. Not
+ * done as part of this change — flagging for a future pass.
+ */
 object ItemCatalog {
     private val items: Map<String, Item> = listOf(
         Item(
@@ -14,6 +24,11 @@ object ItemCatalog {
             id = "dwarven_token",
             name = "Dwarven Token",
             description = "A stonebeard's mark of thanks, warm to the touch even in the cold of the hold."
+        ),
+        Item(
+            id = "stonebeard_lantern",
+            name = "Stonebeard Lantern",
+            description = "Pressed into his hands by an old smith who wouldn't be argued with. \"Rather you carried light back down there than pride.\""
         ),
         Item(
             id = "traveler_ration",
