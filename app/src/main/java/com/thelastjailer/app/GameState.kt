@@ -1,5 +1,12 @@
 package com.thelastjailer.app
 
+/**
+ * Small passive heal applied on an ordinary story-scene transition (see [applyChoice]) - enough to
+ * ease the walk between fights without meaningfully offsetting real combat damage (a single fight
+ * can deal 10-100+ damage; this recovers at most a few points per scene).
+ */
+private const val SCENE_TRANSITION_REGEN = 2
+
 data class GameState(
     val activeSlot: Int = 1,
     val chapterId: String = "chapter_1",
@@ -25,11 +32,16 @@ data class GameState(
     }
 }
 
-/** Applies a [Choice]'s consequences and moves the player to its next node. */
-fun GameState.applyChoice(choice: Choice): GameState {
+/**
+ * Applies a [Choice]'s consequences and moves the player to its next node. [applyRegen] adds
+ * [SCENE_TRANSITION_REGEN] on top - left `false` only by [resolveCombat]'s victory path, since
+ * that transition already carries the fight's own health cost and isn't an ordinary story beat.
+ */
+fun GameState.applyChoice(choice: Choice, applyRegen: Boolean = true): GameState {
     val consequences = choice.consequences
     var next = this
     consequences.statDeltas.forEach { (stat, delta) -> next = next.withStatDelta(stat, delta) }
+    if (applyRegen) next = next.withStatDelta(StatType.HEALTH, SCENE_TRANSITION_REGEN)
     return next.copy(
         sceneId = choice.nextNodeId,
         flags = next.flags + consequences.setFlags,
@@ -65,7 +77,8 @@ fun GameState.resolveCombat(encounter: CombatEncounter, outcome: CombatOutcome):
                     statDeltas = mapOf(StatType.XP to encounter.xpReward, StatType.GOLD to encounter.goldReward),
                     unlockTrophy = encounter.unlockTrophy
                 )
-            )
+            ),
+            applyRegen = false
         )
     } else {
         survived.copy(sceneId = encounter.defeatNodeId ?: encounter.victoryNodeId)

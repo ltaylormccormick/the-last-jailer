@@ -36,7 +36,7 @@ fun SceneIllustration(illustrationId: String, modifier: Modifier = Modifier) {
         } else {
             Box(modifier = Modifier.fillMaxSize().background(JailerColors.Panel)) {
                 Text(
-                    "ART PENDING — $illustrationId",
+                    "ART PENDING: $illustrationId",
                     modifier = Modifier.align(Alignment.Center).padding(12.dp),
                     color = JailerColors.TextPrimary.copy(alpha = .7f),
                     fontSize = 12.sp

@@ -141,6 +141,36 @@ class GameStateApplyChoiceTest {
     }
 
     @Test
+    fun `a non-combat scene transition regenerates a small amount of health`() {
+        val state = GameState(health = 50, maxHealth = 100)
+        val choice = Choice(label = "Move on", nextNodeId = "next")
+
+        val result = state.applyChoice(choice)
+
+        assertEquals(52, result.health)
+    }
+
+    @Test
+    fun `scene regen is clamped to maxHealth`() {
+        val state = GameState(health = 99, maxHealth = 100)
+        val choice = Choice(label = "Move on", nextNodeId = "next")
+
+        val result = state.applyChoice(choice)
+
+        assertEquals(100, result.health)
+    }
+
+    @Test
+    fun `scene regen can be opted out of for a combat-resolution transition`() {
+        val state = GameState(health = 50, maxHealth = 100)
+        val choice = Choice(label = "Move on", nextNodeId = "next")
+
+        val result = state.applyChoice(choice, applyRegen = false)
+
+        assertEquals(50, result.health)
+    }
+
+    @Test
     fun `a default Consequences leaves stats, flags, inventory and trophies unchanged`() {
         val state = GameState(courage = 3, honour = 2, flags = setOf("a"), inventory = listOf("x"), trophies = setOf("y"))
         val choice = Choice(label = "Continue", nextNodeId = "next")
