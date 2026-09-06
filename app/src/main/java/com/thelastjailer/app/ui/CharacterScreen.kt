@@ -29,14 +29,13 @@ fun CharacterScreen(state: GameState, modifier: Modifier = Modifier) {
         OrnatePanel(modifier = Modifier.fillMaxWidth()) {
             Text("WHAT YOUR STATS DO", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
             Text(
-                "Courage — Feeds Kaelen's fighting: bigger hits on Attack, and steadier nerve on " +
-                    "Defend too, though Attack still pays out more. High Courage also unlocks the " +
-                    "boldest dialogue choices.",
+                "Courage: bigger hits on Attack, and steadier nerve on Defend too, though Attack " +
+                    "still pays out more. High Courage also unlocks the boldest dialogue choices.",
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
-                "Honour — Touches no fight at all. It measures the choices Kaelen makes, not the " +
-                    "battles he wins — and enough of it opens the more honest, costlier answers " +
+                "Honour: touches no fight at all. It measures the choices Kaelen makes, not the " +
+                    "battles he wins, and enough of it opens the more honest, costlier answers " +
                     "other characters won't give him otherwise.",
                 style = MaterialTheme.typography.bodyMedium
             )

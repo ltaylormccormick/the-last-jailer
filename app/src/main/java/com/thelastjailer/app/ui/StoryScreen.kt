@@ -270,21 +270,26 @@ private fun ActionArea(
     }
 }
 
+/**
+ * Every choice renders identically - order in the list carries no meaning (it's authoring order,
+ * not a ranking), so styling one differently would visually nudge players toward whichever choice
+ * happens to be listed first, with no connection to what it actually does.
+ */
 @Composable
 private fun ChoiceList(choices: List<Choice>, onChoiceSelected: (Choice) -> Unit) {
-    choices.forEachIndexed { index, choice ->
+    choices.forEach { choice ->
         Button(
             onClick = { onChoiceSelected(choice) },
             modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
             shape = RoundedCornerShape(5.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (index == 0) Color(0xFF211A0F) else Color(0xFF171B21),
+                containerColor = Color(0xFF171B21),
                 contentColor = JailerColors.TextPrimary
             ),
-            border = BorderStroke(1.dp, if (index == 0) JailerColors.Gold else JailerColors.GoldSoft.copy(alpha = .55f))
+            border = BorderStroke(1.dp, JailerColors.GoldSoft.copy(alpha = .55f))
         ) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(if (index == 0) "◆" else "›", color = JailerColors.Gold, fontSize = 18.sp)
+                Text("›", color = JailerColors.Gold, fontSize = 18.sp)
                 Spacer(Modifier.width(10.dp))
                 Text(choice.label, fontWeight = FontWeight.SemiBold)
             }

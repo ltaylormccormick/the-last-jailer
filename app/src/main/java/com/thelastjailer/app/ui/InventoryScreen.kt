@@ -10,16 +10,27 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.thelastjailer.app.GameState
 import com.thelastjailer.app.Item
 import com.thelastjailer.app.data.ItemCatalog
+
+private enum class InventoryTab(val label: String) {
+    ITEMS("ITEMS"),
+    SHOP("SHOP")
+}
 
 /** One item the Inventory screen's shop offers. [repeatable] items (draughts) can be bought more than once. */
 private data class ShopEntry(val itemId: String, val price: Int, val repeatable: Boolean)
@@ -50,34 +61,63 @@ private fun statEffectLine(item: Item): String? {
 
 @Composable
 fun InventoryScreen(state: GameState, onPurchase: (itemId: String, price: Int) -> Unit = { _, _ -> }, modifier: Modifier = Modifier) {
-    val ownedItems = ItemCatalog.resolve(state.inventory)
+    var selectedTab by remember { mutableStateOf(InventoryTab.ITEMS) }
     Column(modifier = modifier.fillMaxSize().padding(14.dp)) {
         Text("INVENTORY", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
         Spacer(Modifier.height(8.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            InventoryTab.entries.forEach { tab ->
+                val selected = tab == selectedTab
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = { selectedTab = tab },
+                    shape = RoundedCornerShape(5.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (selected) JailerColors.Gold else JailerColors.Panel,
+                        contentColor = if (selected) JailerColors.Night else JailerColors.TextPrimary
+                    )
+                ) {
+                    Text(tab.label)
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        when (selectedTab) {
+            InventoryTab.ITEMS -> ItemsTab(state, modifier = Modifier.weight(1f))
+            InventoryTab.SHOP -> ShopTab(state, onPurchase, modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun ItemsTab(state: GameState, modifier: Modifier = Modifier) {
+    val ownedItems = ItemCatalog.resolve(state.inventory)
+    if (ownedItems.isEmpty()) {
+        OrnatePanel(modifier = modifier.fillMaxWidth()) {
+            Text("Kaelen carries nothing of note yet.", style = MaterialTheme.typography.bodyMedium)
+        }
+        return
+    }
+    LazyColumn(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(ownedItems) { invItem ->
+            OrnatePanel(modifier = Modifier.fillMaxWidth()) {
+                Text(invItem.name, style = MaterialTheme.typography.titleMedium)
+                Text(invItem.description, style = MaterialTheme.typography.bodyMedium)
+                statEffectLine(invItem)?.let {
+                    Spacer(Modifier.height(4.dp))
+                    Text(it, style = MaterialTheme.typography.bodyMedium, color = JailerColors.Gold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShopTab(state: GameState, onPurchase: (itemId: String, price: Int) -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text("Gold: ${state.gold}", style = MaterialTheme.typography.bodyMedium)
+        Spacer(Modifier.height(8.dp))
         LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            item {
-                if (ownedItems.isEmpty()) {
-                    OrnatePanel(modifier = Modifier.fillMaxWidth()) {
-                        Text("Kaelen carries nothing of note yet.", style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
-            }
-            items(ownedItems) { invItem ->
-                OrnatePanel(modifier = Modifier.fillMaxWidth()) {
-                    Text(invItem.name, style = MaterialTheme.typography.titleMedium)
-                    Text(invItem.description, style = MaterialTheme.typography.bodyMedium)
-                    statEffectLine(invItem)?.let {
-                        Spacer(Modifier.height(4.dp))
-                        Text(it, style = MaterialTheme.typography.bodyMedium, color = JailerColors.Gold)
-                    }
-                }
-            }
-            item {
-                Spacer(Modifier.height(8.dp))
-                Text("SHOP", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
-                Text("Gold: ${state.gold}", style = MaterialTheme.typography.bodyMedium)
-                Spacer(Modifier.height(4.dp))
-            }
             items(SHOP_ENTRIES.filter { it.repeatable || it.itemId !in state.inventory }) { entry ->
                 val shopItem = ItemCatalog.get(entry.itemId) ?: return@items
                 OrnatePanel(modifier = Modifier.fillMaxWidth()) {
