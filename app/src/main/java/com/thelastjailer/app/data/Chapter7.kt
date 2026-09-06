@@ -98,6 +98,24 @@ val chapter7Nodes: List<StoryNode> = listOf(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     setFlags = setOf("held_voss_accountable")
                 )
+            ),
+            Choice(
+                label = "\"An envoy already made me that same offer. I heard him out, too, and still said no in the end.\"",
+                nextNodeId = "the_price_of_trust_wary",
+                requirements = ChoiceRequirement(requiredFlags = setOf("heard_envoy_offer")),
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    setFlags = setOf("noted_hearing_the_offer")
+                )
+            ),
+            Choice(
+                label = "\"The thing behind that gate already warned me someone like her would come asking. You're not telling me anything I didn't already suspect.\"",
+                nextNodeId = "the_price_of_trust_unsurprised",
+                requirements = ChoiceRequirement(requiredFlags = setOf("confronted_envoy_with_prisoners_words")),
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.COURAGE to 1),
+                    setFlags = setOf("already_suspected_ilsevet")
+                )
             )
         )
     ),
@@ -142,6 +160,24 @@ val chapter7Nodes: List<StoryNode> = listOf(
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     setFlags = setOf("held_voss_accountable")
+                )
+            ),
+            Choice(
+                label = "\"An envoy already made me that same offer. I heard him out, too, and still said no in the end.\"",
+                nextNodeId = "the_price_of_trust_wary",
+                requirements = ChoiceRequirement(requiredFlags = setOf("heard_envoy_offer")),
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    setFlags = setOf("noted_hearing_the_offer")
+                )
+            ),
+            Choice(
+                label = "\"The thing behind that gate already warned me someone like her would come asking. You're not telling me anything I didn't already suspect.\"",
+                nextNodeId = "the_price_of_trust_unsurprised",
+                requirements = ChoiceRequirement(requiredFlags = setOf("confronted_envoy_with_prisoners_words")),
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.COURAGE to 1),
+                    setFlags = setOf("already_suspected_ilsevet")
                 )
             )
         )
@@ -198,6 +234,44 @@ val chapter7Nodes: List<StoryNode> = listOf(
 
             "They followed me," she says, blade already out, no surprise left in her voice at
             all. "You want accountability? Start here. This is what it costs, both ways."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Fight beside her.", nextNodeId = "loyalists_move_in")
+        )
+    ),
+    StoryNode(
+        id = "the_price_of_trust_wary",
+        chapterId = "chapter_7",
+        title = "The Price of Trust",
+        illustrationId = "the_price_of_trust",
+        narrativeText = """
+            Whatever Voss meant to say next dies in her throat, something almost like relief
+            flickering across her face at not having to talk him all the way around to this a
+            second time. There isn't time to dwell on that. She's moving before Kaelen registers
+            why, pulling him sideways as an arrow takes the space where his shoulder was a
+            heartbeat ago.
+
+            "They followed me," she says, blade already out, no surprise left in her voice at
+            all. "Good thing you already know how this part goes."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Fight beside her.", nextNodeId = "loyalists_move_in")
+        )
+    ),
+    StoryNode(
+        id = "the_price_of_trust_unsurprised",
+        chapterId = "chapter_7",
+        title = "The Price of Trust",
+        illustrationId = "the_price_of_trust",
+        narrativeText = """
+            Whatever Voss meant to say next dies in her throat, and for a moment she looks less
+            surprised by his suspicion than relieved not to have to be the one breaking it to him
+            fresh. There's no time to dwell on that either. She's moving before Kaelen registers
+            why, pulling him sideways as an arrow takes the space where his shoulder was a
+            heartbeat ago.
+
+            "They followed me," she says, blade already out, no surprise left in her voice at
+            all. "Seems like you were ahead of both of us on this one."
         """.trimIndent(),
         choices = listOf(
             Choice(label = "Fight beside her.", nextNodeId = "loyalists_move_in")
