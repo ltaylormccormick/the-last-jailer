@@ -27,6 +27,7 @@ import com.thelastjailer.app.data.EnemyCatalog
 import com.thelastjailer.app.data.ItemCatalog
 
 private const val HEALING_DRAUGHT_ID = "healing_draught"
+private const val GREATER_HEALING_DRAUGHT_ID = "greater_healing_draught"
 
 /**
  * A turn-based fight: Attack / Defend / (if carried) drink a Healing Draught, resolved one round
@@ -48,8 +49,11 @@ fun CombatScreen(
             playerMaxHealth = playerState.maxHealth,
             playerCourage = playerState.courage,
             availableDraughts = playerState.inventory.count { it == HEALING_DRAUGHT_ID },
+            availableGreaterDraughts = playerState.inventory.count { it == GREATER_HEALING_DRAUGHT_ID },
             damageReduction = ItemCatalog.resolve(playerState.inventory)
-                .sumOf { it.combatEffect?.damageReduction ?: 0 }
+                .sumOf { it.combatEffect?.damageReduction ?: 0 },
+            attackBonus = ItemCatalog.resolve(playerState.inventory)
+                .sumOf { it.combatEffect?.attackBonus ?: 0 }
         )
     }
     val enemy = remember(encounter.id) { EnemyCatalog.get(encounter.enemyId) }
@@ -81,6 +85,9 @@ fun CombatScreen(
                 OutlinedButton(modifier = Modifier.weight(1f), onClick = { engine.defend() }) { Text("DEFEND") }
                 if (engine.remainingDraughts > 0) {
                     OutlinedButton(modifier = Modifier.weight(1f), onClick = { engine.useDraught() }) { Text("DRINK DRAUGHT (+HP)") }
+                }
+                if (engine.remainingGreaterDraughts > 0) {
+                    OutlinedButton(modifier = Modifier.weight(1f), onClick = { engine.useGreaterDraught() }) { Text("DRINK GREATER DRAUGHT (+HP)") }
                 }
             }
         } else {

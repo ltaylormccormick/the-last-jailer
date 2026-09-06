@@ -72,6 +72,16 @@ fun GameState.resolveCombat(encounter: CombatEncounter, outcome: CombatOutcome):
     }
 }
 
+/**
+ * Spends [price] gold to add [itemId] to the inventory, from the Inventory screen's shop. A no-op
+ * if the player can't afford it — gold never buys Courage or Honour, only items, so this is the
+ * only way gold ever leaves a run.
+ */
+fun GameState.purchaseItem(itemId: String, price: Int): GameState {
+    if (gold < price) return this
+    return copy(gold = gold - price, inventory = inventory + itemId)
+}
+
 /** Removes one occurrence per id in [itemIds] from the inventory (e.g. a consumed potion). */
 fun GameState.consumeItems(itemIds: List<String>): GameState {
     if (itemIds.isEmpty()) return this

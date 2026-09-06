@@ -118,7 +118,13 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                     isExpandedWidth = isExpandedWidth
                 )
                 AppScreen.CHARACTER -> CharacterScreen(state)
-                AppScreen.INVENTORY -> InventoryScreen(state)
+                AppScreen.INVENTORY -> InventoryScreen(
+                    state = state,
+                    onPurchase = { itemId, price ->
+                        state = state.purchaseItem(itemId, price)
+                        store.save(state.activeSlot, state)
+                    }
+                )
                 AppScreen.MAP -> MapScreen(entitlements)
                 AppScreen.SAVE -> SaveScreen(
                     store = store,

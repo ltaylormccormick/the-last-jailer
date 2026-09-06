@@ -7,8 +7,13 @@ import kotlin.random.Random
 
 private const val HEALING_DRAUGHT_ID = "healing_draught"
 private const val HEALING_DRAUGHT_AMOUNT = 25
+private const val GREATER_HEALING_DRAUGHT_ID = "greater_healing_draught"
+private const val GREATER_HEALING_DRAUGHT_AMOUNT = 50
 private const val PLAYER_ATTACK_MIN = 8
 private const val PLAYER_ATTACK_MAX_EXCLUSIVE = 15
+
+/** Courage's bonus on Defend is smaller than its bonus on Attack ([CombatEngine.attack] uses `/ 2`) so Attack stays the stronger payoff for a high-Courage build. */
+private const val DEFEND_COURAGE_DIVISOR = 3
 
 /**
  * Round-by-round resolution for a [CombatEncounter], independent of any Compose UI so it can be
@@ -27,7 +32,9 @@ class CombatEngine(
     private val playerMaxHealth: Int,
     private val playerCourage: Int,
     private val availableDraughts: Int,
+    private val availableGreaterDraughts: Int = 0,
     private val damageReduction: Int = 0,
+    private val attackBonus: Int = 0,
     private val random: Random = Random.Default
 ) {
     private val startingPlayerHealth = startingPlayerHealth
@@ -50,9 +57,12 @@ class CombatEngine(
     val remainingDraughts: Int
         get() = availableDraughts - consumedItems.count { it == HEALING_DRAUGHT_ID }
 
+    val remainingGreaterDraughts: Int
+        get() = availableGreaterDraughts - consumedItems.count { it == GREATER_HEALING_DRAUGHT_ID }
+
     fun attack() {
         if (outcome != null) return
-        val dmg = random.nextInt(PLAYER_ATTACK_MIN, PLAYER_ATTACK_MAX_EXCLUSIVE) + (playerCourage / 2)
+        val dmg = random.nextInt(PLAYER_ATTACK_MIN, PLAYER_ATTACK_MAX_EXCLUSIVE) + (playerCourage / 2) + attackBonus
         enemyHealth = (enemyHealth - dmg).coerceAtLeast(0)
         val round = mutableListOf("You strike the ${enemy.name} for $dmg damage.")
         if (enemyHealth <= 0) {
@@ -83,11 +93,22 @@ class CombatEngine(
         log = log + round
     }
 
+    fun useGreaterDraught() {
+        if (outcome != null || remainingGreaterDraughts <= 0) return
+        consumedItems = consumedItems + GREATER_HEALING_DRAUGHT_ID
+        playerHealth = (playerHealth + GREATER_HEALING_DRAUGHT_AMOUNT).coerceAtMost(playerMaxHealth)
+        val round = mutableListOf("You drink a Greater Healing Draught and feel considerably restored.")
+        round += enemyStrikes(reduced = false)
+        if (outcome != null) round += "You collapse — but you're still breathing."
+        log = log + round
+    }
+
     /** Enemy strikes back; returns the log line and finalizes [outcome] on a knockout. */
     private fun enemyStrikes(reduced: Boolean): String {
         val raw = random.nextInt(enemy.minAttack, enemy.maxAttack + 1)
         val halved = if (reduced) raw / 2 else raw
-        val dmg = (halved - damageReduction).coerceAtLeast(0)
+        val courageDefense = if (reduced) playerCourage / DEFEND_COURAGE_DIVISOR else 0
+        val dmg = (halved - damageReduction - courageDefense).coerceAtLeast(0)
         playerHealth = (playerHealth - dmg).coerceAtLeast(0)
         if (playerHealth <= 0) finish(victory = false)
         return "The ${enemy.name} hits you for $dmg damage."

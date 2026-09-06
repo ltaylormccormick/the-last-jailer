@@ -11,7 +11,8 @@ enum class StatType {
 
 /** A passive bonus an [Item] grants automatically whenever it's carried into a fight. */
 data class ItemCombatEffect(
-    val damageReduction: Int = 0
+    val damageReduction: Int = 0,
+    val attackBonus: Int = 0
 )
 
 /** An inventory item definition, looked up by id from [com.thelastjailer.app.data.ItemCatalog]. */
