@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoStories
+import androidx.compose.material.icons.filled.Backpack
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Settings
@@ -92,7 +94,9 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                         onClick = { screen = s },
                         icon = {
                             when (s) {
+                                AppScreen.STORY -> Icon(Icons.Filled.AutoStories, contentDescription = s.label, tint = JailerColors.Gold)
                                 AppScreen.CHARACTER -> Icon(Icons.Filled.Shield, contentDescription = s.label, tint = JailerColors.Gold)
+                                AppScreen.INVENTORY -> Icon(Icons.Filled.Backpack, contentDescription = s.label, tint = JailerColors.Gold)
                                 AppScreen.MAP -> Icon(Icons.Filled.Map, contentDescription = s.label, tint = JailerColors.Gold)
                                 AppScreen.SAVE -> Icon(Icons.Filled.Save, contentDescription = s.label, tint = JailerColors.Gold)
                                 AppScreen.OPTIONS -> Icon(Icons.Filled.Settings, contentDescription = s.label, tint = JailerColors.Gold)
