@@ -144,7 +144,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "Keep the token.",
-                nextNodeId = "dwarven_path",
+                nextNodeId = "dwarven_path_kept",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     setFlags = setOf("kept_the_token"),
@@ -153,7 +153,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "Leave the past buried.",
-                nextNodeId = "dwarven_path",
+                nextNodeId = "dwarven_path_buried",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     setFlags = setOf("buried_the_past")
@@ -162,11 +162,34 @@ val chapter1Nodes: List<StoryNode> = listOf(
         )
     ),
     StoryNode(
-        id = "dwarven_path",
+        id = "dwarven_path_kept",
         chapterId = "chapter_1",
         title = "The Dwarven Path",
         illustrationId = "root_tunnel_dwarven_path",
         narrativeText = """
+            The clasp goes into his pocket, a weight that was never his to carry and now is anyway.
+
+            The stairway becomes a tunnel, its walls squared and chiseled by dwarven hands long before
+            the tree above ever took root. Old runes catch what little light Kaelen carries with him.
+
+            Somewhere far below, iron rings against stone — the steady rhythm of hammers at a forge
+            that has not gone cold in longer than he has been alive.
+
+            The rhythm falters. Then stops.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Follow the tunnel toward the silence.", nextNodeId = "the_silent_forge")
+        )
+    ),
+    StoryNode(
+        id = "dwarven_path_buried",
+        chapterId = "chapter_1",
+        title = "The Dwarven Path",
+        illustrationId = "root_tunnel_dwarven_path",
+        narrativeText = """
+            He leaves the clasp where he found it, and doesn't look back to check whether that
+            was mercy or just cowardice wearing a gentler word.
+
             The stairway becomes a tunnel, its walls squared and chiseled by dwarven hands long before
             the tree above ever took root. Old runes catch what little light Kaelen carries with him.
 
@@ -236,7 +259,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "Help him repair the gate.",
-                nextNodeId = "smiths_warning",
+                nextNodeId = "smiths_warning_helped",
                 consequences = Consequences(
                     setFlags = setOf("helped_dwarf"),
                     grantItemIds = listOf("dwarven_token", "healing_draught"),
@@ -245,7 +268,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "Tell him honestly why your cloak is gone.",
-                nextNodeId = "smiths_warning",
+                nextNodeId = "smiths_warning_confessed",
                 requirements = ChoiceRequirement(minStats = mapOf(StatType.HONOUR to 1)),
                 consequences = Consequences(
                     setFlags = setOf("confessed_to_dwarf"),
@@ -254,18 +277,82 @@ val chapter1Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "Move on without a word.",
-                nextNodeId = "smiths_warning"
+                nextNodeId = "smiths_warning_moved_on"
             )
         )
     ),
     StoryNode(
-        id = "smiths_warning",
+        id = "smiths_warning_helped",
         chapterId = "chapter_1",
         title = "A Warning in the Dark",
         illustrationId = "dwarven_hold_gate",
         narrativeText = """
-            The smith sets down his tools and looks past Kaelen, toward the tunnel mouth beyond
-            the hold.
+            The gate sits a little straighter for the work, and the smith straightens with it,
+            some of the wariness gone out of his shoulders now that he's seen what Kaelen's hands
+            are actually good for.
+
+            "Something's been moving in the lower passage," he says. "Pale. Too many arms for
+            anything honest. It's taken two of my kin already, and it isn't finished." He does
+            not ask Kaelen to stay. He does not ask him to go, either.
+
+            The passage beyond the hold is the only way forward.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Take the buckler he offers.",
+                nextNodeId = "first_blood",
+                requirements = ChoiceRequirement(requiredFlags = setOf("helped_dwarf")),
+                consequences = Consequences(
+                    setFlags = setOf("took_buckler"),
+                    grantItemIds = listOf("sturdy_buckler")
+                )
+            ),
+            Choice(
+                label = "Heed his warning and go on.",
+                nextNodeId = "first_blood"
+            )
+        )
+    ),
+    StoryNode(
+        id = "smiths_warning_confessed",
+        chapterId = "chapter_1",
+        title = "A Warning in the Dark",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            The smith hears him out without interrupting, and whatever he makes of a stranger's
+            honesty, he keeps most of it to himself, though something in how he speaks next is a
+            shade less guarded than before.
+
+            "Something's been moving in the lower passage," he says. "Pale. Too many arms for
+            anything honest. It's taken two of my kin already, and it isn't finished." He does
+            not ask Kaelen to stay. He does not ask him to go, either.
+
+            The passage beyond the hold is the only way forward.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Take the buckler he offers.",
+                nextNodeId = "first_blood",
+                requirements = ChoiceRequirement(requiredFlags = setOf("helped_dwarf")),
+                consequences = Consequences(
+                    setFlags = setOf("took_buckler"),
+                    grantItemIds = listOf("sturdy_buckler")
+                )
+            ),
+            Choice(
+                label = "Heed his warning and go on.",
+                nextNodeId = "first_blood"
+            )
+        )
+    ),
+    StoryNode(
+        id = "smiths_warning_moved_on",
+        chapterId = "chapter_1",
+        title = "A Warning in the Dark",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            Kaelen doesn't explain himself, and the smith doesn't ask him to. Whatever judgment
+            passed between them back at the broken gate, neither one puts it into words.
 
             "Something's been moving in the lower passage," he says. "Pale. Too many arms for
             anything honest. It's taken two of my kin already, and it isn't finished." He does

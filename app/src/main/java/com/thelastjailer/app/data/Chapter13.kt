@@ -43,7 +43,7 @@ val chapter13Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "\"Then we meet them together.\"",
-                nextNodeId = "the_inquisitor_general",
+                nextNodeId = "the_inquisitor_general_stood",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     setFlags = setOf("stood_with_voss")
@@ -51,7 +51,7 @@ val chapter13Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "\"This one might go better if I'm not standing in the doorway.\"",
-                nextNodeId = "the_inquisitor_general",
+                nextNodeId = "the_inquisitor_general_alone",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     setFlags = setOf("let_voss_go_alone")
@@ -60,17 +60,43 @@ val chapter13Nodes: List<StoryNode> = listOf(
         )
     ),
     StoryNode(
-        id = "the_inquisitor_general",
+        id = "the_inquisitor_general_stood",
         chapterId = "chapter_13",
         title = "The Inquisitor-General",
         illustrationId = "the_inquisitor_general",
         narrativeText = """
+            Kaelen stays where Voss can feel him at her shoulder, and the inquisitor's attention
+            finds him there almost immediately, appraising him the same unhurried way she's
+            appraising everything else.
+
             She doesn't look like Voss, or move like her either: older, slower, entirely
             unhurried in a way that has nothing to do with confidence and everything to do with
             rank. "Inquisitor Voss," she says, and doesn't offer a hand. "Or should I say,
             former Inquisitor. You've been reported dead twice and traitor once since
             Stonebeard's gate stopped being a rumour. I'm inclined to believe the second report
-            over the first two, unless you give me a reason not to."
+            over the first two, unless you give me a reason not to." Her gaze doesn't leave
+            Kaelen the whole time she says it, as if he's the reason she'd need one.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Let Voss answer.", nextNodeId = "what_voss_answers")
+        )
+    ),
+    StoryNode(
+        id = "the_inquisitor_general_alone",
+        chapterId = "chapter_13",
+        title = "The Inquisitor-General",
+        illustrationId = "the_inquisitor_general",
+        narrativeText = """
+            Kaelen keeps to the tunnel mouth, close enough to hear every word and far enough that
+            the inquisitor has to decide for herself whether that was courtesy or something else.
+
+            She doesn't look like Voss, or move like her either: older, slower, entirely
+            unhurried in a way that has nothing to do with confidence and everything to do with
+            rank. "Inquisitor Voss," she says, and doesn't offer a hand. "Or should I say,
+            former Inquisitor. You've been reported dead twice and traitor once since
+            Stonebeard's gate stopped being a rumour. I'm inclined to believe the second report
+            over the first two, unless you give me a reason not to." If she notices Kaelen
+            keeping his distance, she doesn't spend a word on it.
         """.trimIndent(),
         choices = listOf(
             Choice(label = "Let Voss answer.", nextNodeId = "what_voss_answers")
