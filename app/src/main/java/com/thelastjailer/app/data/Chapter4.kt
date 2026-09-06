@@ -132,7 +132,7 @@ val chapter4Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "Open your hand. Take what it's offering.",
-                nextNodeId = "the_cost",
+                nextNodeId = "the_cost_aided",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 2),
                     setFlags = setOf("accepted_dark_aid")
@@ -140,7 +140,7 @@ val chapter4Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "Keep your hand closed. Finish this on your own strength.",
-                nextNodeId = "the_cost",
+                nextNodeId = "the_cost_unaided",
                 requirements = ChoiceRequirement(minStats = mapOf(StatType.HONOUR to 2)),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
@@ -150,20 +150,53 @@ val chapter4Nodes: List<StoryNode> = listOf(
         )
     ),
     StoryNode(
-        id = "the_cost",
+        id = "the_cost_aided",
         chapterId = "chapter_4",
         title = "The Cost",
         illustrationId = "the_cost_aftermath",
         narrativeText = """
             The vanguard falls, and what's left of the column pulls back down the ruined road
-            rather than press an attack that already cost them their best blade.
+            rather than press an attack that already cost them their best blade. Kaelen's arm
+            still hums with borrowed strength, and some part of him that isn't quite relief keeps
+            waiting for a bill to come due for it.
 
-            It isn't a clean victory. Halvard took a wound shielding the door that he's too old to
-            have taken and too stubborn to admit hurts as much as it does. Stonebeard Hold's gate,
-            already cracked, is cracked further, and neither of them says out loud how much
-            further it can crack before it stops being a gate at all.
+            It isn't a clean victory, and Kaelen isn't entirely sure the hand that won it was only
+            his own. Halvard took a wound shielding the door that he's too old to have taken and
+            too stubborn to admit hurts as much as it does. Stonebeard Hold's gate, already
+            cracked, is cracked further, and neither of them says out loud how much further it can
+            crack before it stops being a gate at all.
 
-            They held. That's all "won" means, down here.
+            They held. That's all "won" means, down here. Kaelen just isn't sure yet what it means
+            that winning came easier than it should have.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Search the fallen vanguard's gear.",
+                nextNodeId = "no_longer_a_rumour",
+                consequences = Consequences(grantItemIds = listOf("ashen_signet"))
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_cost_unaided",
+        chapterId = "chapter_4",
+        title = "The Cost",
+        illustrationId = "the_cost_aftermath",
+        narrativeText = """
+            The vanguard falls, and what's left of the column pulls back down the ruined road
+            rather than press an attack that already cost them their best blade. Every part of
+            Kaelen aches with a plain, honest exhaustion, the kind that comes from an arm doing
+            all its own work with nothing lent to it.
+
+            It isn't a clean victory, not in the sense that costs nothing. Halvard took a wound
+            shielding the door that he's too old to have taken and too stubborn to admit hurts as
+            much as it does. Stonebeard Hold's gate, already cracked, is cracked further, and
+            neither of them says out loud how much further it can crack before it stops being a
+            gate at all.
+
+            They held. That's all "won" means, down here, and Kaelen intends to remember exactly
+            how much this particular win took out of him, on his own terms, before he lets himself
+            forget.
         """.trimIndent(),
         choices = listOf(
             Choice(
