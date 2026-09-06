@@ -181,6 +181,34 @@ object ItemCatalog {
             id = "promise_of_the_six",
             name = "Promise of the Six",
             description = "What was left on the hillside once the reaching finally stopped — not a weapon, not a trophy, just proof that an argument three hundred years old can still end without anyone having to lose."
+        ),
+        Item(
+            id = "greater_healing_draught",
+            name = "Greater Healing Draught",
+            description = "The same dwarven remedy, brewed stronger and priced accordingly."
+        ),
+        Item(
+            id = "leather_armor",
+            name = "Leather Armor",
+            description = "Boiled hard and fitted close. Not dwarven-forged like the buckler, but it turns a blade all the same.",
+            combatEffect = ItemCombatEffect(damageReduction = 2)
+        ),
+        Item(
+            id = "proper_helmet",
+            name = "Proper Helmet",
+            description = "Plain steel, no crest, no rank markings left to strip off it. Exactly the kind of unremarkable that keeps a man's skull in one piece.",
+            combatEffect = ItemCombatEffect(damageReduction = 3)
+        ),
+        Item(
+            id = "upgraded_sword",
+            name = "Upgraded Sword",
+            description = "Reforged and rebalanced by a smith who clearly took the work personally. Kaelen's old blade, made to hit like it means it.",
+            combatEffect = ItemCombatEffect(attackBonus = 3)
+        ),
+        Item(
+            id = "reforged_guard_clasp",
+            name = "Reforged Guard's Clasp",
+            description = "Not found in the dark, not stripped from some stranger's cloak — struck new, in his own shape, because he finally asked someone to make it. The tarnished one he carries was never his. This one is."
         )
     ).associateBy { it.id }
 

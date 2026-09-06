@@ -112,6 +112,97 @@ class CombatEngineTest {
     }
 
     @Test
+    fun `attackBonus adds flat damage to the player's own strike`() {
+        val seed = 123L
+        val enemy = testEnemy()
+        val engine = CombatEngine(
+            enemy = enemy,
+            startingPlayerHealth = 100,
+            playerMaxHealth = 100,
+            playerCourage = 4,
+            availableDraughts = 0,
+            attackBonus = 3,
+            random = Random(seed)
+        )
+        val expected = Random(seed)
+        val playerDamage = expected.nextInt(8, 15) + (4 / 2) + 3
+        val enemyDamage = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
+
+        engine.attack()
+
+        assertEquals(enemy.maxHealth - playerDamage, engine.enemyHealth)
+        assertEquals(100 - enemyDamage, engine.playerHealth)
+    }
+
+    @Test
+    fun `courage lowers incoming damage on defend, by less than its bonus on attack`() {
+        val seed = 55L
+        val enemy = testEnemy()
+        val engine = CombatEngine(
+            enemy = enemy,
+            startingPlayerHealth = 100,
+            playerMaxHealth = 100,
+            playerCourage = 9,
+            availableDraughts = 0,
+            random = Random(seed)
+        )
+        val expected = Random(seed)
+        val rawEnemyDamage = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
+        // Courage 9: Defend mitigates 9 / 3 = 3, strictly less than Attack's 9 / 2 = 4 bonus damage.
+        val defendMitigation = 9 / 3
+
+        engine.defend()
+
+        assertEquals(100 - (rawEnemyDamage / 2 - defendMitigation).coerceAtLeast(0), engine.playerHealth)
+        assertTrue(defendMitigation < 9 / 2)
+    }
+
+    @Test
+    fun `greater draught heals more than the regular draught and consumes its own item id`() {
+        val seed = 7L
+        val enemy = testEnemy()
+        val engine = CombatEngine(
+            enemy = enemy,
+            startingPlayerHealth = 30,
+            playerMaxHealth = 100,
+            playerCourage = 0,
+            availableDraughts = 0,
+            availableGreaterDraughts = 1,
+            random = Random(seed)
+        )
+        assertEquals(1, engine.remainingGreaterDraughts)
+        val expected = Random(seed)
+        val enemyDamage = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
+
+        engine.useGreaterDraught()
+
+        assertEquals(0, engine.remainingGreaterDraughts)
+        assertEquals(listOf("greater_healing_draught"), engine.consumedItems)
+        assertEquals((30 + 50) - enemyDamage, engine.playerHealth)
+    }
+
+    @Test
+    fun `using a greater draught with none available is a no-op`() {
+        val enemy = testEnemy()
+        val engine = CombatEngine(
+            enemy = enemy,
+            startingPlayerHealth = 50,
+            playerMaxHealth = 100,
+            playerCourage = 0,
+            availableDraughts = 0,
+            availableGreaterDraughts = 0,
+            random = Random(1)
+        )
+        val logSizeBefore = engine.log.size
+
+        engine.useGreaterDraught()
+
+        assertEquals(logSizeBefore, engine.log.size)
+        assertEquals(50, engine.playerHealth)
+        assertTrue(engine.consumedItems.isEmpty())
+    }
+
+    @Test
     fun `draught heals the player, consumes one item, then the enemy still attacks`() {
         val seed = 7L
         val enemy = testEnemy()
