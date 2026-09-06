@@ -190,8 +190,8 @@ val chapter5Nodes: List<StoryNode> = listOf(
             shoulders ease tells Kaelen he's misjudged that distinction, if only for a moment. It
             doesn't last.
 
-            The recitation drops away almost as soon as it returned, and what's underneath is
-            colder and far better prepared than the empty hands ever suggested.
+            The recitation drops away, and what's underneath is colder and far better prepared
+            than the empty hands ever suggested.
 
             "That's unfortunate," he says, and doesn't sound like he means it as an apology. He
             doesn't reach for a weapon. He doesn't need to. Along the treeline, shapes that
