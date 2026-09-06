@@ -84,7 +84,7 @@ val chapter5Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "\"Whatever the Marshal wants with the brand, the answer is no.\"",
-                nextNodeId = "the_envoys_mask_slips",
+                nextNodeId = "the_envoys_mask_slips_refused",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     setFlags = setOf("refused_envoy")
@@ -92,12 +92,12 @@ val chapter5Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "\"Keep talking. I'm listening.\"",
-                nextNodeId = "the_envoys_mask_slips",
+                nextNodeId = "the_envoys_mask_slips_heard",
                 consequences = Consequences(setFlags = setOf("heard_envoy_offer"))
             ),
             Choice(
                 label = "\"The thing behind that gate already told me what it wants. Did the Marshal send you to finish what it started?\"",
-                nextNodeId = "the_envoys_mask_slips",
+                nextNodeId = "the_envoys_mask_slips_confronted",
                 requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid")),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
@@ -133,7 +133,7 @@ val chapter5Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "\"Whatever the Marshal wants with the brand, the answer is no.\"",
-                nextNodeId = "the_envoys_mask_slips",
+                nextNodeId = "the_envoys_mask_slips_refused",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     setFlags = setOf("refused_envoy")
@@ -141,12 +141,12 @@ val chapter5Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "\"Keep talking. I'm listening.\"",
-                nextNodeId = "the_envoys_mask_slips",
+                nextNodeId = "the_envoys_mask_slips_heard",
                 consequences = Consequences(setFlags = setOf("heard_envoy_offer"))
             ),
             Choice(
                 label = "\"The thing behind that gate already told me what it wants. Did the Marshal send you to finish what it started?\"",
-                nextNodeId = "the_envoys_mask_slips",
+                nextNodeId = "the_envoys_mask_slips_confronted",
                 requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid")),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
@@ -156,14 +156,65 @@ val chapter5Nodes: List<StoryNode> = listOf(
         )
     ),
     StoryNode(
-        id = "the_envoys_mask_slips",
+        id = "the_envoys_mask_slips_refused",
         chapterId = "chapter_5",
         title = "The Mask Slips",
         illustrationId = "envoy_reveals_guard",
         narrativeText = """
-            Whatever answer Kaelen gives, something in the envoy's face changes: the recitation
-            drops away, and what's underneath is colder and far better prepared than the empty
-            hands ever suggested.
+            The refusal doesn't land the way Kaelen expects. No anger, no counteroffer, just a
+            beat too long before the envoy answers, the look of a man carefully filing something
+            away rather than reacting to it. Whatever he just decided about Kaelen, and about
+            Voss for putting him in this position at all, it isn't finished deciding.
+
+            Then the recitation drops away entirely, and what's underneath is colder and far
+            better prepared than the empty hands ever suggested.
+
+            "That's unfortunate," he says, and doesn't sound like he means it as an apology. He
+            doesn't reach for a weapon. He doesn't need to. Along the treeline, shapes that
+            weren't there a moment ago straighten out of the undergrowth, an escort that walked
+            the last mile of the ruined road in absolute silence, waiting the entire time for
+            exactly this word.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Stand your ground.", nextNodeId = "the_marshals_warning")
+        )
+    ),
+    StoryNode(
+        id = "the_envoys_mask_slips_heard",
+        chapterId = "chapter_5",
+        title = "The Mask Slips",
+        illustrationId = "envoy_reveals_guard",
+        narrativeText = """
+            "Keep talking" isn't the same as agreeing, but something in the way the envoy's
+            shoulders ease tells Kaelen he's misjudged that distinction, if only for a moment. It
+            doesn't last.
+
+            The recitation drops away almost as soon as it returned, and what's underneath is
+            colder and far better prepared than the empty hands ever suggested.
+
+            "That's unfortunate," he says, and doesn't sound like he means it as an apology. He
+            doesn't reach for a weapon. He doesn't need to. Along the treeline, shapes that
+            weren't there a moment ago straighten out of the undergrowth, an escort that walked
+            the last mile of the ruined road in absolute silence, waiting the entire time for
+            exactly this word.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Stand your ground.", nextNodeId = "the_marshals_warning")
+        )
+    ),
+    StoryNode(
+        id = "the_envoys_mask_slips_confronted",
+        chapterId = "chapter_5",
+        title = "The Mask Slips",
+        illustrationId = "envoy_reveals_guard",
+        narrativeText = """
+            Naming what the prisoner already told him gets further under the envoy's composure
+            than an outright refusal would have: a flicker of something that isn't quite alarm,
+            quickly smoothed back over. Whatever he came expecting to negotiate, it wasn't a
+            jailer who already knew the shape of the offer before he'd finished making it.
+
+            The recitation drops away regardless, and what's underneath is colder and far better
+            prepared than the empty hands ever suggested.
 
             "That's unfortunate," he says, and doesn't sound like he means it as an apology. He
             doesn't reach for a weapon. He doesn't need to. Along the treeline, shapes that
