@@ -1,5 +1,14 @@
 package com.thelastjailer.app
 
+/**
+ * Small passive heal applied on an ordinary story-scene transition (see [applyChoice]). Deliberately
+ * small: a typical chapter has ~5-9 such transitions, so even at +1 this totals only ~5-9 HP per
+ * chapter (out of 100 max health) - a fraction of what a single Healing Draught (40 gold, +25 HP)
+ * or Greater Healing Draught (150 gold, +50 HP) provides, so it eases the walk between fights
+ * without meaningfully competing with the shop economy.
+ */
+private const val SCENE_TRANSITION_REGEN = 1
+
 data class GameState(
     val activeSlot: Int = 1,
     val chapterId: String = "chapter_1",
@@ -25,11 +34,16 @@ data class GameState(
     }
 }
 
-/** Applies a [Choice]'s consequences and moves the player to its next node. */
-fun GameState.applyChoice(choice: Choice): GameState {
+/**
+ * Applies a [Choice]'s consequences and moves the player to its next node. [applyRegen] adds
+ * [SCENE_TRANSITION_REGEN] on top - left `false` only by [resolveCombat]'s victory path, since
+ * that transition already carries the fight's own health cost and isn't an ordinary story beat.
+ */
+fun GameState.applyChoice(choice: Choice, applyRegen: Boolean = true): GameState {
     val consequences = choice.consequences
     var next = this
     consequences.statDeltas.forEach { (stat, delta) -> next = next.withStatDelta(stat, delta) }
+    if (applyRegen) next = next.withStatDelta(StatType.HEALTH, SCENE_TRANSITION_REGEN)
     return next.copy(
         sceneId = choice.nextNodeId,
         flags = next.flags + consequences.setFlags,
@@ -65,7 +79,8 @@ fun GameState.resolveCombat(encounter: CombatEncounter, outcome: CombatOutcome):
                     statDeltas = mapOf(StatType.XP to encounter.xpReward, StatType.GOLD to encounter.goldReward),
                     unlockTrophy = encounter.unlockTrophy
                 )
-            )
+            ),
+            applyRegen = false
         )
     } else {
         survived.copy(sceneId = encounter.defeatNodeId ?: encounter.victoryNodeId)
