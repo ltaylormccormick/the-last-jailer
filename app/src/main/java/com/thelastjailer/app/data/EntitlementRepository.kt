@@ -12,7 +12,7 @@ import com.thelastjailer.app.BuildConfig
  * later without touching any caller of this interface.
  */
 interface EntitlementRepository {
-    /** Chapters I-III are always free; anything past that needs [unlockFullStory]. */
+    /** Chapters I-V are always free; anything past that needs [unlockFullStory]. */
     fun isChapterUnlocked(chapterId: String): Boolean
 
     fun hasUnlockedFullStory(): Boolean
@@ -53,7 +53,7 @@ class LocalEntitlementRepository(private val prefs: SharedPreferences) : Entitle
     }
 
     companion object {
-        const val FREE_CHAPTER_LIMIT = 3
+        const val FREE_CHAPTER_LIMIT = 5
         const val FREE_SAVE_SLOTS = 3
         const val UNLOCKED_SAVE_SLOTS = 10
 

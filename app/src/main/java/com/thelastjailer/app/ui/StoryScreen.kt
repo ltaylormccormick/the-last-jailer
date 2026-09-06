@@ -309,7 +309,7 @@ private fun LockedChapterScreen(
         Text("CHAPTER LOCKED", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
         Spacer(Modifier.height(12.dp))
         Text(
-            "${node.title} is part of the full story. Unlock it with a one-time purchase to continue Kaelen's tale beyond Chapter III.",
+            "${node.title} is part of the full story. Unlock it with a one-time purchase to continue Kaelen's tale beyond Chapter V.",
             style = MaterialTheme.typography.bodyLarge
         )
         Spacer(Modifier.height(20.dp))

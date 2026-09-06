@@ -16,15 +16,17 @@ class EntitlementRepositoryTest {
     }
 
     @Test
-    fun `chapters I through III are unlocked by default`() {
+    fun `chapters I through V are unlocked by default`() {
         assertTrue(repository.isChapterUnlocked("chapter_1"))
         assertTrue(repository.isChapterUnlocked("chapter_2"))
         assertTrue(repository.isChapterUnlocked("chapter_3"))
+        assertTrue(repository.isChapterUnlocked("chapter_4"))
+        assertTrue(repository.isChapterUnlocked("chapter_5"))
     }
 
     @Test
-    fun `chapter IV and beyond are locked by default`() {
-        assertFalse(repository.isChapterUnlocked("chapter_4"))
+    fun `chapter VI and beyond are locked by default`() {
+        assertFalse(repository.isChapterUnlocked("chapter_6"))
         assertFalse(repository.isChapterUnlocked("chapter_9"))
     }
 
@@ -43,7 +45,7 @@ class EntitlementRepositoryTest {
         repository.unlockFullStory()
 
         assertTrue(repository.hasUnlockedFullStory())
-        assertTrue(repository.isChapterUnlocked("chapter_4"))
+        assertTrue(repository.isChapterUnlocked("chapter_6"))
         assertEquals(LocalEntitlementRepository.UNLOCKED_SAVE_SLOTS, repository.maxSaveSlots())
     }
 

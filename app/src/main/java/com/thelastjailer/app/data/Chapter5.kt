@@ -18,7 +18,8 @@ import com.thelastjailer.app.StoryNode
  * jailer's brand, a fourth and toughest combat encounter yet, a stat-gated aftermath choice
  * (mirroring III and IV), and a chapter-ending reveal that raises the stakes past "one door" — the
  * Marshal, named for the first time, is going after every warded gate like this one at once. Ends
- * on an escalation hook rather than a resolution, same as II and III.
+ * on an escalation hook rather than a resolution, same as II and III. This is the last free
+ * chapter (see [com.thelastjailer.app.data.LocalEntitlementRepository.FREE_CHAPTER_LIMIT]).
  */
 val chapter5Nodes: List<StoryNode> = listOf(
     StoryNode(
