@@ -9,8 +9,8 @@ import com.thelastjailer.app.StoryNode
 /**
  * Chapter IV — The Ashen Vanguard.
  *
- * The first chapter behind the full-story purchase. Voss's promise from Chapter III comes due:
- * the Ashen Order returns to the black door in force, not to talk. A 7-node arc: the warning, a
+ * Voss's promise from Chapter III comes due: the Ashen Order returns to the black door in force,
+ * not to talk. A 7-node arc: the warning, a
  * strategy choice with Halvard that genuinely stages the siege differently depending on the
  * answer (barricaded at the door versus met head-on out on the road), the siege itself (a third
  * and toughest combat encounter yet), the prisoner escalating its temptation mid-battle, a real

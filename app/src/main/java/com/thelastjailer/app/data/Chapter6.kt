@@ -20,7 +20,8 @@ import com.thelastjailer.app.StoryNode
  * encounter yet against what got loose, a stat-gated choice about what to do with an unwardable
  * ruin (mirroring III/IV/V, and now earning Halvard a genuinely different reaction each way), and
  * a chapter-ending gut-check that narrows the clock — four gates left, and the Marshal already
- * knows where one of them is.
+ * knows where one of them is. The first chapter behind the full-story purchase (see
+ * [com.thelastjailer.app.data.LocalEntitlementRepository.FREE_CHAPTER_LIMIT]).
  */
 val chapter6Nodes: List<StoryNode> = listOf(
     StoryNode(

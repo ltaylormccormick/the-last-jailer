@@ -24,9 +24,8 @@ import com.thelastjailer.app.StoryNode
  * antagonist — someone from Kaelen's own world, above ground, who has heard that a jailer has been
  * named and does not consider that good news. The chapter-ending confrontation with her is a genuine
  * three-way fork: standing his ground, arguing for mercy, and stalling for time each earn a distinct
- * reaction from Voss, not just a distinct stat. This is the last free chapter, so it ends on a real
- * hook rather than a resolution: a named threat now knows Kaelen exists, and knows what he's
- * guarding.
+ * reaction from Voss, not just a distinct stat. Ends on a real hook rather than a resolution: a
+ * named threat now knows Kaelen exists, and knows what he's guarding.
  */
 val chapter3Nodes: List<StoryNode> = listOf(
     StoryNode(
