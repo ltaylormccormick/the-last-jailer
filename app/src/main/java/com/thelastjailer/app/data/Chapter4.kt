@@ -33,7 +33,11 @@ val chapter4Nodes: List<StoryNode> = listOf(
             was never going to be a conversation twice.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Go to Halvard.", nextNodeId = "council_at_the_gate")
+            Choice(
+                label = "Go to Halvard.",
+                nextNodeId = "council_at_the_gate",
+                consequences = Consequences(statDeltas = mapOf(StatType.HEALTH to 40))
+            )
         )
     ),
     StoryNode(

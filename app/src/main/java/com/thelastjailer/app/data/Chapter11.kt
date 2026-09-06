@@ -45,7 +45,7 @@ val chapter11Nodes: List<StoryNode> = listOf(
                 label = "\"I think I know where the last gate is.\"",
                 nextNodeId = "voss_confirms_it_trusted",
                 consequences = Consequences(
-                    statDeltas = mapOf(StatType.COURAGE to 1),
+                    statDeltas = mapOf(StatType.COURAGE to 1, StatType.HEALTH to 20),
                     setFlags = setOf("trusted_the_vision")
                 )
             ),
@@ -53,7 +53,7 @@ val chapter11Nodes: List<StoryNode> = listOf(
                 label = "Sit with it a while longer before saying anything.",
                 nextNodeId = "voss_confirms_it_doubted",
                 consequences = Consequences(
-                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    statDeltas = mapOf(StatType.HONOUR to 1, StatType.HEALTH to 20),
                     setFlags = setOf("doubted_the_vision")
                 )
             )
