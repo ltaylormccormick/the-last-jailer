@@ -290,6 +290,41 @@ val chapter2Nodes: List<StoryNode> = listOf(
         combatEncounterId = "seal_breaker_encounter"
     ),
     StoryNode(
+        id = "seal_breaker_defeat",
+        chapterId = "chapter_2",
+        title = "End of Chapter II — What Got Through",
+        illustrationId = "chapter2_threshold",
+        narrativeText = """
+            The gap doesn't close so much as it loses interest in him specifically — whatever
+            poured through the failing seal has clearly decided that finishing Kaelen costs more
+            than it's worth when there's an entire hold's worth of dark still open behind it. It
+            withdraws only once Halvard finally wedges the stone back into place without him,
+            then drags Kaelen clear of the threshold like dead weight before he can find his feet
+            on his own.
+
+            Halvard doesn't say he told him so. He doesn't have to. He presses what's left of
+            Kaelen's coin purse back into his hand — lighter than it was, some of it spent or
+            lost getting him patched up in the hour after — and says only, "You're still
+            breathing. Down here, some nights, that's the whole victory."
+
+            "The office is yours if you want it," he says anyway, once Kaelen can stand under his
+            own power again. "It was never about winning the first fight. It's about being the
+            one still standing at the gate after you've lost one."
+
+            Kaelen doesn't answer right away. He doesn't leave, either, and after a while that
+            starts to feel like an answer of its own.
+
+            Chapter III awaits.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Give him your answer.",
+                nextNodeId = "the_answer",
+                consequences = Consequences(statDeltas = mapOf(StatType.GOLD to -20))
+            )
+        )
+    ),
+    StoryNode(
         id = "chapter2_end",
         chapterId = "chapter_2",
         title = "End of Chapter II — The Weight of the Office",

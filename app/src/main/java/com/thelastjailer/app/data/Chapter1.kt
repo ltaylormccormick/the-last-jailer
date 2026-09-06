@@ -306,6 +306,49 @@ val chapter1Nodes: List<StoryNode> = listOf(
         combatEncounterId = "first_blood_encounter"
     ),
     StoryNode(
+        id = "first_blood_defeat",
+        chapterId = "chapter_1",
+        title = "End of Chapter I — What the Dark Let Him Keep",
+        illustrationId = "threshold_ahead",
+        narrativeText = """
+            The thing doesn't stop moving. It simply decides, with the same cold patience it's
+            clearly used on the two kin it already took, that Kaelen isn't worth finishing
+            tonight — and drags itself back into the black before he can find the strength to
+            make it regret that. He comes back to himself some time later, alone in the passage,
+            one hand pressed to a wound that will scar and the other closed around nothing where
+            his coin purse used to hang.
+
+            Ten gold pieces lighter and considerably less sure of his own sword arm, he takes
+            stock of what's left. Behind him: a black door that opened for no one and everyone,
+            roots that remembered a war he wasn't part of, a dwarf who fed him nothing but truth.
+            Ahead, past where the dwarven chisel marks give out and something older and far
+            smoother takes over, the tunnel keeps going regardless of whether he won anything
+            down here or not.
+
+            He is not the knight he was three years ago. Tonight made sure he'd feel every year
+            of that gap. But he's still walking, which is more than the thing in the passage
+            expected.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Follow the passage deeper.",
+                nextNodeId = "the_tended_dark",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.COURAGE to 1, StatType.GOLD to -10),
+                    setFlags = setOf("pressed_deeper", "survived_first_blood_defeat")
+                )
+            ),
+            Choice(
+                label = "Carry word back to Stonebeard Hold first.",
+                nextNodeId = "word_at_stonebeard",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1, StatType.GOLD to -10),
+                    setFlags = setOf("returned_to_hold", "survived_first_blood_defeat")
+                )
+            )
+        )
+    ),
+    StoryNode(
         id = "chapter1_end",
         chapterId = "chapter_1",
         title = "End of Chapter I — The First Threshold",
