@@ -96,6 +96,13 @@ fun CombatScreen(
                 style = MaterialTheme.typography.labelLarge,
                 color = JailerColors.Gold
             )
+            if (currentOutcome.victory) {
+                Text(
+                    "+${encounter.goldReward} gold, +${encounter.xpReward} XP",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = JailerColors.TextPrimary
+                )
+            }
             Button(modifier = Modifier.fillMaxWidth(), onClick = { onResolved(currentOutcome) }) {
                 Text("CONTINUE")
             }
