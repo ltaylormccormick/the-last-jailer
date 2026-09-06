@@ -20,8 +20,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Backpack
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -170,8 +176,8 @@ private fun StoryHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        TextButton(onClick = onOpenMenu) { Text("☰", color = JailerColors.Gold, fontSize = 22.sp) }
-        TextButton(onClick = onOpenJournal) { Text("📖", fontSize = 20.sp) }
+        TextButton(onClick = onOpenMenu) { Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = JailerColors.Gold) }
+        TextButton(onClick = onOpenJournal) { Icon(Icons.Filled.MenuBook, contentDescription = "Journal", tint = JailerColors.Gold) }
         Text(
             "THE LAST JAILER",
             color = JailerColors.TextPrimary,
@@ -179,8 +185,14 @@ private fun StoryHeader(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.weight(1f)
         )
-        TextButton(onClick = onOpenInventory) { Text("🎒", fontSize = 20.sp) }
-        TextButton(onClick = onOpenTrophies) { Text("🏆 $trophyCount", color = JailerColors.Gold, fontSize = 14.sp) }
+        TextButton(onClick = onOpenInventory) { Icon(Icons.Filled.Backpack, contentDescription = "Inventory", tint = JailerColors.Gold) }
+        TextButton(onClick = onOpenTrophies) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.EmojiEvents, contentDescription = "Trophies", tint = JailerColors.Gold)
+                Spacer(Modifier.width(4.dp))
+                Text("$trophyCount", color = JailerColors.Gold, fontSize = 14.sp)
+            }
+        }
     }
 }
 
