@@ -45,7 +45,7 @@ val chapter5Nodes: List<StoryNode> = listOf(
                 label = "Meet him at the door yourself.",
                 nextNodeId = "the_envoys_offer_alone",
                 consequences = Consequences(
-                    statDeltas = mapOf(StatType.COURAGE to 1),
+                    statDeltas = mapOf(StatType.COURAGE to 1, StatType.HEALTH to 40),
                     setFlags = setOf("met_envoy_alone")
                 )
             ),
@@ -53,7 +53,7 @@ val chapter5Nodes: List<StoryNode> = listOf(
                 label = "Bring Halvard up to stand with you.",
                 nextNodeId = "the_envoys_offer_with_halvard",
                 consequences = Consequences(
-                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    statDeltas = mapOf(StatType.HONOUR to 1, StatType.HEALTH to 40),
                     setFlags = setOf("brought_halvard")
                 )
             )
