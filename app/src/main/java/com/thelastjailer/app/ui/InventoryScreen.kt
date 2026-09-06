@@ -27,6 +27,7 @@ private data class ShopEntry(val itemId: String, val price: Int, val repeatable:
 private val SHOP_ENTRIES = listOf(
     ShopEntry("healing_draught", price = 40, repeatable = true),
     ShopEntry("greater_healing_draught", price = 150, repeatable = true),
+    ShopEntry("sturdy_buckler", price = 70, repeatable = false),
     ShopEntry("leather_armor", price = 70, repeatable = false),
     ShopEntry("proper_helmet", price = 160, repeatable = false),
     ShopEntry("upgraded_sword", price = 200, repeatable = false),
