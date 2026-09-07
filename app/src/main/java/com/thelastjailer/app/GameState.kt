@@ -163,6 +163,13 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
 
     fun load(slot: Int): GameState? {
         val scene = prefs.getString("$slot.scene", null) ?: return null
+        val level = prefs.getInt("$slot.level", 1)
+        // A save written before level granted +HEALTH_PER_LEVEL maxHealth per level (see
+        // GameState.applyXpGain) stored a maxHealth that never accounts for levels already
+        // earned at that point - only future level-ups would have added the bonus. Recomputing
+        // the level-derived floor here and taking the higher of the two corrects that backlog for
+        // existing saves without discarding maxHealth from any other source.
+        val levelDerivedMaxHealth = 100 + HEALTH_PER_LEVEL * (level - 1)
         return GameState(
             activeSlot = slot,
             chapterId = prefs.getString("$slot.chapter", null) ?: "chapter_1",
@@ -170,9 +177,9 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
             courage = prefs.getInt("$slot.courage", 1),
             honour = prefs.getInt("$slot.honour", 0),
             health = prefs.getInt("$slot.health", 100),
-            maxHealth = prefs.getInt("$slot.maxHealth", 100),
+            maxHealth = maxOf(prefs.getInt("$slot.maxHealth", 100), levelDerivedMaxHealth),
             gold = prefs.getInt("$slot.gold", 25),
-            level = prefs.getInt("$slot.level", 1),
+            level = level,
             xp = prefs.getInt("$slot.xp", 0),
             xpToNextLevel = prefs.getInt("$slot.xpToNextLevel", 100),
             inventory = readInventory(slot),
