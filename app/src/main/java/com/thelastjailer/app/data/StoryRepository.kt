@@ -27,7 +27,16 @@ object StoryRepository {
                 chapter26Nodes + chapter27Nodes + chapter28Nodes + chapter29Nodes + chapter30Nodes
             ).associateBy { it.id }
 
-    fun node(id: String): StoryNode = nodesById[id] ?: nodesById.getValue(chapter1.startNodeId)
+    /**
+     * Debug builds crash loudly on an unknown [id] instead of silently teleporting the player back
+     * to Chapter I's start node — a typo in a `nextNodeId`/`combatEncounterId`/`victoryNodeId`/
+     * `defeatNodeId` reference should fail where a tester can see it, not months later in
+     * production. Release builds keep the graceful fallback for resilience against a bad update.
+     */
+    fun node(id: String): StoryNode = nodesById[id] ?: run {
+        if (com.thelastjailer.app.BuildConfig.DEBUG) error("Unknown story node: $id")
+        nodesById.getValue(chapter1.startNodeId)
+    }
 
     fun chapter(id: String): Chapter? = chapters.find { it.id == id }
 
