@@ -147,6 +147,30 @@ val chapter14Nodes: List<StoryNode> = listOf(
         combatEncounterId = "memory_confrontation_encounter"
     ),
     StoryNode(
+        id = "memory_confrontation_defeat",
+        chapterId = "chapter_14",
+        title = "The Memory Wins This Round",
+        illustrationId = "inside_the_memory",
+        narrativeText = """
+            Whatever this fragment of memory used to fight, it still remembers how, and Kaelen
+            loses ground he doesn't get back before the vision decides it's finished with him
+            rather than the other way around. It doesn't kill him — a memory three centuries old
+            has nothing left to kill with — it simply lets go, the same way a hand opens once
+            it's made its point.
+
+            He comes back to himself anyway, gasping, palm bleeding faintly where the iron bit
+            into it. Losing didn't stop the memory from happening. It just meant he had less say
+            in how it ended.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Try to make sense of what you saw.",
+                nextNodeId = "what_kaelen_remembers",
+                consequences = Consequences(setFlags = setOf("lost_to_the_memory_itself"))
+            )
+        )
+    ),
+    StoryNode(
         id = "what_kaelen_remembers",
         chapterId = "chapter_14",
         title = "What Kaelen Remembers",

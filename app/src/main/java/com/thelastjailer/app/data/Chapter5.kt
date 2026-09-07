@@ -245,6 +245,29 @@ val chapter5Nodes: List<StoryNode> = listOf(
         combatEncounterId = "cinder_envoy_encounter"
     ),
     StoryNode(
+        id = "cinder_envoy_defeat",
+        chapterId = "chapter_5",
+        title = "Nearly Overrun",
+        illustrationId = "aftermath_of_betrayal",
+        narrativeText = """
+            The adept doesn't fight like someone testing him, it fights like someone finishing an
+            argument, and Kaelen's guard gives out a full breath before he's ready to admit it. He
+            goes down hard enough to taste blood, hard enough that the next thing he's aware of is
+            Halvard's boot planting itself between him and the follow-up strike.
+
+            Whatever the old warden lacks in speed these days, he doesn't lack in timing. The
+            adept falls anyway, moments later, to a blade that isn't Kaelen's own this time — a
+            fact Kaelen intends to remember longer than he'd like to admit.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Get up.",
+                nextNodeId = "aftermath_of_betrayal",
+                consequences = Consequences(setFlags = setOf("lost_to_cinder_adept"))
+            )
+        )
+    ),
+    StoryNode(
         id = "aftermath_of_betrayal",
         chapterId = "chapter_5",
         title = "Aftermath",

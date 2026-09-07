@@ -215,6 +215,30 @@ val chapter8Nodes: List<StoryNode> = listOf(
         combatEncounterId = "sanctum_sentinel_encounter"
     ),
     StoryNode(
+        id = "sanctum_sentinel_defeat",
+        chapterId = "chapter_8",
+        title = "Barely Clear",
+        illustrationId = "sentinels_close_in",
+        narrativeText = """
+            The sentinel doesn't fall so much as Kaelen runs out of ways to keep it from closing
+            the distance, stone-slow and stone-patient, exactly the kind of fight that punishes
+            anyone hoping to end it quickly. He's still moving when it finally gets a grip on him,
+            but only because Voss puts herself in the gap at the worst possible moment for her and
+            the best possible one for him.
+
+            It costs her more than it should have. It costs him nothing he didn't already have
+            coming, and neither of them is in any position to argue about which of those is worse
+            right now.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Keep running.",
+                nextNodeId = "the_price_of_escape",
+                consequences = Consequences(setFlags = setOf("lost_to_sanctum_sentinel"))
+            )
+        )
+    ),
+    StoryNode(
         id = "the_price_of_escape",
         chapterId = "chapter_8",
         title = "The Price of Escape",

@@ -154,6 +154,29 @@ val chapter4Nodes: List<StoryNode> = listOf(
         )
     ),
     StoryNode(
+        id = "siege_defeat",
+        chapterId = "chapter_4",
+        title = "Barely Holding",
+        illustrationId = "the_cost_aftermath",
+        narrativeText = """
+            The vanguard's blade finds an opening Kaelen doesn't have the strength left to close,
+            and the world tilts sideways before he registers he's already on the stone. It should
+            end there. It doesn't, because Halvard's ward-work slams into the knight's flank a
+            heartbeat later, buying the only thing that matters: time.
+
+            "Get up," Halvard says, hauling him upright with a grip that isn't gentle. The vanguard
+            staggers, overextended, and doesn't get a second chance to press the advantage. Kaelen
+            didn't win this one. He's still standing regardless, and tonight that has to be enough.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Get back on your feet.",
+                nextNodeId = "what_the_prisoner_offers_again",
+                consequences = Consequences(setFlags = setOf("lost_to_ashen_vanguard"))
+            )
+        )
+    ),
+    StoryNode(
         id = "the_cost_aided",
         chapterId = "chapter_4",
         title = "The Cost",

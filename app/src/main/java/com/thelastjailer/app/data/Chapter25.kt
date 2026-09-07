@@ -138,6 +138,30 @@ val chapter25Nodes: List<StoryNode> = listOf(
         combatEncounterId = "duskmere_threshold_encounter"
     ),
     StoryNode(
+        id = "duskmere_threshold_defeat",
+        chapterId = "chapter_25",
+        title = "It Stops On Its Own Terms",
+        illustrationId = "the_answering_shape",
+        narrativeText = """
+            It doesn't fight like it's trying to survive, it fights like it's trying to finish
+            becoming something, and Kaelen realizes too late that matching it blow for blow was
+            never going to be enough to stop that. He's out of answers well before it's out of
+            shape to take.
+
+            It doesn't need him to win. Whatever Wren's yes was building toward finishes on its
+            own terms, folding back down into the ward-stone the way a wave folds back into the
+            sea, and leaves Kaelen standing in the wreck of a fight he isn't sure he actually
+            ended.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Take stock of the threshold.",
+                nextNodeId = "what_yielding_cost",
+                consequences = Consequences(setFlags = setOf("lost_to_the_answering_door"))
+            )
+        )
+    ),
+    StoryNode(
         id = "what_yielding_cost",
         chapterId = "chapter_25",
         title = "What Yielding Cost",

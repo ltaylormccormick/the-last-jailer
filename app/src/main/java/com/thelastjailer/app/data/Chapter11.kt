@@ -155,6 +155,29 @@ val chapter11Nodes: List<StoryNode> = listOf(
         combatEncounterId = "fenmoor_extraction_encounter"
     ),
     StoryNode(
+        id = "fenmoor_extraction_defeat",
+        chapterId = "chapter_11",
+        title = "The Marsh Nearly Takes Him Too",
+        illustrationId = "the_marsh_holds",
+        narrativeText = """
+            The extraction leader doesn't fight like someone worried about losing, and Kaelen
+            finds out why the hard way: half-drowned footing and a blade that doesn't miss twice
+            make for a short, humbling exchange. He goes down into marsh water cold enough to
+            feel like its own kind of ending.
+
+            It isn't one. Thessaly's spear finds the gap Kaelen couldn't close himself, and Voss
+            is already moving to drag him back onto solid ground before the reeds can finish what
+            the leader started.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Get up.",
+                nextNodeId = "what_thessaly_decides",
+                consequences = Consequences(setFlags = setOf("lost_to_cinder_extraction_leader"))
+            )
+        )
+    ),
+    StoryNode(
         id = "what_thessaly_decides",
         chapterId = "chapter_11",
         title = "What Thessaly Decides",

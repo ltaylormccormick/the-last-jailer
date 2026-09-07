@@ -141,6 +141,29 @@ val chapter23Nodes: List<StoryNode> = listOf(
         combatEncounterId = "emberlow_stragglers_encounter"
     ),
     StoryNode(
+        id = "emberlow_stragglers_defeat",
+        chapterId = "chapter_23",
+        title = "They Break Before He Does",
+        illustrationId = "what_waits_at_the_threshold",
+        narrativeText = """
+            Weeks of drilling against nothing but their own nerves turns out to have taught the
+            stragglers more than Kaelen expects, and he spends most of this fight on the losing
+            end of it, boxed in against a gate he came here to reach, not defend.
+
+            They break anyway. Leaderless doesn't just mean undisciplined, it means nobody left to
+            order them to finish what they started, and once the captain goes down hard enough to
+            stop shouting orders nobody wants to follow, the rest decide the gate isn't worth
+            whatever's left of this fight.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Reach the gate.",
+                nextNodeId = "reaching_emberlow",
+                consequences = Consequences(setFlags = setOf("lost_to_cinder_straggler_captain"))
+            )
+        )
+    ),
+    StoryNode(
         id = "reaching_emberlow",
         chapterId = "chapter_23",
         title = "Reaching Emberlow",

@@ -185,6 +185,29 @@ val chapter16Nodes: List<StoryNode> = listOf(
         combatEncounterId = "reliquary_thief_encounter"
     ),
     StoryNode(
+        id = "reliquary_thief_defeat",
+        chapterId = "chapter_16",
+        title = "Outmatched, Not Outnumbered",
+        illustrationId = "the_reliquary_thief",
+        narrativeText = """
+            Whoever trained this thief trained them to disengage the instant a fight stops being
+            easy, and Kaelen never gets the chance to make it stop being easy. He's on the
+            ground, arm numb from a strike he never saw coming, before he's fully awake enough to
+            call it a fight at all.
+
+            The thief doesn't linger to finish what they started. There's no need to. They
+            already have what they came for, and Kaelen coming up swinging a moment too late
+            doesn't change what's missing when he finally checks.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Take stock of the damage.",
+                nextNodeId = "what_was_taken",
+                consequences = Consequences(setFlags = setOf("lost_to_cinder_reliquary_thief"))
+            )
+        )
+    ),
+    StoryNode(
         id = "what_was_taken",
         chapterId = "chapter_16",
         title = "What Was Taken",

@@ -209,6 +209,29 @@ val chapter6Nodes: List<StoryNode> = listOf(
         combatEncounterId = "unbound_encounter"
     ),
     StoryNode(
+        id = "unbound_defeat",
+        chapterId = "chapter_6",
+        title = "Outlasted, Not Outfought",
+        illustrationId = "greymoor_aftermath",
+        narrativeText = """
+            It's faster than him, and hungrier, and by the time Kaelen realizes he isn't winning
+            this one outright, the only choice left is whether to keep his feet under him or not.
+            He chooses feet, barely, dragging himself back from its reach again and again until
+            it's the creature that tires first, not the man too stubborn to stop moving.
+
+            That isn't the same as beating it. It slinks back into the wreck of Greymoor's gate
+            rather than press an advantage it still technically holds, and Kaelen isn't foolish
+            enough to call that a victory, whatever it looks like from the outside.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Take stock of what's left.",
+                nextNodeId = "what_must_be_decided",
+                consequences = Consequences(setFlags = setOf("lost_to_unbound_horror"))
+            )
+        )
+    ),
+    StoryNode(
         id = "what_must_be_decided",
         chapterId = "chapter_6",
         title = "What Must Be Decided",

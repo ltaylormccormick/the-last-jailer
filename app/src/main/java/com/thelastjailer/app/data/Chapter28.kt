@@ -128,6 +128,30 @@ val chapter28Nodes: List<StoryNode> = listOf(
         combatEncounterId = "wraithspire_vigil_encounter"
     ),
     StoryNode(
+        id = "wraithspire_vigil_defeat",
+        chapterId = "chapter_28",
+        title = "The Line Breaks Around Her, Not Because of Her",
+        illustrationId = "the_vigils_challenge",
+        narrativeText = """
+            She's exactly as good as three centuries of unbroken duty would suggest, and Kaelen
+            spends this fight finding out precisely how little that leaves him to work with. He's
+            on the ground, disarmed, well before he's ready to call this over.
+
+            She doesn't finish it. Around them, the rest of her sentries are already faltering,
+            uncertain in a way three hundred years of drilling never accounted for, and the
+            captain lowers her blade to see what's happening to her own line before she bothers
+            finishing what's happening to his. Nobody beat her one-on-one tonight. Something else
+            entirely did.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Get up.",
+                nextNodeId = "what_wraithspire_reveals",
+                consequences = Consequences(setFlags = setOf("lost_to_vigil_captain_of_wraithspire"))
+            )
+        )
+    ),
+    StoryNode(
         id = "what_wraithspire_reveals",
         chapterId = "chapter_28",
         title = "What Wraithspire Reveals",

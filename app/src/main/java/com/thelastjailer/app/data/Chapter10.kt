@@ -212,6 +212,29 @@ val chapter10Nodes: List<StoryNode> = listOf(
         combatEncounterId = "stonebeard_siege_encounter"
     ),
     StoryNode(
+        id = "stonebeard_siege_defeat",
+        chapterId = "chapter_10",
+        title = "Held By Someone Else",
+        illustrationId = "the_gate_falls",
+        narrativeText = """
+            The vanguard captain doesn't so much defeat Kaelen as simply outlast him, patient in a
+            way the rest of Ilsevet's people rarely bother to be, and the ground comes up to meet
+            him before he's ready to admit he's lost this exchange. It should be the end of it.
+
+            It isn't, because Halvard breaks from the gap he's been holding just long enough to
+            put the captain down himself, buying Kaelen the one thing he can't buy for himself
+            right now: another minute standing. It costs the old warden something he can't easily
+            spare, with the wave still pressing at his back.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Go to Halvard.",
+                nextNodeId = "halvard_falls",
+                consequences = Consequences(setFlags = setOf("lost_to_ilsevets_vanguard_captain"))
+            )
+        )
+    ),
+    StoryNode(
         id = "halvard_falls",
         chapterId = "chapter_10",
         title = "Halvard Falls",

@@ -156,6 +156,29 @@ val chapter22Nodes: List<StoryNode> = listOf(
         combatEncounterId = "patient_voice_encounter"
     ),
     StoryNode(
+        id = "patient_voice_defeat",
+        chapterId = "chapter_22",
+        title = "Said No Anyway",
+        illustrationId = "into_the_asking",
+        narrativeText = """
+            It doesn't get easier because it's gentle. If anything, gentle turns out to be harder
+            to fight than anything with teeth, and Kaelen loses ground he didn't know he was
+            giving until the pull of it is already most of the way to a yes he never meant to
+            offer.
+
+            He says no anyway. It isn't clean, and it isn't confident, and it costs him more than
+            the last two times combined, but the vision lets go all the same, the way a hand lets
+            go when it finally accepts the answer, however unsteady the voice that gave it.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Decide what to commit to.",
+                nextNodeId = "what_it_costs_to_refuse",
+                consequences = Consequences(setFlags = setOf("lost_to_the_patient_voice"))
+            )
+        )
+    ),
+    StoryNode(
         id = "what_it_costs_to_refuse",
         chapterId = "chapter_22",
         title = "What It Costs to Refuse",

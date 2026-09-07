@@ -295,6 +295,29 @@ val chapter7Nodes: List<StoryNode> = listOf(
         combatEncounterId = "loyalist_ambush_encounter"
     ),
     StoryNode(
+        id = "loyalist_ambush_defeat",
+        chapterId = "chapter_7",
+        title = "The Flank Gave Out",
+        illustrationId = "after_the_ambush",
+        narrativeText = """
+            The enforcer's "traitor gets the same as the jailer" turns out not to be a boast, and
+            Kaelen learns exactly how little room the man leaves for a mistake before he's already
+            made one. He goes down with the wind driven out of him and no clear idea how to get
+            back up in time.
+
+            He doesn't have to. Voss is already there, closing the gap he left open with a cut
+            along her own forearm to show for it, and the enforcer breaks off rather than trade
+            blows with two blades where he expected one uncovered back.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Get up.",
+                nextNodeId = "after_the_ambush",
+                consequences = Consequences(setFlags = setOf("lost_to_loyalist_enforcer"))
+            )
+        )
+    ),
+    StoryNode(
         id = "after_the_ambush",
         chapterId = "chapter_7",
         title = "After the Ambush",

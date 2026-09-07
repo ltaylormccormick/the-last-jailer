@@ -132,6 +132,30 @@ val chapter17Nodes: List<StoryNode> = listOf(
         combatEncounterId = "chamber_guardian_encounter"
     ),
     StoryNode(
+        id = "chamber_guardian_defeat",
+        chapterId = "chapter_17",
+        title = "It Runs Out of Purpose Before He Runs Out of Time",
+        illustrationId = "the_chamber_defended",
+        narrativeText = """
+            Whatever built this thing didn't build it to improvise, and Kaelen learns that only
+            after it's already put him on the ground twice, each hit landing with the same flat,
+            mechanical certainty as the last. There's no adjusting to it. There's only surviving
+            long enough for something else to go wrong first.
+
+            Something does. It seizes mid-motion, whatever half-finished purpose was driving it
+            finally outrunning whatever was holding it together, and goes still the way a machine
+            stops rather than the way a creature dies. Kaelen doesn't feel like he won. He'll take
+            it anyway — the chamber's gone quiet, and that's the only clock that matters right now.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Get to the frame.",
+                nextNodeId = "what_must_be_broken",
+                consequences = Consequences(setFlags = setOf("lost_to_sanctum_construct"))
+            )
+        )
+    ),
+    StoryNode(
         id = "what_must_be_broken",
         chapterId = "chapter_17",
         title = "What Must Be Broken",
