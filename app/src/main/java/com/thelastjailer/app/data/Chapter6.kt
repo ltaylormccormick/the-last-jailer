@@ -85,7 +85,7 @@ val chapter6Nodes: List<StoryNode> = listOf(
         narrativeText = """
             He spends the better part of a day with Halvard's maps first, tracing what's left of
             the old warded roads by lamplight before he ever sets a boot outside. Greymoor sits
-            nearest by a full day's walk, which makes the choice of where to start itself easy,
+            nearest by a few days' walk, which makes the choice of where to start itself easy,
             even if nothing else about it is.
 
             Above ground properly for the first time in longer than he can easily count, Kaelen
