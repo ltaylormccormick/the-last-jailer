@@ -226,11 +226,20 @@ val chapter30Nodes: List<StoryNode> = listOf(
             with.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Rest, for now.", nextNodeId = "the_watch_continues")
+            Choice(
+                label = "Rest, for now.",
+                nextNodeId = "the_watch_continues_dark_aid",
+                requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid"))
+            ),
+            Choice(
+                label = "Rest, for now.",
+                nextNodeId = "the_watch_continues_unaided",
+                requirements = ChoiceRequirement(forbiddenFlags = setOf("accepted_dark_aid"))
+            )
         )
     ),
     StoryNode(
-        id = "the_watch_continues",
+        id = "the_watch_continues_dark_aid",
         chapterId = "chapter_30",
         title = "End of Chapter XXX — For Now",
         illustrationId = "chapter30_threshold",
@@ -239,6 +248,40 @@ val chapter30Nodes: List<StoryNode> = listOf(
             Emberlow and Greymoor still weighing an answer nobody can weigh for them, and a sixth
             door at Duskmere that has yet to open on anyone. The last jailer's watch isn't over.
             It's just, for the first time in three years, not a watch he's keeping alone.
+
+            The brand still aches sometimes, the way it did the night at Stonebeard's gate when he
+            first opened his hand and let something not his own carry a fight he wasn't sure he
+            could win alone. He never told Voss exactly how much of that night wasn't his own
+            strength. He isn't sure anymore if that's a secret he's keeping or just a question he
+            hasn't finished asking himself.
+
+            The rest of it — whatever Emberlow decides, whatever Ilsevet still intends, whatever
+            waits at Duskmere — is a tale still being told, not yet finished being written.
+            Kaelen's journal and trophy case hold everything the road has given him so far.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Begin the tale again, and see where this telling leads.",
+                nextNodeId = "fallen_knight",
+                consequences = Consequences(unlockTrophy = "The Watch Goes On")
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_watch_continues_unaided",
+        chapterId = "chapter_30",
+        title = "End of Chapter XXX — For Now",
+        illustrationId = "chapter30_threshold",
+        narrativeText = """
+            This is where Kaelen's part of the story rests, for now — Ilsevet unaccounted for,
+            Emberlow and Greymoor still weighing an answer nobody can weigh for them, and a sixth
+            door at Duskmere that has yet to open on anyone. The last jailer's watch isn't over.
+            It's just, for the first time in three years, not a watch he's keeping alone.
+
+            He thinks, sometimes, about the night at Stonebeard's gate when the offer was open and
+            he closed his hand anyway, and about how much simpler winning would have been if he
+            hadn't. He still isn't sure that would have counted as winning, whatever it cost him
+            not to find out.
 
             The rest of it — whatever Emberlow decides, whatever Ilsevet still intends, whatever
             waits at Duskmere — is a tale still being told, not yet finished being written.
