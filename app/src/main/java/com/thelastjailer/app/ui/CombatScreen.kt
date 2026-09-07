@@ -25,6 +25,8 @@ import com.thelastjailer.app.CombatOutcome
 import com.thelastjailer.app.GameState
 import com.thelastjailer.app.data.EnemyCatalog
 import com.thelastjailer.app.data.ItemCatalog
+import com.thelastjailer.app.levelAttackBonus
+import com.thelastjailer.app.levelDamageReduction
 
 private const val HEALING_DRAUGHT_ID = "healing_draught"
 private const val GREATER_HEALING_DRAUGHT_ID = "greater_healing_draught"
@@ -51,9 +53,9 @@ fun CombatScreen(
             availableDraughts = playerState.inventory.count { it == HEALING_DRAUGHT_ID },
             availableGreaterDraughts = playerState.inventory.count { it == GREATER_HEALING_DRAUGHT_ID },
             damageReduction = ItemCatalog.resolve(playerState.inventory)
-                .sumOf { it.combatEffect?.damageReduction ?: 0 },
+                .sumOf { it.combatEffect?.damageReduction ?: 0 } + playerState.levelDamageReduction(),
             attackBonus = ItemCatalog.resolve(playerState.inventory)
-                .sumOf { it.combatEffect?.attackBonus ?: 0 }
+                .sumOf { it.combatEffect?.attackBonus ?: 0 } + playerState.levelAttackBonus()
         )
     }
     val enemy = remember(encounter.id) { EnemyCatalog.get(encounter.enemyId) }

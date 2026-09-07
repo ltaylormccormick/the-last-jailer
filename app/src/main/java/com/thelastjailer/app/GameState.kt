@@ -9,6 +9,9 @@ package com.thelastjailer.app
  */
 private const val SCENE_TRANSITION_REGEN = 1
 
+/** MaxHealth gained per level-up (see [levelAttackBonus]/[levelDamageReduction] for the rest of level's combat payoff). */
+private const val HEALTH_PER_LEVEL = 9
+
 data class GameState(
     val activeSlot: Int = 1,
     val chapterId: String = "chapter_1",
@@ -111,13 +114,31 @@ private fun GameState.applyXpGain(delta: Int): GameState {
     var newXp = xp + delta
     var newLevel = level
     var newThreshold = xpToNextLevel
+    var newMaxHealth = maxHealth
     while (newXp >= newThreshold) {
         newXp -= newThreshold
         newLevel += 1
         newThreshold = newLevel * 100
+        newMaxHealth += HEALTH_PER_LEVEL
     }
-    return copy(xp = newXp, level = newLevel, xpToNextLevel = newThreshold)
+    return copy(xp = newXp, level = newLevel, xpToNextLevel = newThreshold, maxHealth = newMaxHealth)
 }
+
+/**
+ * Level's combat payoff, read by [com.thelastjailer.app.ui.CombatScreen] alongside item bonuses:
+ * without this, XP had zero mechanical effect — a Monte Carlo simulation of every encounter
+ * (generous play: full combat gear, draughts refreshed each fight) showed combat becoming
+ * unwinnable from roughly the back third of the story onward, since enemy stats scale linearly
+ * per chapter while player power was hard-capped ([maxHealth] never increased; items cap out at
+ * +3 attack/+7 damage reduction total, see [com.thelastjailer.app.data.ItemCatalog]). These two
+ * coefficients (plus [HEALTH_PER_LEVEL] above) were tuned by re-running that simulation until the
+ * whole curve stayed comfortably winnable, with the final encounter deliberately left as the one
+ * real climactic risk rather than flattened to the same near-100% as everything before it.
+ */
+fun GameState.levelAttackBonus(): Int = (level - 1) * 7 / 10
+
+/** See [levelAttackBonus]. */
+fun GameState.levelDamageReduction(): Int = (level - 1) * 5 / 10
 
 /** Persists [GameState] across numbered save slots, plus which slot is currently active. */
 class SaveStore(private val prefs: android.content.SharedPreferences) {
