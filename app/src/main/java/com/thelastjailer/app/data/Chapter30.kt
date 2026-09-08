@@ -106,11 +106,47 @@ val chapter30Nodes: List<StoryNode> = listOf(
             silence, turning them over one more time before whatever happens next.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Keep going.", nextNodeId = "what_gathers_at_the_ground")
+            Choice(
+                label = "Keep going.",
+                nextNodeId = "what_gathers_at_the_ground_refused",
+                requirements = ChoiceRequirement(requiredFlags = setOf("refused_to_leave_emberlow"))
+            ),
+            Choice(
+                label = "Keep going.",
+                nextNodeId = "what_gathers_at_the_ground_insisted",
+                requirements = ChoiceRequirement(requiredFlags = setOf("insisted_on_real_choice"))
+            ),
+            Choice(
+                label = "Keep going.",
+                nextNodeId = "what_gathers_at_the_ground_waited",
+                requirements = ChoiceRequirement(requiredFlags = setOf("waited_at_emberlow"))
+            )
         )
     ),
     StoryNode(
-        id = "what_gathers_at_the_ground",
+        id = "what_gathers_at_the_ground_refused",
+        chapterId = "chapter_30",
+        title = "What Gathers at the Ground",
+        illustrationId = "what_gathers_at_the_ground",
+        narrativeText = """
+            They aren't alone when they reach the hillside. A rider from Wraithspire is waiting
+            with a message from the Vigil-Captain, brief and plainly meant: whatever happens
+            here, the sixth gate stands with whoever's trying to end this without erasing anyone
+            to do it. Emberlow and Greymoor send nothing, because they still haven't decided
+            anything to send, and for the first time, that silence doesn't feel like failure.
+            Kaelen still remembers camping at Emberlow's threshold rather than leave her to
+            decide alone, and hopes, without any way to know for certain, that the lesson
+            outlasted the visit.
+
+            Only Duskmere is entirely absent, and everyone standing on this hillside feels the
+            shape of that absence exactly as sharply as they should.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Face what's waiting underneath.", nextNodeId = "the_last_reach")
+        )
+    ),
+    StoryNode(
+        id = "what_gathers_at_the_ground_insisted",
         chapterId = "chapter_30",
         title = "What Gathers at the Ground",
         illustrationId = "what_gathers_at_the_ground",
@@ -120,7 +156,30 @@ val chapter30Nodes: List<StoryNode> = listOf(
             here, the sixth gate stands with whoever's trying to end this without erasing anyone
             to do it. Emberlow and Greymoor send nothing, because they still haven't decided
             anything to send, and for the first time, that silence doesn't feel like failure. It
-            feels like two people still being allowed to take their time.
+            feels, the way Kaelen insisted it should at Emberlow's own threshold, like a real
+            choice finally being given the time it needs rather than a verdict rushed out of
+            anyone.
+
+            Only Duskmere is entirely absent, and everyone standing on this hillside feels the
+            shape of that absence exactly as sharply as they should.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Face what's waiting underneath.", nextNodeId = "the_last_reach")
+        )
+    ),
+    StoryNode(
+        id = "what_gathers_at_the_ground_waited",
+        chapterId = "chapter_30",
+        title = "What Gathers at the Ground",
+        illustrationId = "what_gathers_at_the_ground",
+        narrativeText = """
+            They aren't alone when they reach the hillside. A rider from Wraithspire is waiting
+            with a message from the Vigil-Captain, brief and plainly meant: whatever happens
+            here, the sixth gate stands with whoever's trying to end this without erasing anyone
+            to do it. Emberlow and Greymoor send nothing, because they still haven't decided
+            anything to send, and for the first time, that silence doesn't feel like failure. It
+            feels like the same patient presence Kaelen once offered Emberlow's own sibling
+            without a single word of pressure attached to it.
 
             Only Duskmere is entirely absent, and everyone standing on this hillside feels the
             shape of that absence exactly as sharply as they should.
@@ -254,26 +313,56 @@ val chapter30Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "Rest, for now.",
-                nextNodeId = "the_watch_continues_dark_aid",
-                requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid"))
+                nextNodeId = "the_watch_continues_dark_aid_captured",
+                requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid", "captured_ilsevet"))
             ),
             Choice(
                 label = "Rest, for now.",
-                nextNodeId = "the_watch_continues_unaided",
-                requirements = ChoiceRequirement(forbiddenFlags = setOf("accepted_dark_aid"))
+                nextNodeId = "the_watch_continues_dark_aid_mercy",
+                requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid", "showed_ilsevet_mercy"))
+            ),
+            Choice(
+                label = "Rest, for now.",
+                nextNodeId = "the_watch_continues_dark_aid_deferred",
+                requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid", "deferred_ilsevets_fate"))
+            ),
+            Choice(
+                label = "Rest, for now.",
+                nextNodeId = "the_watch_continues_unaided_captured",
+                requirements = ChoiceRequirement(
+                    requiredFlags = setOf("captured_ilsevet"),
+                    forbiddenFlags = setOf("accepted_dark_aid")
+                )
+            ),
+            Choice(
+                label = "Rest, for now.",
+                nextNodeId = "the_watch_continues_unaided_mercy",
+                requirements = ChoiceRequirement(
+                    requiredFlags = setOf("showed_ilsevet_mercy"),
+                    forbiddenFlags = setOf("accepted_dark_aid")
+                )
+            ),
+            Choice(
+                label = "Rest, for now.",
+                nextNodeId = "the_watch_continues_unaided_deferred",
+                requirements = ChoiceRequirement(
+                    requiredFlags = setOf("deferred_ilsevets_fate"),
+                    forbiddenFlags = setOf("accepted_dark_aid")
+                )
             )
         )
     ),
     StoryNode(
-        id = "the_watch_continues_dark_aid",
+        id = "the_watch_continues_dark_aid_captured",
         chapterId = "chapter_30",
         title = "End of Chapter XXX — For Now",
         illustrationId = "chapter30_threshold",
         narrativeText = """
-            This is where Kaelen's part of the story rests, for now — Ilsevet unaccounted for,
-            Emberlow and Greymoor still weighing an answer nobody can weigh for them, and a sixth
-            door at Duskmere that has yet to open on anyone. The last jailer's watch isn't over.
-            It's just, for the first time in three years, not a watch he's keeping alone.
+            This is where Kaelen's part of the story rests, for now — Emberlow and Greymoor still
+            weighing an answer nobody can weigh for them, and Duskmere's door already answered,
+            though what that yes still costs the rest of them doesn't have a name anyone's found
+            yet. The last jailer's watch isn't over. It's just, for the first time in three years,
+            not a watch he's keeping alone.
 
             The brand still aches sometimes, the way it did the night at Stonebeard's gate when he
             first opened his hand and let something not his own carry a fight he wasn't sure he
@@ -281,9 +370,15 @@ val chapter30Nodes: List<StoryNode> = listOf(
             strength. He isn't sure anymore if that's a secret he's keeping or just a question he
             hasn't finished asking himself.
 
-            The rest of it — whatever Emberlow decides, whatever Ilsevet still intends, whatever
-            waits at Duskmere — is a tale still being told, not yet finished being written.
-            Kaelen's journal and trophy case hold everything the road has given him so far.
+            Word came back from wherever the Order's keeping Ilsevet, weeks after the fact and
+            secondhand, that she hasn't said a single word to anyone who isn't Kaelen since the
+            binding went on. He isn't sure yet whether that's punishment enough or just another
+            kind of waiting she's decided to be good at.
+
+            The rest of it — whatever Emberlow decides, whatever Ilsevet's silence still means,
+            whatever Duskmere's answer still costs the rest of them — is a tale still being told,
+            not yet finished being written. Kaelen's journal and trophy case hold everything the
+            road has given him so far.
         """.trimIndent(),
         choices = listOf(
             Choice(
@@ -294,24 +389,169 @@ val chapter30Nodes: List<StoryNode> = listOf(
         )
     ),
     StoryNode(
-        id = "the_watch_continues_unaided",
+        id = "the_watch_continues_dark_aid_mercy",
         chapterId = "chapter_30",
         title = "End of Chapter XXX — For Now",
         illustrationId = "chapter30_threshold",
         narrativeText = """
-            This is where Kaelen's part of the story rests, for now — Ilsevet unaccounted for,
-            Emberlow and Greymoor still weighing an answer nobody can weigh for them, and a sixth
-            door at Duskmere that has yet to open on anyone. The last jailer's watch isn't over.
-            It's just, for the first time in three years, not a watch he's keeping alone.
+            This is where Kaelen's part of the story rests, for now — Emberlow and Greymoor still
+            weighing an answer nobody can weigh for them, and Duskmere's door already answered,
+            though what that yes still costs the rest of them doesn't have a name anyone's found
+            yet. The last jailer's watch isn't over. It's just, for the first time in three years,
+            not a watch he's keeping alone.
+
+            The brand still aches sometimes, the way it did the night at Stonebeard's gate when he
+            first opened his hand and let something not his own carry a fight he wasn't sure he
+            could win alone. He never told Voss exactly how much of that night wasn't his own
+            strength. He isn't sure anymore if that's a secret he's keeping or just a question he
+            hasn't finished asking himself.
+
+            Nobody's seen Ilsevet since the night he let her walk. Voss checks anyway, sometimes,
+            without being asked to, the way a person checks on a debt they're not sure yet
+            whether to call forgiven or just unpaid.
+
+            The rest of it — whatever Emberlow decides, whatever Ilsevet does with the mercy she
+            was given, whatever Duskmere's answer still costs the rest of them — is a tale still
+            being told, not yet finished being written. Kaelen's journal and trophy case hold
+            everything the road has given him so far.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Begin the tale again, and see where this telling leads.",
+                nextNodeId = "fallen_knight",
+                consequences = Consequences(unlockTrophy = "The Watch Goes On")
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_watch_continues_dark_aid_deferred",
+        chapterId = "chapter_30",
+        title = "End of Chapter XXX — For Now",
+        illustrationId = "chapter30_threshold",
+        narrativeText = """
+            This is where Kaelen's part of the story rests, for now — Emberlow and Greymoor still
+            weighing an answer nobody can weigh for them, and Duskmere's door already answered,
+            though what that yes still costs the rest of them doesn't have a name anyone's found
+            yet. The last jailer's watch isn't over. It's just, for the first time in three years,
+            not a watch he's keeping alone.
+
+            The brand still aches sometimes, the way it did the night at Stonebeard's gate when he
+            first opened his hand and let something not his own carry a fight he wasn't sure he
+            could win alone. He never told Voss exactly how much of that night wasn't his own
+            strength. He isn't sure anymore if that's a secret he's keeping or just a question he
+            hasn't finished asking himself.
+
+            He still hasn't decided what to do with Ilsevet, and she's still exactly where he
+            left her, waiting on an answer neither of them seems to be in any hurry to reach.
+            Some choices, he's learning, don't get easier for being put off.
+
+            The rest of it — whatever Emberlow decides, whatever Kaelen finally decides about
+            Ilsevet, whatever Duskmere's answer still costs the rest of them — is a tale still
+            being told, not yet finished being written. Kaelen's journal and trophy case hold
+            everything the road has given him so far.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Begin the tale again, and see where this telling leads.",
+                nextNodeId = "fallen_knight",
+                consequences = Consequences(unlockTrophy = "The Watch Goes On")
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_watch_continues_unaided_captured",
+        chapterId = "chapter_30",
+        title = "End of Chapter XXX — For Now",
+        illustrationId = "chapter30_threshold",
+        narrativeText = """
+            This is where Kaelen's part of the story rests, for now — Emberlow and Greymoor still
+            weighing an answer nobody can weigh for them, and Duskmere's door already answered,
+            though what that yes still costs the rest of them doesn't have a name anyone's found
+            yet. The last jailer's watch isn't over. It's just, for the first time in three years,
+            not a watch he's keeping alone.
 
             He thinks, sometimes, about the night at Stonebeard's gate when the offer was open and
             he closed his hand anyway, and about how much simpler winning would have been if he
             hadn't. He still isn't sure that would have counted as winning, whatever it cost him
             not to find out.
 
-            The rest of it — whatever Emberlow decides, whatever Ilsevet still intends, whatever
-            waits at Duskmere — is a tale still being told, not yet finished being written.
-            Kaelen's journal and trophy case hold everything the road has given him so far.
+            Word came back from wherever the Order's keeping Ilsevet, weeks after the fact and
+            secondhand, that she hasn't said a single word to anyone who isn't Kaelen since the
+            binding went on. He isn't sure yet whether that's punishment enough or just another
+            kind of waiting she's decided to be good at.
+
+            The rest of it — whatever Emberlow decides, whatever Ilsevet's silence still means,
+            whatever Duskmere's answer still costs the rest of them — is a tale still being told,
+            not yet finished being written. Kaelen's journal and trophy case hold everything the
+            road has given him so far.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Begin the tale again, and see where this telling leads.",
+                nextNodeId = "fallen_knight",
+                consequences = Consequences(unlockTrophy = "The Watch Goes On")
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_watch_continues_unaided_mercy",
+        chapterId = "chapter_30",
+        title = "End of Chapter XXX — For Now",
+        illustrationId = "chapter30_threshold",
+        narrativeText = """
+            This is where Kaelen's part of the story rests, for now — Emberlow and Greymoor still
+            weighing an answer nobody can weigh for them, and Duskmere's door already answered,
+            though what that yes still costs the rest of them doesn't have a name anyone's found
+            yet. The last jailer's watch isn't over. It's just, for the first time in three years,
+            not a watch he's keeping alone.
+
+            He thinks, sometimes, about the night at Stonebeard's gate when the offer was open and
+            he closed his hand anyway, and about how much simpler winning would have been if he
+            hadn't. He still isn't sure that would have counted as winning, whatever it cost him
+            not to find out.
+
+            Nobody's seen Ilsevet since the night he let her walk. Voss checks anyway, sometimes,
+            without being asked to, the way a person checks on a debt they're not sure yet
+            whether to call forgiven or just unpaid.
+
+            The rest of it — whatever Emberlow decides, whatever Ilsevet does with the mercy she
+            was given, whatever Duskmere's answer still costs the rest of them — is a tale still
+            being told, not yet finished being written. Kaelen's journal and trophy case hold
+            everything the road has given him so far.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Begin the tale again, and see where this telling leads.",
+                nextNodeId = "fallen_knight",
+                consequences = Consequences(unlockTrophy = "The Watch Goes On")
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_watch_continues_unaided_deferred",
+        chapterId = "chapter_30",
+        title = "End of Chapter XXX — For Now",
+        illustrationId = "chapter30_threshold",
+        narrativeText = """
+            This is where Kaelen's part of the story rests, for now — Emberlow and Greymoor still
+            weighing an answer nobody can weigh for them, and Duskmere's door already answered,
+            though what that yes still costs the rest of them doesn't have a name anyone's found
+            yet. The last jailer's watch isn't over. It's just, for the first time in three years,
+            not a watch he's keeping alone.
+
+            He thinks, sometimes, about the night at Stonebeard's gate when the offer was open and
+            he closed his hand anyway, and about how much simpler winning would have been if he
+            hadn't. He still isn't sure that would have counted as winning, whatever it cost him
+            not to find out.
+
+            He still hasn't decided what to do with Ilsevet, and she's still exactly where he
+            left her, waiting on an answer neither of them seems to be in any hurry to reach.
+            Some choices, he's learning, don't get easier for being put off.
+
+            The rest of it — whatever Emberlow decides, whatever Kaelen finally decides about
+            Ilsevet, whatever Duskmere's answer still costs the rest of them — is a tale still
+            being told, not yet finished being written. Kaelen's journal and trophy case hold
+            everything the road has given him so far.
         """.trimIndent(),
         choices = listOf(
             Choice(

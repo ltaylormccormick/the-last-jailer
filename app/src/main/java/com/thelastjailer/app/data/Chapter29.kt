@@ -27,7 +27,7 @@ import com.thelastjailer.app.StoryNode
  */
 val chapter29Nodes: List<StoryNode> = listOf(
     StoryNode(
-        id = "what_reaches_for_kaelen",
+        id = "what_reaches_for_kaelen_direct",
         chapterId = "chapter_29",
         title = "What Reaches for Kaelen",
         illustrationId = "black_door_beneath_the_tree",
@@ -38,6 +38,47 @@ val chapter29Nodes: List<StoryNode> = listOf(
 
             The prisoner's voice is suddenly very small. "It's done asking anyone else. It's
             coming for the fragment it's always had the easiest reach to. Mine."
+
+            Weeks ago, being direct was what finally got the prisoner to say what it needed,
+            rather than let it sit unspoken behind a silence neither of them was serving well.
+            Kaelen doesn't see any reason that stops being true just because the asking's
+            turned physical.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "\"Then it picked the wrong door to force.\"",
+                nextNodeId = "what_the_prisoner_says_before_defiant",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.COURAGE to 1),
+                    setFlags = setOf("stood_defiant_before_the_whole")
+                )
+            ),
+            Choice(
+                label = "\"Tell me what you need from me. Exactly.\"",
+                nextNodeId = "what_the_prisoner_says_before_asked",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    setFlags = setOf("asked_what_it_needed_before")
+                )
+            )
+        )
+    ),
+    StoryNode(
+        id = "what_reaches_for_kaelen_patient",
+        chapterId = "chapter_29",
+        title = "What Reaches for Kaelen",
+        illustrationId = "black_door_beneath_the_tree",
+        narrativeText = """
+            It doesn't come through the prisoner this time. Kaelen feels it directly, for the
+            first time in three years, not a request, not a memory, not a gentle asking. A hand,
+            closing around the branded mark on his palm from the inside, patient no longer.
+
+            The prisoner's voice is suddenly very small. "It's done asking anyone else. It's
+            coming for the fragment it's always had the easiest reach to. Mine."
+
+            Weeks ago, patience was what finally got the prisoner to say what it needed, in its
+            own time rather than his. Kaelen isn't sure patience is a tool this particular
+            moment has much use for, but he reaches for it anyway, out of habit more than plan.
         """.trimIndent(),
         choices = listOf(
             Choice(

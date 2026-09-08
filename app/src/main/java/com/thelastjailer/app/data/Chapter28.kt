@@ -223,7 +223,16 @@ val chapter28Nodes: List<StoryNode> = listOf(
             Chapter XXIX awaits.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Go on.", nextNodeId = "what_reaches_for_kaelen")
+            Choice(
+                label = "Go on.",
+                nextNodeId = "what_reaches_for_kaelen_direct",
+                requirements = ChoiceRequirement(requiredFlags = setOf("asked_directly_ch22"))
+            ),
+            Choice(
+                label = "Go on.",
+                nextNodeId = "what_reaches_for_kaelen_patient",
+                requirements = ChoiceRequirement(requiredFlags = setOf("offered_patience_ch22"))
+            )
         )
     )
 )
