@@ -190,6 +190,29 @@ val chapter12Nodes: List<StoryNode> = listOf(
         combatEncounterId = "unfinished_thing_encounter"
     ),
     StoryNode(
+        id = "unfinished_thing_defeat",
+        chapterId = "chapter_12",
+        title = "It Wins By Falling Apart",
+        illustrationId = "the_unfinished_thing",
+        narrativeText = """
+            Six half-made wards fighting for one body was never a stable arrangement, and Kaelen
+            doesn't so much defeat the thing as survive long enough to watch it lose an argument
+            with itself. He's on the ground more than he's on his feet by the end, and the last
+            blow that connects is more luck than skill, on either side of it.
+
+            It goes still anyway, whatever held it together finally giving out under its own
+            contradictions rather than anything Kaelen did particularly well. He'll take it. He
+            isn't in any shape to ask for better.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Get up.",
+                nextNodeId = "what_kaelen_does_with_her",
+                consequences = Consequences(setFlags = setOf("lost_to_the_unfinished"))
+            )
+        )
+    ),
+    StoryNode(
         id = "what_kaelen_does_with_her",
         chapterId = "chapter_12",
         title = "What Kaelen Does With Her",

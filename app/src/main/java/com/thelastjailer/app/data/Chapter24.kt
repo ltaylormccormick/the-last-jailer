@@ -146,6 +146,30 @@ val chapter24Nodes: List<StoryNode> = listOf(
         combatEncounterId = "greymoor_unraveling_encounter"
     ),
     StoryNode(
+        id = "greymoor_unraveling_defeat",
+        chapterId = "chapter_24",
+        title = "It Only Wanted to Be Heard",
+        illustrationId = "what_waits_in_the_keening",
+        narrativeText = """
+            Grief doesn't fight like hunger does, and Kaelen spends most of this exchange learning
+            that the hard way: every shape that comes apart under his blade seems to cost him more
+            than it costs the ward, like striking at something that was never trying to win in the
+            first place.
+
+            It doesn't need to win. Once the keening's said what it needed to say, the last of the
+            shapes unravels on its own, not defeated so much as finished, and Kaelen is left
+            standing in a silence that isn't quite the same as victory but isn't quite defeat
+            either.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Let the silence settle.",
+                nextNodeId = "reaching_greymoor",
+                consequences = Consequences(setFlags = setOf("lost_to_greymoor_ward_wraith"))
+            )
+        )
+    ),
+    StoryNode(
         id = "reaching_greymoor",
         chapterId = "chapter_24",
         title = "Reaching Greymoor",

@@ -127,6 +127,30 @@ val chapter20Nodes: List<StoryNode> = listOf(
         combatEncounterId = "ghostwriter_encounter"
     ),
     StoryNode(
+        id = "ghostwriter_defeat",
+        chapterId = "chapter_20",
+        title = "It Wears Itself Thin",
+        illustrationId = "the_workshops_own_guardian",
+        narrativeText = """
+            It doesn't hit like a person, it hits like weather, pressure without a clean edge to
+            block or parry, and Kaelen spends more of the fight finding out what that means than
+            doing anything useful about it. He's on the workshop floor, ears ringing, before he
+            manages to land anything that actually counts.
+
+            Whatever's wearing the dead archivist's coat doesn't seem to notice the difference
+            between winning and simply continuing, and that turns out to be its own kind of
+            weakness: it keeps pressing long after there's nothing left of itself to press with,
+            and dissolves back into the dark mid-motion, worn through rather than beaten.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Check the workbench.",
+                nextNodeId = "the_last_page",
+                consequences = Consequences(setFlags = setOf("lost_to_the_ghostwriter"))
+            )
+        )
+    ),
+    StoryNode(
         id = "the_last_page",
         chapterId = "chapter_20",
         title = "The Last Page",

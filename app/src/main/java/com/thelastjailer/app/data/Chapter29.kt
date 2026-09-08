@@ -107,6 +107,30 @@ val chapter29Nodes: List<StoryNode> = listOf(
         combatEncounterId = "the_whole_encounter"
     ),
     StoryNode(
+        id = "the_whole_defeat",
+        chapterId = "chapter_29",
+        title = "The Door Holds Anyway",
+        illustrationId = "into_the_undisguised",
+        narrativeText = """
+            Nothing about this fight is fair, and Kaelen loses more of it than he wins, sheer
+            scale doing what three centuries of scattering apparently couldn't: overwhelm him
+            outright. He runs out of ground to give somewhere in the middle of it, and there
+            isn't a version of this where his sword arm alone was ever going to be enough.
+
+            It doesn't matter, not the way he expects it to. The door was never his to hold with
+            a blade. It holds anyway, startled, the whole recoiling from a refusal that has
+            nothing to do with who won the fight and everything to do with what the binding
+            underneath it was always going to do regardless.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Come back to yourself.",
+                nextNodeId = "what_holding_the_line_costs",
+                consequences = Consequences(setFlags = setOf("lost_to_the_whole_undisguised"))
+            )
+        )
+    ),
+    StoryNode(
         id = "what_holding_the_line_costs",
         chapterId = "chapter_29",
         title = "What Holding the Line Costs",

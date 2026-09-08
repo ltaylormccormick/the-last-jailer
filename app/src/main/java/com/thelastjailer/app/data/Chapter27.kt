@@ -118,6 +118,30 @@ val chapter27Nodes: List<StoryNode> = listOf(
         combatEncounterId = "the_reclamation_encounter"
     ),
     StoryNode(
+        id = "the_reclamation_defeat",
+        chapterId = "chapter_27",
+        title = "It Takes What It Came For Anyway",
+        illustrationId = "the_reclamation",
+        narrativeText = """
+            It was never fighting to win, only to take, and Kaelen spends most of this exchange
+            realizing that a half-second too late each time: every strike he manages to land
+            costs him more than it costs something this size to simply absorb. He's down before
+            he's found a way to make that cost mean anything.
+
+            It doesn't press the advantage. Whatever it came for matters more than finishing him,
+            and it breaks off the same way it would have if he'd won outright, a piece of it left
+            behind in the dirt, the rest withdrawing rather than risk losing more than a splinter
+            over a fight that was never really the point.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Check what it left behind.",
+                nextNodeId = "what_the_thread_showed",
+                consequences = Consequences(setFlags = setOf("lost_to_the_reclamation"))
+            )
+        )
+    ),
+    StoryNode(
         id = "what_the_thread_showed",
         chapterId = "chapter_27",
         title = "What the Thread Showed",

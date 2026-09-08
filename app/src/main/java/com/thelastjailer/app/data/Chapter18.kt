@@ -157,6 +157,29 @@ val chapter18Nodes: List<StoryNode> = listOf(
         combatEncounterId = "ilsevet_duel_encounter"
     ),
     StoryNode(
+        id = "ilsevet_duel_defeat",
+        chapterId = "chapter_18",
+        title = "She Doesn't Take It",
+        illustrationId = "the_duel",
+        narrativeText = """
+            She's better than anyone who's fought for her before, faster and colder and entirely
+            unhurried even now, and Kaelen learns exactly how much distance that leaves between
+            them the hard way, on his back, her blade already at the reach it needs to finish this.
+
+            She doesn't take it. Whatever flickered across her face earlier hasn't finished
+            flickering, and the half-second she spends deciding not to become the thing Ashwell
+            made of her is the half-second Kaelen needs to make sure neither of them has to decide
+            anything else tonight.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Get up.",
+                nextNodeId = "what_is_left_of_her",
+                consequences = Consequences(setFlags = setOf("lost_to_ilsevet_the_cinder_marshal"))
+            )
+        )
+    ),
+    StoryNode(
         id = "what_is_left_of_her",
         chapterId = "chapter_18",
         title = "What Is Left of Her",

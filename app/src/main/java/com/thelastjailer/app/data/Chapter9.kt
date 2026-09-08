@@ -239,6 +239,29 @@ val chapter9Nodes: List<StoryNode> = listOf(
         combatEncounterId = "right_hand_encounter"
     ),
     StoryNode(
+        id = "right_hand_defeat",
+        chapterId = "chapter_9",
+        title = "Not By His Own Hand",
+        illustrationId = "the_right_hand_intercepts",
+        narrativeText = """
+            Ordrun doesn't fight like a man expecting to lose, and for a stretch of very bad
+            seconds neither does Kaelen's body agree that he's going to win this one. Twin blades
+            find him twice before he manages to put anything meaningful between them, and the
+            second time is the one that puts him down.
+
+            Voss is the one still standing when it matters. Ordrun goes down to her blade instead
+            of his, a fact the castellan seems almost more offended by than the wound itself,
+            laughing through blood at his teeth like it's a joke only he finds funny.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Get up.",
+                nextNodeId = "what_the_castellan_says",
+                consequences = Consequences(setFlags = setOf("lost_to_cinder_castellan"))
+            )
+        )
+    ),
+    StoryNode(
         id = "what_the_castellan_says",
         chapterId = "chapter_9",
         title = "What the Castellan Says",

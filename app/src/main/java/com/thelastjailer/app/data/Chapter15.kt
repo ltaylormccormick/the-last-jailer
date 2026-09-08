@@ -239,6 +239,29 @@ val chapter15Nodes: List<StoryNode> = listOf(
         combatEncounterId = "reprisal_squad_encounter"
     ),
     StoryNode(
+        id = "reprisal_squad_defeat",
+        chapterId = "chapter_15",
+        title = "She Held It Alone",
+        illustrationId = "the_reprisal",
+        narrativeText = """
+            The squad came for Voss, not him, and Kaelen learns that the hard way when the leader
+            simply steps around him rather than finish a fight he's already losing, more
+            interested in the traitor than the jailer standing in the way. Going down proves
+            easier than staying between them.
+
+            Voss doesn't need him upright to make her point. She holds the line herself, bleeding
+            and furious, until the squad breaks and runs rather than press an attack that's cost
+            them more than Ilsevet promised it would.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Get up and tend the cut she won't mention.",
+                nextNodeId = "after_the_reprisal",
+                consequences = Consequences(setFlags = setOf("lost_to_cinder_reprisal_leader"))
+            )
+        )
+    ),
+    StoryNode(
         id = "after_the_reprisal",
         chapterId = "chapter_15",
         title = "After the Reprisal",

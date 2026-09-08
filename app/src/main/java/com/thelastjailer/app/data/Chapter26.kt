@@ -139,6 +139,30 @@ val chapter26Nodes: List<StoryNode> = listOf(
         combatEncounterId = "sundering_ground_encounter"
     ),
     StoryNode(
+        id = "sundering_ground_defeat",
+        chapterId = "chapter_26",
+        title = "It Forgets Him Too, Almost",
+        illustrationId = "what_guards_the_beginning",
+        narrativeText = """
+            Fighting something that insists it isn't there turns out to be harder than fighting
+            something that wants him dead, and Kaelen loses ground he can't explain losing, like
+            arguing with a silence that keeps winning simply by refusing to answer. He's on one
+            knee before he manages to make it listen at all.
+
+            That's enough. The forgetting doesn't break so much as pause, mid-argument, the way
+            someone pauses when they've lost the thread of what they were insisting — and for one
+            unguarded moment, whether Kaelen's still standing or not, something underneath it is
+            listening.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Press the moment while it lasts.",
+                nextNodeId = "what_kaelen_offers_the_forgotten",
+                consequences = Consequences(setFlags = setOf("lost_to_the_unremembering"))
+            )
+        )
+    ),
+    StoryNode(
         id = "what_kaelen_offers_the_forgotten",
         chapterId = "chapter_26",
         title = "What Kaelen Offers the Forgotten",

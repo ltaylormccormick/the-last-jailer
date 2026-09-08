@@ -144,6 +144,32 @@ val chapter30Nodes: List<StoryNode> = listOf(
         combatEncounterId = "the_last_reach_encounter"
     ),
     StoryNode(
+        id = "the_last_reach_defeat",
+        chapterId = "chapter_30",
+        title = "Not Strength. Just Refusal.",
+        illustrationId = "the_last_reach",
+        narrativeText = """
+            Full reach means exactly what it says: everything three centuries of scattering left
+            it able to gather, all at once, and Kaelen's arm gives out somewhere in the middle of
+            absorbing that, the same way anyone's would against something that size. This was
+            never a fight he was going to win by being the better swordsman. He isn't.
+
+            He stays upright anyway, on nothing but refusal, long after refusal should have
+            stopped being enough — and it turns out that's the only thing it was ever actually
+            testing. The fight doesn't go out of it because Kaelen beat it. It goes out of it
+            because he simply never stopped saying no, and for something that's spent three
+            centuries only ever being answered with force, that's the one answer it never learned
+            how to overcome.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Say what needs saying.",
+                nextNodeId = "what_the_whole_finally_hears",
+                consequences = Consequences(setFlags = setOf("lost_to_the_whole_at_full_reach"))
+            )
+        )
+    ),
+    StoryNode(
         id = "what_the_whole_finally_hears",
         chapterId = "chapter_30",
         title = "What the Whole Finally Hears",
