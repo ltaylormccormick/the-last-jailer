@@ -7,6 +7,7 @@ import com.thelastjailer.app.StatType
 import com.thelastjailer.app.StoryNode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -21,10 +22,13 @@ class StoryRepositoryTest {
     }
 
     @Test
-    fun `node falls back to chapter one's start node for an unknown id`() {
-        val node = StoryRepository.node("this_id_does_not_exist_anywhere")
-
-        assertEquals(chapter1.startNodeId, node.id)
+    fun `node crashes loudly on an unknown id in a debug build`() {
+        // Unit tests run against the debug variant, where BuildConfig.DEBUG is true — this should
+        // fail where a tester can see it rather than silently teleporting to Chapter I's start
+        // node, which is release-build-only behavior (see StoryRepository.node's doc comment).
+        assertThrows(IllegalStateException::class.java) {
+            StoryRepository.node("this_id_does_not_exist_anywhere")
+        }
     }
 
     @Test
