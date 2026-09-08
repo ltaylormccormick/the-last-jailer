@@ -43,7 +43,7 @@ class SaveStoreTest {
             courage = 3,
             honour = 2,
             health = 62,
-            maxHealth = 100,
+            maxHealth = 109,
             gold = 47,
             level = 2,
             xp = 15,
@@ -105,6 +105,36 @@ class SaveStoreTest {
         val loaded = store.load(4)
 
         assertEquals(setOf("dwarven_token", "healing_draught"), loaded?.inventory?.toSet())
+    }
+
+    @Test
+    fun `loading corrects a stale maxHealth left over from before level granted a health bonus`() {
+        // A save written before level started granting +9 maxHealth per level (see
+        // GameState.applyXpGain) would have persisted maxHealth = 100 even at a high level, since
+        // only future level-ups added the bonus. Loading must recompute the level-derived floor
+        // rather than trusting a stale stored value forever.
+        prefs.edit()
+            .putString("6.scene", "fallen_knight")
+            .putInt("6.level", 4)
+            .putInt("6.maxHealth", 100)
+            .apply()
+
+        val loaded = store.load(6)
+
+        assertEquals(127, loaded?.maxHealth) // 100 + 9 * (4 - 1)
+    }
+
+    @Test
+    fun `loading never lowers maxHealth below what was actually saved`() {
+        prefs.edit()
+            .putString("7.scene", "fallen_knight")
+            .putInt("7.level", 1)
+            .putInt("7.maxHealth", 150)
+            .apply()
+
+        val loaded = store.load(7)
+
+        assertEquals(150, loaded?.maxHealth)
     }
 
     @Test

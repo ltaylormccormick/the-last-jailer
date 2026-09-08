@@ -88,8 +88,8 @@ class GameStateResolveCombatTest {
     }
 
     @Test
-    fun `a big enough xp reward levels the player up`() {
-        val state = GameState(level = 1, xp = 90, xpToNextLevel = 100)
+    fun `a big enough xp reward levels the player up and raises maxHealth`() {
+        val state = GameState(level = 1, xp = 90, xpToNextLevel = 100, maxHealth = 100)
         val bigReward = testEncounter.copy(xpReward = 40, goldReward = 0, unlockTrophy = null)
         val outcome = CombatOutcome(victory = true, damageTaken = 0, consumedItemIds = emptyList())
 
@@ -98,5 +98,19 @@ class GameStateResolveCombatTest {
         assertEquals(2, result.level)
         assertEquals(30, result.xp)
         assertEquals(200, result.xpToNextLevel)
+        assertEquals(109, result.maxHealth)
+    }
+
+    @Test
+    fun `an xp reward spanning multiple level-ups raises maxHealth once per level gained`() {
+        val state = GameState(level = 1, xp = 0, xpToNextLevel = 100, maxHealth = 100)
+        val hugeReward = testEncounter.copy(xpReward = 350, goldReward = 0, unlockTrophy = null)
+        val outcome = CombatOutcome(victory = true, damageTaken = 0, consumedItemIds = emptyList())
+
+        val result = state.resolveCombat(hugeReward, outcome)
+
+        // 350 xp: level 1->2 (100), 2->3 (200), leaves 50 short of level 3->4 (300) — two level-ups.
+        assertEquals(3, result.level)
+        assertEquals(118, result.maxHealth)
     }
 }
