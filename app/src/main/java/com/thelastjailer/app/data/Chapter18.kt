@@ -196,11 +196,20 @@ val chapter18Nodes: List<StoryNode> = listOf(
             to expect."
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Decide.", nextNodeId = "what_kaelen_chooses")
+            Choice(
+                label = "Decide.",
+                nextNodeId = "what_kaelen_chooses_trusted",
+                requirements = ChoiceRequirement(requiredFlags = setOf("trusted_voss_fully"))
+            ),
+            Choice(
+                label = "Decide.",
+                nextNodeId = "what_kaelen_chooses_guarded",
+                requirements = ChoiceRequirement(forbiddenFlags = setOf("trusted_voss_fully"))
+            )
         )
     ),
     StoryNode(
-        id = "what_kaelen_chooses",
+        id = "what_kaelen_chooses_trusted",
         chapterId = "chapter_18",
         title = "What Kaelen Chooses",
         illustrationId = "what_kaelen_chooses",
@@ -208,6 +217,55 @@ val chapter18Nodes: List<StoryNode> = listOf(
             It isn't a clean choice. It was never going to be, not after Ashwell, not after
             Halvard, not after everyone else who paid for the space between what she's afraid of
             and what she's willing to do about it.
+
+            Voss doesn't tell him what to do with the woman bleeding out at his feet, the same way
+            she never once asked him to simply believe her back at the black door. She just waits,
+            the way trust that was given freely tends to be returned.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "\"I'm not going to kill you. But you're done deciding what happens to six lives that aren't yours to spend.\" Bind her and bring her back to face what's left of the Order.",
+                nextNodeId = "chapter18_end",
+                requirements = ChoiceRequirement(minStats = mapOf(StatType.COURAGE to 16)),
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.COURAGE to 1),
+                    grantItemIds = listOf("ilsevets_blade"),
+                    setFlags = setOf("captured_ilsevet")
+                )
+            ),
+            Choice(
+                label = "\"Ashwell already took enough from you. I won't let this take the rest.\" Let her go, on the condition she never comes back armed.",
+                nextNodeId = "chapter18_end",
+                requirements = ChoiceRequirement(minStats = mapOf(StatType.HONOUR to 15)),
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    grantItemIds = listOf("ilsevets_blade"),
+                    setFlags = setOf("showed_ilsevet_mercy")
+                )
+            ),
+            Choice(
+                label = "Take her weapon, and decide the rest later. There's no clean answer waiting right now.",
+                nextNodeId = "chapter18_end",
+                consequences = Consequences(
+                    grantItemIds = listOf("ilsevets_blade"),
+                    setFlags = setOf("deferred_ilsevets_fate")
+                )
+            )
+        )
+    ),
+    StoryNode(
+        id = "what_kaelen_chooses_guarded",
+        chapterId = "chapter_18",
+        title = "What Kaelen Chooses",
+        illustrationId = "what_kaelen_chooses",
+        narrativeText = """
+            It isn't a clean choice. It was never going to be, not after Ashwell, not after
+            Halvard, not after everyone else who paid for the space between what she's afraid of
+            and what she's willing to do about it.
+
+            Voss doesn't tell him what to do with the woman bleeding out at his feet. She's earned
+            that much restraint from him by now, the same slow way he once made her earn his
+            belief at the black door.
         """.trimIndent(),
         choices = listOf(
             Choice(

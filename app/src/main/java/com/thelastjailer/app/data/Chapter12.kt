@@ -281,7 +281,16 @@ val chapter12Nodes: List<StoryNode> = listOf(
             Chapter XIII awaits.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Go on.", nextNodeId = "the_orders_delegation")
+            Choice(
+                label = "Go on.",
+                nextNodeId = "the_orders_delegation_trusted",
+                requirements = ChoiceRequirement(requiredFlags = setOf("trusted_voss_fully"))
+            ),
+            Choice(
+                label = "Go on.",
+                nextNodeId = "the_orders_delegation_guarded",
+                requirements = ChoiceRequirement(forbiddenFlags = setOf("trusted_voss_fully"))
+            )
         )
     ),
     StoryNode(
@@ -339,7 +348,16 @@ val chapter12Nodes: List<StoryNode> = listOf(
             Chapter XIII awaits.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Go on.", nextNodeId = "the_orders_delegation")
+            Choice(
+                label = "Go on.",
+                nextNodeId = "the_orders_delegation_trusted",
+                requirements = ChoiceRequirement(requiredFlags = setOf("trusted_voss_fully"))
+            ),
+            Choice(
+                label = "Go on.",
+                nextNodeId = "the_orders_delegation_guarded",
+                requirements = ChoiceRequirement(forbiddenFlags = setOf("trusted_voss_fully"))
+            )
         )
     )
 )

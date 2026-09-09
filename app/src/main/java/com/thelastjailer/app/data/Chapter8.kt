@@ -321,7 +321,16 @@ val chapter8Nodes: List<StoryNode> = listOf(
             Chapter IX awaits.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Decide what happens next.", nextNodeId = "a_debt_remembered")
+            Choice(
+                label = "Decide what happens next.",
+                nextNodeId = "a_debt_remembered_trusted",
+                requirements = ChoiceRequirement(requiredFlags = setOf("trusted_voss_fully"))
+            ),
+            Choice(
+                label = "Decide what happens next.",
+                nextNodeId = "a_debt_remembered_guarded",
+                requirements = ChoiceRequirement(forbiddenFlags = setOf("trusted_voss_fully"))
+            )
         )
     )
 )

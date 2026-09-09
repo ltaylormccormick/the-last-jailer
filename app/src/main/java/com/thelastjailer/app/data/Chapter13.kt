@@ -27,7 +27,7 @@ import com.thelastjailer.app.StoryNode
  */
 val chapter13Nodes: List<StoryNode> = listOf(
     StoryNode(
-        id = "the_orders_delegation",
+        id = "the_orders_delegation_trusted",
         chapterId = "chapter_13",
         title = "The Order's Delegation",
         illustrationId = "threshold_ahead",
@@ -39,6 +39,47 @@ val chapter13Nodes: List<StoryNode> = listOf(
 
             "They're not here for you," Voss says, reading Kaelen's face before he's said a
             word. "Not directly. They're here for me."
+
+            Whatever they've come to decide about her, Kaelen already decided his own answer
+            back at the black door, the day he chose to believe her before she'd given him a
+            single reason that wasn't just her own word.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "\"Then we meet them together.\"",
+                nextNodeId = "the_inquisitor_general_stood",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.COURAGE to 1),
+                    setFlags = setOf("stood_with_voss")
+                )
+            ),
+            Choice(
+                label = "\"This one might go better if I'm not standing in the doorway.\"",
+                nextNodeId = "the_inquisitor_general_alone",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    setFlags = setOf("let_voss_go_alone")
+                )
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_orders_delegation_guarded",
+        chapterId = "chapter_13",
+        title = "The Order's Delegation",
+        illustrationId = "threshold_ahead",
+        narrativeText = """
+            Halvard's grave is barely a season old when the second rider in as many months comes
+            up the ruined road to the black door: Order colours again, but not Voss's, and not
+            Ilsevet's cinder-grey either. An actual delegation this time, banners and all, the
+            kind Voss says the real Order hasn't bothered sending anywhere in years.
+
+            "They're not here for you," Voss says, reading Kaelen's face before he's said a
+            word. "Not directly. They're here for me."
+
+            Whatever they've come to decide about her, Kaelen made his own decision the slow
+            way, the day he chose to wait and watch rather than take her word for it — and
+            hasn't found a reason since to wish he'd chosen faster.
         """.trimIndent(),
         choices = listOf(
             Choice(
@@ -293,5 +334,5 @@ val chapter13 = com.thelastjailer.app.Chapter(
     id = "chapter_13",
     number = 13,
     title = "Chapter XIII — What the Order Allows",
-    startNodeId = "the_orders_delegation"
+    startNodeId = "the_orders_delegation_guarded"
 )

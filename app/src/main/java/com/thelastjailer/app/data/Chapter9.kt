@@ -26,7 +26,7 @@ import com.thelastjailer.app.StoryNode
  */
 val chapter9Nodes: List<StoryNode> = listOf(
     StoryNode(
-        id = "a_debt_remembered",
+        id = "a_debt_remembered_trusted",
         chapterId = "chapter_9",
         title = "A Debt Remembered",
         illustrationId = "dwarven_hold_gate",
@@ -34,6 +34,54 @@ val chapter9Nodes: List<StoryNode> = listOf(
             Voss bought Kaelen the road home with everything she had left to spend. He hasn't
             forgotten it for a moment since — not on the walk south, not in the days it took
             Halvard to hear the whole account without interrupting once.
+
+            He believed her the moment she first asked to be believed, back at the black door,
+            and nothing about watching her bleed for that trust in the days since has made him
+            regret it.
+
+            Whatever else the schematic means, whatever the seventh door turns out to cost, none
+            of it changes what's owed first.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "\"No more waiting. We move now.\"",
+                nextNodeId = "the_plan_takes_shape",
+                requirements = ChoiceRequirement(requiredFlags = setOf("vowed_to_return_now")),
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.COURAGE to 1),
+                    setFlags = setOf("moved_without_delay")
+                )
+            ),
+            Choice(
+                label = "\"We do this properly, with whatever Halvard can spare.\"",
+                nextNodeId = "the_plan_takes_shape",
+                requirements = ChoiceRequirement(requiredFlags = setOf("vowed_to_return_prepared")),
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    setFlags = setOf("moved_with_preparation")
+                )
+            ),
+            Choice(
+                label = "\"The day I asked for is over. Time to decide.\"",
+                nextNodeId = "the_plan_takes_shape",
+                requirements = ChoiceRequirement(requiredFlags = setOf("undecided_on_voss")),
+                consequences = Consequences(setFlags = setOf("decided_at_last"))
+            )
+        )
+    ),
+    StoryNode(
+        id = "a_debt_remembered_guarded",
+        chapterId = "chapter_9",
+        title = "A Debt Remembered",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            Voss bought Kaelen the road home with everything she had left to spend. He hasn't
+            forgotten it for a moment since — not on the walk south, not in the days it took
+            Halvard to hear the whole account without interrupting once.
+
+            He made her earn that belief before he'd give it, back at the black door, and
+            whatever she made of the delay, she's more than paid down whatever debt his caution
+            left standing between them.
 
             Whatever else the schematic means, whatever the seventh door turns out to cost, none
             of it changes what's owed first.
@@ -315,5 +363,5 @@ val chapter9 = com.thelastjailer.app.Chapter(
     id = "chapter_9",
     number = 9,
     title = "Chapter IX — What Ordrun Said",
-    startNodeId = "a_debt_remembered"
+    startNodeId = "a_debt_remembered_guarded"
 )
