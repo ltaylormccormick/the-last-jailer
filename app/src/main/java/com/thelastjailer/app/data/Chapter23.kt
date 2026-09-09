@@ -103,11 +103,69 @@ val chapter23Nodes: List<StoryNode> = listOf(
             the quiet of the place feels earned rather than accidental.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Look closer.", nextNodeId = "what_emberlow_kept")
+            Choice(
+                label = "Look closer.",
+                nextNodeId = "what_emberlow_kept_captured",
+                requirements = ChoiceRequirement(requiredFlags = setOf("captured_ilsevet"))
+            ),
+            Choice(
+                label = "Look closer.",
+                nextNodeId = "what_emberlow_kept_mercy",
+                requirements = ChoiceRequirement(requiredFlags = setOf("showed_ilsevet_mercy"))
+            ),
+            Choice(
+                label = "Look closer.",
+                nextNodeId = "what_emberlow_kept_deferred",
+                requirements = ChoiceRequirement(requiredFlags = setOf("deferred_ilsevets_fate"))
+            )
         )
     ),
     StoryNode(
-        id = "what_emberlow_kept",
+        id = "what_emberlow_kept_captured",
+        chapterId = "chapter_23",
+        title = "What Emberlow Kept",
+        illustrationId = "what_emberlow_kept",
+        narrativeText = """
+            They're not the only ones who noticed Emberlow's silence. A handful of cinder-grey
+            stragglers, the last of Ilsevet's people, leaderless now in more than name — the
+            Marshal who might have recalled them is answering to the Order she used to command
+            instead — have made camp at the gate's threshold, following standing orders nobody
+            left in a position to countermand.
+
+            One of them notices Kaelen before he's decided how to approach this quietly.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Take the fallen warden's token from where it's lain untouched.",
+                nextNodeId = "what_waits_at_the_threshold",
+                consequences = Consequences(grantItemIds = listOf("emberlow_wardens_token"))
+            )
+        )
+    ),
+    StoryNode(
+        id = "what_emberlow_kept_mercy",
+        chapterId = "chapter_23",
+        title = "What Emberlow Kept",
+        illustrationId = "what_emberlow_kept",
+        narrativeText = """
+            They're not the only ones who noticed Emberlow's silence. A handful of cinder-grey
+            stragglers, the last of Ilsevet's people, leaderless and apparently still following
+            standing orders she never sent anyone to cancel, have made camp at the gate's
+            threshold, not guarding it so much as waiting to see what it does next. Whatever
+            she's doing with the mercy Kaelen showed her, it isn't reining these people in.
+
+            One of them notices Kaelen before he's decided how to approach this quietly.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Take the fallen warden's token from where it's lain untouched.",
+                nextNodeId = "what_waits_at_the_threshold",
+                consequences = Consequences(grantItemIds = listOf("emberlow_wardens_token"))
+            )
+        )
+    ),
+    StoryNode(
+        id = "what_emberlow_kept_deferred",
         chapterId = "chapter_23",
         title = "What Emberlow Kept",
         illustrationId = "what_emberlow_kept",
@@ -115,7 +173,9 @@ val chapter23Nodes: List<StoryNode> = listOf(
             They're not the only ones who noticed Emberlow's silence. A handful of cinder-grey
             stragglers, the last of Ilsevet's people, leaderless and apparently still following
             standing orders nobody's countermanded, have made camp at the gate's threshold, not
-            guarding it so much as waiting to see what it does next.
+            guarding it so much as waiting to see what it does next — the same unanswered
+            question Kaelen left behind at Stonebeard when he couldn't decide what to do with
+            her either.
 
             One of them notices Kaelen before he's decided how to approach this quietly.
         """.trimIndent(),
