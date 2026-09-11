@@ -12,6 +12,12 @@ private const val GREATER_HEALING_DRAUGHT_AMOUNT = 50
 private const val PLAYER_ATTACK_MIN = 8
 private const val PLAYER_ATTACK_MAX_EXCLUSIVE = 15
 
+/** Some enemy names already carry their own article (e.g. "The Unbound") - avoid doubling it. */
+private fun Enemy.articled(capitalized: Boolean): String {
+    if (name.startsWith("The ")) return name
+    return if (capitalized) "The $name" else "the $name"
+}
+
 /** Courage's bonus on Defend is smaller than its bonus on Attack ([CombatEngine.attack] uses `/ 2`) so Attack stays the stronger payoff for a high-Courage build. */
 private const val DEFEND_COURAGE_DIVISOR = 3
 
@@ -48,7 +54,7 @@ class CombatEngine(
     var consumedItems: List<String> by mutableStateOf(emptyList())
         private set
 
-    var log: List<String> by mutableStateOf(listOf("The ${enemy.name} lunges out of the dark."))
+    var log: List<String> by mutableStateOf(listOf("${enemy.articled(capitalized = true)} lunges out of the dark."))
         private set
 
     var outcome: CombatOutcome? by mutableStateOf(null)
@@ -64,9 +70,9 @@ class CombatEngine(
         if (outcome != null) return
         val dmg = random.nextInt(PLAYER_ATTACK_MIN, PLAYER_ATTACK_MAX_EXCLUSIVE) + (playerCourage / 2) + attackBonus
         enemyHealth = (enemyHealth - dmg).coerceAtLeast(0)
-        val round = mutableListOf("You strike the ${enemy.name} for $dmg damage.")
+        val round = mutableListOf("You strike ${enemy.articled(capitalized = false)} for $dmg damage.")
         if (enemyHealth <= 0) {
-            round += "The ${enemy.name} falls."
+            round += "${enemy.articled(capitalized = true)} falls."
             finish(victory = true)
         } else {
             round += enemyStrikes(reduced = false)
@@ -111,7 +117,7 @@ class CombatEngine(
         val dmg = (halved - damageReduction - courageDefense).coerceAtLeast(0)
         playerHealth = (playerHealth - dmg).coerceAtLeast(0)
         if (playerHealth <= 0) finish(victory = false)
-        return "The ${enemy.name} hits you for $dmg damage."
+        return "${enemy.articled(capitalized = true)} hits you for $dmg damage."
     }
 
     private fun finish(victory: Boolean) {
