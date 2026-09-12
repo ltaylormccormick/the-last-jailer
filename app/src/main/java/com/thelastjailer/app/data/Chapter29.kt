@@ -309,5 +309,5 @@ val chapter29 = com.thelastjailer.app.Chapter(
     id = "chapter_29",
     number = 29,
     title = "Chapter XXIX — The Whole, Undisguised",
-    startNodeId = "what_reaches_for_kaelen"
+    startNodeId = "what_reaches_for_kaelen_direct"
 )

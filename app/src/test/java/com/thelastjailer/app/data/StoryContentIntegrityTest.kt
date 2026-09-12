@@ -16,6 +16,49 @@ class StoryContentIntegrityTest {
     private val allNodes = StoryRepository.chapters.flatMap { StoryRepository.nodesInChapter(it.id) }
     private val allNodeIds = allNodes.map { it.id }.toSet()
 
+    private val nodesById = allNodes.associateBy { it.id }
+
+    /** Every (sourceNodeId, targetNodeId) edge in the game: a choice's nextNodeId, or a combat node's victory/defeat targets. */
+    private val allEdges: List<Pair<String, String>> = allNodes.flatMap { node ->
+        val combatTargets = node.combatEncounterId
+            ?.let { runCatching { CombatRepository.encounter(it) }.getOrNull() }
+            ?.let { listOfNotNull(it.victoryNodeId, it.defeatNodeId) }
+            ?: emptyList()
+        (node.choices.map { it.nextNodeId } + combatTargets).map { node.id to it }
+    }
+
+    private val outgoingEdges: Map<String, List<String>> = allEdges.groupBy({ it.first }, { it.second })
+
+    /**
+     * Nodes a *different* chapter's choice or combat outcome routes into directly - the legitimate
+     * way a chapter can have more than one true entry point (e.g. two upstream chapters, or two
+     * flag-gated exits from the same upstream choice, each landing on a different variant of this
+     * chapter's opening beat; see the trusted/guarded convergent-branch pattern used throughout
+     * chapters IX, XIII and XXIX). [chapter.startNodeId] is only ever one of these - it doesn't
+     * have to be the only one - so per-chapter reachability below seeds from all of them, not just
+     * the one recorded on [com.thelastjailer.app.Chapter].
+     */
+    private val externalEntryPointsByChapter: Map<String, Set<String>> = allEdges
+        .mapNotNull { (sourceId, targetId) ->
+            val source = nodesById[sourceId] ?: return@mapNotNull null
+            val target = nodesById[targetId] ?: return@mapNotNull null
+            if (source.chapterId != target.chapterId) target.chapterId to target.id else null
+        }
+        .groupBy({ it.first }, { it.second })
+        .mapValues { it.value.toSet() }
+
+    /** Every node reachable by walking forward from any of [startIds], however many chapters that crosses. */
+    private fun reachableFrom(startIds: Collection<String>): Set<String> {
+        val visited = mutableSetOf<String>()
+        val queue = ArrayDeque<String>().apply { addAll(startIds) }
+        while (queue.isNotEmpty()) {
+            val current = queue.removeFirst()
+            if (!visited.add(current)) continue
+            outgoingEdges[current]?.forEach { next -> if (next !in visited) queue.add(next) }
+        }
+        return visited
+    }
+
     @Test
     fun `every node id is unique across all chapters`() {
         val duplicates = allNodes.map { it.id }.groupingBy { it }.eachCount().filter { it.value > 1 }
@@ -87,18 +130,41 @@ class StoryContentIntegrityTest {
     }
 
     @Test
-    fun `every node is reachable from some chapter's start node`() {
-        val startNodeIds = StoryRepository.chapters.map { it.startNodeId }.toSet()
-        val nextNodeTargets = allNodes.flatMap { it.choices }.map { it.nextNodeId }.toSet()
-        val encounterTargets = allNodes.mapNotNull { it.combatEncounterId }.distinct()
-            .map { CombatRepository.encounter(it) }
-            .flatMap { listOfNotNull(it.victoryNodeId, it.defeatNodeId) }
-            .toSet()
+    fun `every chapter's startNodeId resolves to one of that chapter's own nodes`() {
+        val badStartNodes = StoryRepository.chapters
+            .filterNot { chapter -> allNodes.any { it.id == chapter.startNodeId && it.chapterId == chapter.id } }
+            .map { it.id to it.startNodeId }
 
-        val reachable = startNodeIds + nextNodeTargets + encounterTargets
-        val unreachable = allNodeIds - reachable
+        assertTrue(
+            "Chapters whose startNodeId doesn't resolve to one of their own nodes (stale after a rename?): $badStartNodes",
+            badStartNodes.isEmpty()
+        )
+    }
 
-        assertTrue("Nodes never reached by a start node, choice, or combat outcome: $unreachable", unreachable.isEmpty())
+    /**
+     * Stronger than "every node is reachable from *some* start node in the whole graph" (which a
+     * chapter's own stale/dangling startNodeId can pass vacuously, since some other chapter's real
+     * start node happens to reach the same id): walks forward from each chapter's own entry points -
+     * [Chapter.startNodeId] plus any node a different chapter routes into directly, see
+     * [externalEntryPointsByChapter] - and checks that walk actually covers every node tagged with
+     * that chapter's id. Reaching past the chapter's end into the next one is expected and fine -
+     * only a node missing from its own chapter's walk fails.
+     */
+    @Test
+    fun `every node in a chapter is reachable from that chapter's own entry points`() {
+        val unreachableByChapter = StoryRepository.chapters.mapNotNull { chapter ->
+            val seeds = (externalEntryPointsByChapter[chapter.id].orEmpty() + chapter.startNodeId)
+                .filter { it in allNodeIds } // a dangling startNodeId is covered by the test above
+            val reachable = reachableFrom(seeds)
+            val ownNodeIds = allNodes.filter { it.chapterId == chapter.id }.map { it.id }
+            val missing = ownNodeIds.filterNot { it in reachable }
+            if (missing.isEmpty()) null else chapter.id to missing
+        }
+
+        assertTrue(
+            "Chapters with nodes none of their own entry points ever reach: $unreachableByChapter",
+            unreachableByChapter.isEmpty()
+        )
     }
 
     @Test
