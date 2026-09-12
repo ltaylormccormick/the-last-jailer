@@ -1,5 +1,6 @@
 package com.thelastjailer.app.data
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -125,5 +126,19 @@ class StoryContentIntegrityTest {
         val deadEnds = allNodes.filter { it.combatEncounterId == null && it.choices.isEmpty() }
 
         assertTrue("Nodes with no combat and no choices (a dead end): ${deadEnds.map { it.id }}", deadEnds.isEmpty())
+    }
+
+    /**
+     * [CombatEncounter.isSurprise] opts a fight out of [com.thelastjailer.app.ui.StoryScreen]'s
+     * pre-combat accent-stripe signal. Pinning the exact set here means adding or removing one is
+     * a deliberate, reviewable edit to this test rather than a silent change to what the player is
+     * warned about.
+     */
+    @Test
+    fun `exactly the encounters written as a deliberate surprise opt out of the pre-combat signal`() {
+        val encounters = allNodes.mapNotNull { it.combatEncounterId }.distinct().map { CombatRepository.encounter(it) }
+        val surprises = encounters.filter { it.isSurprise }.map { it.id }.toSet()
+
+        assertEquals(setOf("ilsevet_duel_encounter"), surprises)
     }
 }

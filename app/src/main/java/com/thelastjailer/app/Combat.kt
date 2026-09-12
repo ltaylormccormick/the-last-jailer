@@ -14,6 +14,11 @@ data class Enemy(
  * A scripted fight triggered by a [StoryNode.combatEncounterId]. Combat is never fatal to the
  * story — a defeat still continues (via [defeatNodeId], defaulting to the same node as victory)
  * with no reward, rather than ending the run.
+ *
+ * [isSurprise] opts an encounter out of [com.thelastjailer.app.ui.StoryScreen]'s pre-combat
+ * accent-stripe signal (a choice whose [Choice.nextNodeId] leads straight into a fight is marked,
+ * unless that fight sets this) — for the handful of fights, like Ilsevet's chapter XVIII duel,
+ * written so the ambush itself is the point.
  */
 data class CombatEncounter(
     val id: String,
@@ -22,7 +27,8 @@ data class CombatEncounter(
     val defeatNodeId: String? = null,
     val xpReward: Int = 0,
     val goldReward: Int = 0,
-    val unlockTrophy: String? = null
+    val unlockTrophy: String? = null,
+    val isSurprise: Boolean = false
 )
 
 /** The result of playing out a [CombatEncounter] in [com.thelastjailer.app.ui.CombatScreen]. */
