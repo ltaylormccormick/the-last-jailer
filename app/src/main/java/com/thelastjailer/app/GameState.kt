@@ -1,13 +1,24 @@
 package com.thelastjailer.app
 
 /**
- * Small passive heal applied on an ordinary story-scene transition (see [applyChoice]). Deliberately
- * small: a typical chapter has ~5-9 such transitions, so even at +1 this totals only ~5-9 HP per
- * chapter (out of 100 max health) - a fraction of what a single Healing Draught (40 gold, +25 HP)
- * or Greater Healing Draught (150 gold, +50 HP) provides, so it eases the walk between fights
- * without meaningfully competing with the shop economy.
+ * Passive heal applied on an ordinary story-scene transition (see [applyChoice] and
+ * [GameState.passiveRegenAmount]). At full or near-full health this is deliberately tiny: a typical
+ * chapter has ~5-9 such transitions, so even at +1 this totals only ~5-9 HP per chapter (out of 100
+ * max health) - a fraction of what a single Healing Draught (40 gold, +25 HP) or Greater Healing
+ * Draught (150 gold, +50 HP) provides, so it eases the walk between fights without meaningfully
+ * competing with the shop economy.
+ *
+ * [WOUNDED_TRANSITION_REGEN] and [CRITICAL_TRANSITION_REGEN] exist because that same +1/transition
+ * is negligible as an actual recovery path: a player who ends a losing fight in single digits (combat
+ * floors health at 1, never 0 - see [resolveCombat]) had no way to meaningfully recover before an
+ * unknown next encounter short of a finite, gold-gated draught. Below half health the passive heal
+ * steps up, and below a quarter it steps up again, so a genuinely low-health run recovers over the
+ * next several story beats without needing an explicit "rest" scene at a specific location, and
+ * without changing anything for a player who's already healthy.
  */
 private const val SCENE_TRANSITION_REGEN = 1
+private const val WOUNDED_TRANSITION_REGEN = 4
+private const val CRITICAL_TRANSITION_REGEN = 9
 
 /** MaxHealth gained per level-up (see [levelAttackBonus]/[levelDamageReduction] for the rest of level's combat payoff). */
 private const val HEALTH_PER_LEVEL = 9
@@ -39,20 +50,27 @@ data class GameState(
 
 /**
  * Applies a [Choice]'s consequences and moves the player to its next node. [applyRegen] adds
- * [SCENE_TRANSITION_REGEN] on top - left `false` only by [resolveCombat]'s victory path, since
+ * [GameState.passiveRegenAmount] on top - left `false` only by [resolveCombat]'s victory path, since
  * that transition already carries the fight's own health cost and isn't an ordinary story beat.
  */
 fun GameState.applyChoice(choice: Choice, applyRegen: Boolean = true): GameState {
     val consequences = choice.consequences
     var next = this
     consequences.statDeltas.forEach { (stat, delta) -> next = next.withStatDelta(stat, delta) }
-    if (applyRegen) next = next.withStatDelta(StatType.HEALTH, SCENE_TRANSITION_REGEN)
+    if (applyRegen) next = next.withStatDelta(StatType.HEALTH, next.passiveRegenAmount())
     return next.copy(
         sceneId = choice.nextNodeId,
         flags = next.flags + consequences.setFlags,
         inventory = next.inventory + consequences.grantItemIds,
         trophies = consequences.unlockTrophy?.let { next.trophies + it } ?: next.trophies
     )
+}
+
+/** See [SCENE_TRANSITION_REGEN]/[WOUNDED_TRANSITION_REGEN]/[CRITICAL_TRANSITION_REGEN]. */
+private fun GameState.passiveRegenAmount(): Int = when {
+    health * 4 < maxHealth -> CRITICAL_TRANSITION_REGEN // below 25% max health
+    health * 2 < maxHealth -> WOUNDED_TRANSITION_REGEN // below 50% max health
+    else -> SCENE_TRANSITION_REGEN
 }
 
 private fun GameState.withStatDelta(stat: StatType, delta: Int): GameState = when (stat) {

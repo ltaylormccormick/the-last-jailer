@@ -171,6 +171,46 @@ class GameStateApplyChoiceTest {
     }
 
     @Test
+    fun `scene regen steps up below half health`() {
+        val state = GameState(health = 40, maxHealth = 100)
+        val choice = Choice(label = "Move on", nextNodeId = "next")
+
+        val result = state.applyChoice(choice)
+
+        assertEquals(44, result.health)
+    }
+
+    @Test
+    fun `scene regen steps up again below a quarter health`() {
+        val state = GameState(health = 20, maxHealth = 100)
+        val choice = Choice(label = "Move on", nextNodeId = "next")
+
+        val result = state.applyChoice(choice)
+
+        assertEquals(29, result.health)
+    }
+
+    @Test
+    fun `scene regen at exactly half health is not yet the wounded tier`() {
+        val state = GameState(health = 50, maxHealth = 100)
+        val choice = Choice(label = "Move on", nextNodeId = "next")
+
+        val result = state.applyChoice(choice)
+
+        assertEquals(51, result.health)
+    }
+
+    @Test
+    fun `scene regen at exactly a quarter health is wounded, not yet critical`() {
+        val state = GameState(health = 25, maxHealth = 100)
+        val choice = Choice(label = "Move on", nextNodeId = "next")
+
+        val result = state.applyChoice(choice)
+
+        assertEquals(29, result.health)
+    }
+
+    @Test
     fun `a default Consequences leaves stats, flags, inventory and trophies unchanged`() {
         val state = GameState(courage = 3, honour = 2, flags = setOf("a"), inventory = listOf("x"), trophies = setOf("y"))
         val choice = Choice(label = "Continue", nextNodeId = "next")
