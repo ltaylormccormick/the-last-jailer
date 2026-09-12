@@ -285,28 +285,52 @@ private fun ActionArea(
 /**
  * Every choice renders identically - order in the list carries no meaning (it's authoring order,
  * not a ranking), so styling one differently would visually nudge players toward whichever choice
- * happens to be listed first, with no connection to what it actually does.
+ * happens to be listed first, with no connection to what it actually does. The one exception is
+ * the accent stripe from [leadsToSignaledCombat]: that's not a ranking either, just an honest
+ * heads-up that this path goes straight into a fight.
  */
 @Composable
 private fun ChoiceList(choices: List<Choice>, onChoiceSelected: (Choice) -> Unit) {
     choices.forEach { choice ->
-        Button(
-            onClick = { onChoiceSelected(choice) },
-            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
-            shape = RoundedCornerShape(5.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF171B21),
-                contentColor = JailerColors.TextPrimary
-            ),
-            border = BorderStroke(1.dp, JailerColors.GoldSoft.copy(alpha = .55f))
-        ) {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("›", color = JailerColors.Gold, fontSize = 18.sp)
-                Spacer(Modifier.width(10.dp))
-                Text(choice.label, fontWeight = FontWeight.SemiBold)
+        val signaled = leadsToSignaledCombat(choice.nextNodeId)
+        Box(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+            Button(
+                onClick = { onChoiceSelected(choice) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(5.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF171B21),
+                    contentColor = JailerColors.TextPrimary
+                ),
+                border = BorderStroke(1.dp, JailerColors.GoldSoft.copy(alpha = .55f))
+            ) {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("›", color = JailerColors.Gold, fontSize = 18.sp)
+                    Spacer(Modifier.width(10.dp))
+                    Text(choice.label, fontWeight = FontWeight.SemiBold)
+                }
+            }
+            if (signaled) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = 1.dp)
+                        .width(3.dp)
+                        .fillMaxHeight(0.62f)
+                        .background(JailerColors.HealthRed, RoundedCornerShape(2.dp))
+                )
             }
         }
     }
+}
+
+/**
+ * True when [nodeId] is a fight ([StoryNode.combatEncounterId] set) that hasn't opted out via
+ * [CombatEncounter.isSurprise] — see that flag's doc for why a handful of fights opt out.
+ */
+private fun leadsToSignaledCombat(nodeId: String): Boolean {
+    val encounterId = StoryRepository.node(nodeId).combatEncounterId ?: return false
+    return !CombatRepository.encounter(encounterId).isSurprise
 }
 
 @Composable

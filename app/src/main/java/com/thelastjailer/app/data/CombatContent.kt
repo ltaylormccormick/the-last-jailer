@@ -375,7 +375,8 @@ private val ilsevetDuelEncounter = CombatEncounter(
     defeatNodeId = "ilsevet_duel_defeat",
     xpReward = 600,
     goldReward = 150,
-    unlockTrophy = "No More Between Us"
+    unlockTrophy = "No More Between Us",
+    isSurprise = true
 )
 
 private val ghostwriterEncounter = CombatEncounter(
