@@ -68,7 +68,7 @@ fun CombatScreen(
             Text(enemy.description, style = MaterialTheme.typography.bodyMedium)
             Spacer(Modifier.height(6.dp))
             Text("Enemy health: ${engine.enemyHealth}/${enemy.maxHealth}", style = MaterialTheme.typography.bodyMedium)
-            Text("Your health: ${engine.playerHealth}/${playerState.maxHealth}", style = MaterialTheme.typography.bodyMedium)
+            Text("Your health: ${engine.playerHealth.coerceAtLeast(1)}/${playerState.maxHealth}", style = MaterialTheme.typography.bodyMedium)
         }
 
         LazyColumn(

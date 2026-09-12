@@ -208,7 +208,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         id = "the_return",
         chapterId = "chapter_3",
         title = "The Return",
-        illustrationId = "warded_gate",
+        illustrationId = "first_seal",
         narrativeText = """
             Halvard doesn't look surprised to see him climbing back down through the tended
             dark, though something in his shoulders eases all the same. The seal is worse than
@@ -349,7 +349,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         id = "the_surface_again",
         chapterId = "chapter_3",
         title = "The Surface, Again",
-        illustrationId = "threshold_ahead",
+        illustrationId = "a_choice_at_the_door",
         narrativeText = """
             Rain again, or still; Kaelen has honestly lost track of how long he's been below. The
             ancient tree looks exactly as he left it. The black door does not.
