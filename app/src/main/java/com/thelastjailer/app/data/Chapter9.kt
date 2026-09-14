@@ -29,7 +29,7 @@ val chapter9Nodes: List<StoryNode> = listOf(
         id = "a_debt_remembered_trusted",
         chapterId = "chapter_9",
         title = "A Debt Remembered",
-        illustrationId = "dwarven_hold_gate",
+        illustrationId = "a_debt_remembered",
         narrativeText = """
             Voss bought Kaelen the road home with everything she had left to spend. He hasn't
             forgotten it for a moment since — not on the walk south, not in the days it took
@@ -73,7 +73,7 @@ val chapter9Nodes: List<StoryNode> = listOf(
         id = "a_debt_remembered_guarded",
         chapterId = "chapter_9",
         title = "A Debt Remembered",
-        illustrationId = "dwarven_hold_gate",
+        illustrationId = "a_debt_remembered",
         narrativeText = """
             Voss bought Kaelen the road home with everything she had left to spend. He hasn't
             forgotten it for a moment since — not on the walk south, not in the days it took
