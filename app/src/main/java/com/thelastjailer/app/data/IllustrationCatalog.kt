@@ -47,7 +47,29 @@ object IllustrationCatalog {
         "loyalists_ambush" to R.drawable.loyalists_ambush,
         "after_the_ambush" to R.drawable.after_the_ambush,
         "what_voss_offers" to R.drawable.what_voss_offers,
-        "chapter7_threshold" to R.drawable.chapter7_threshold
+        "chapter7_threshold" to R.drawable.chapter7_threshold,
+        "the_marshals_envoy" to R.drawable.the_marshals_envoy,
+        "voss_returns_alone" to R.drawable.voss_returns_alone,
+        "the_choice_of_roads" to R.drawable.the_choice_of_roads,
+        "the_device_glimpsed" to R.drawable.the_device_glimpsed,
+        "sentinels_close_in" to R.drawable.sentinels_close_in,
+        "the_price_of_escape" to R.drawable.the_price_of_escape,
+        "what_must_be_risked" to R.drawable.what_must_be_risked,
+        "chapter8_threshold" to R.drawable.chapter8_threshold,
+        "a_debt_remembered" to R.drawable.a_debt_remembered,
+        "the_plan_takes_shape" to R.drawable.the_plan_takes_shape,
+        "into_the_ash_sanctum" to R.drawable.into_the_ash_sanctum,
+        "voss_in_chains" to R.drawable.voss_in_chains,
+        "the_right_hand_intercepts" to R.drawable.the_right_hand_intercepts,
+        "castellan_defeated" to R.drawable.castellan_defeated,
+        "chapter9_threshold" to R.drawable.chapter9_threshold,
+        "the_last_two" to R.drawable.the_last_two,
+        "ilsevet_arrives" to R.drawable.ilsevet_arrives,
+        "kaelens_answer" to R.drawable.kaelens_answer,
+        "the_gate_falls" to R.drawable.the_gate_falls,
+        "halvard_falls" to R.drawable.halvard_falls,
+        "what_halvard_leaves_behind" to R.drawable.what_halvard_leaves_behind,
+        "chapter10_threshold" to R.drawable.chapter10_threshold
     )
 
     fun get(illustrationId: String): Int? = illustrations[illustrationId]

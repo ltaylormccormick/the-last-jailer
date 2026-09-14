@@ -32,7 +32,7 @@ val chapter10Nodes: List<StoryNode> = listOf(
         id = "the_last_two",
         chapterId = "chapter_10",
         title = "The Last Two",
-        illustrationId = "dwarven_hold_gate",
+        illustrationId = "the_last_two",
         narrativeText = """
             Halvard doesn't waste time being surprised anymore, which is its own kind of grim
             comfort. "One of the last two," he says, turning Ordrun's own words over like a coin

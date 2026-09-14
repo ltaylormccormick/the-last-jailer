@@ -28,7 +28,7 @@ val chapter11Nodes: List<StoryNode> = listOf(
         id = "the_chain_speaks",
         chapterId = "chapter_11",
         title = "The Chain Speaks",
-        illustrationId = "dwarven_hold_gate",
+        illustrationId = "the_chain_speaks",
         narrativeText = """
             Kaelen doesn't mean to fall asleep wearing it. The warden's chain isn't heavy, not
             really, but it sits differently than any weight he's carried before: six links, six
@@ -105,7 +105,7 @@ val chapter11Nodes: List<StoryNode> = listOf(
         id = "the_road_to_fenmoor",
         chapterId = "chapter_11",
         title = "The Road to Fenmoor",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "the_road_to_fenmoor",
         narrativeText = """
             Fenmoor turns out to be exactly as unwelcoming as its name promises: flat grey water
             under a flatter grey sky, reeds taller than a man, and a smell that never quite goes

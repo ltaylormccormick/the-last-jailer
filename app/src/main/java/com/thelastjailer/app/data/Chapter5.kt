@@ -26,7 +26,7 @@ val chapter5Nodes: List<StoryNode> = listOf(
         id = "the_marshals_envoy",
         chapterId = "chapter_5",
         title = "The Marshal's Envoy",
-        illustrationId = "threshold_ahead",
+        illustrationId = "the_marshals_envoy",
         narrativeText = """
             The weeks after the siege pass slower than any before them. Halvard's wound closes
             crooked, and he curses the cold more than he used to, but he mends. Stonebeard Hold's
