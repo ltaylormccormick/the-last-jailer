@@ -27,7 +27,7 @@ val chapter7Nodes: List<StoryNode> = listOf(
         id = "voss_returns_alone",
         chapterId = "chapter_7",
         title = "Voss Returns Alone",
-        illustrationId = "threshold_ahead",
+        illustrationId = "voss_returns_alone",
         narrativeText = """
             No column this time. No banner, not even the four riders from her first visit. Just
             Voss, on foot, favoring one side, stopping well short of the tree the way she never

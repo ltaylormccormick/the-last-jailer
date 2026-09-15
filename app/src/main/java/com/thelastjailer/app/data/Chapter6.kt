@@ -28,7 +28,7 @@ val chapter6Nodes: List<StoryNode> = listOf(
         id = "the_choice_of_roads",
         chapterId = "chapter_6",
         title = "The Choice of Roads",
-        illustrationId = "dwarven_hold_gate",
+        illustrationId = "the_choice_of_roads",
         narrativeText = """
             Halvard doesn't sleep so much as ration it these days, and the missive sits between
             them on the workbench like a coal neither of them wants to touch first.
