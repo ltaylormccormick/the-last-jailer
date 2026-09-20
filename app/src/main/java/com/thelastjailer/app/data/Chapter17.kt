@@ -103,7 +103,7 @@ val chapter17Nodes: List<StoryNode> = listOf(
         id = "the_road_to_ashfall_again",
         chapterId = "chapter_17",
         title = "The Road to Ashfall, Again",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "back_to_the_ash",
         narrativeText = """
             The Ashfall reaches have changed since the last two times Kaelen crossed them. The
             Sanctum's spire doesn't just hum now; it's visible for a day's travel in every

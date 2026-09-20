@@ -31,7 +31,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
         id = "word_from_ashfall",
         chapterId = "chapter_12",
         title = "Word from Ashfall",
-        illustrationId = "dwarven_hold_gate",
+        illustrationId = "word_from_ashfall",
         narrativeText = """
             It's one of Voss's old Order contacts who brings the word, riding hard enough to
             nearly founder his horse at Stonebeard's gate: the kind of messenger who doesn't
@@ -140,7 +140,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
         id = "back_to_the_ash",
         chapterId = "chapter_12",
         title = "Back to the Ash",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "back_to_the_ash",
         narrativeText = """
             The Ashfall reaches look different at speed and under smoke than they did the last
             two times Kaelen crossed them: the spire that used to hum is visible from twice the
@@ -297,7 +297,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
         id = "watched_from_a_distance",
         chapterId = "chapter_12",
         title = "Watched From a Distance",
-        illustrationId = "dwarven_hold_gate",
+        illustrationId = "watched_from_a_distance",
         narrativeText = """
             Voss doesn't argue with the decision, which somehow makes it heavier rather than
             lighter. "She's had every chance to be someone worth risking your neck for," she

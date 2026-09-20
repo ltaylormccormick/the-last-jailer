@@ -30,7 +30,7 @@ val chapter13Nodes: List<StoryNode> = listOf(
         id = "the_orders_delegation_trusted",
         chapterId = "chapter_13",
         title = "The Order's Delegation",
-        illustrationId = "threshold_ahead",
+        illustrationId = "the_orders_delegation",
         narrativeText = """
             Halvard's grave is barely a season old when the second rider in as many months comes
             up the ruined road to the black door: Order colours again, but not Voss's, and not
@@ -67,7 +67,7 @@ val chapter13Nodes: List<StoryNode> = listOf(
         id = "the_orders_delegation_guarded",
         chapterId = "chapter_13",
         title = "The Order's Delegation",
-        illustrationId = "threshold_ahead",
+        illustrationId = "the_orders_delegation",
         narrativeText = """
             Halvard's grave is barely a season old when the second rider in as many months comes
             up the ruined road to the black door: Order colours again, but not Voss's, and not

@@ -31,7 +31,7 @@ val chapter18Nodes: List<StoryNode> = listOf(
         id = "no_more_envoys",
         chapterId = "chapter_18",
         title = "No More Envoys",
-        illustrationId = "threshold_ahead",
+        illustrationId = "no_more_envoys",
         narrativeText = """
             She comes back to the black door three days after the Sanctum, alone this time in
             every sense that matters: no vanguard, no captain, no reliquary thief. Just Ilsevet,

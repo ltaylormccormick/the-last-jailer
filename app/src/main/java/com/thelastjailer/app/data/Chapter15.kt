@@ -28,7 +28,7 @@ val chapter15Nodes: List<StoryNode> = listOf(
         id = "what_selvane_sends",
         chapterId = "chapter_15",
         title = "What Selvane Sends",
-        illustrationId = "dwarven_hold_gate",
+        illustrationId = "what_selvane_sends",
         narrativeText = """
             No rider this time, just a locked dispatch case, delivered by a courier who doesn't
             wait for a reply and won't say who sent it beyond "the Inquisitor-General thought the
