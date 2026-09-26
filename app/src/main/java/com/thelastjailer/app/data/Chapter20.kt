@@ -61,7 +61,7 @@ val chapter20Nodes: List<StoryNode> = listOf(
         id = "the_road_to_the_workshop_alone",
         chapterId = "chapter_20",
         title = "The Road to the Workshop",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "the_road_to_the_workshop",
         narrativeText = """
             He goes alone, and something about the solitude feels correct for what he's about to
             read, the way certain conversations only work with exactly one listener.
@@ -79,7 +79,7 @@ val chapter20Nodes: List<StoryNode> = listOf(
         id = "the_road_to_the_workshop_with_voss",
         chapterId = "chapter_20",
         title = "The Road to the Workshop",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "the_road_to_the_workshop",
         narrativeText = """
             Voss falls into step beside him without needing to be asked twice, and Kaelen finds
             he's glad of the company sooner than he expected to be, the road out feeling longer

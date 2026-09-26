@@ -28,7 +28,7 @@ val chapter23Nodes: List<StoryNode> = listOf(
         id = "word_of_emberlow",
         chapterId = "chapter_23",
         title = "Word of Emberlow",
-        illustrationId = "black_door_beneath_the_tree",
+        illustrationId = "word_of_emberlow",
         narrativeText = """
             The prisoner wakes Kaelen in the deep of the night, which it has never once done
             before. "Emberlow," it says, before he's even fully upright. "One of the others.
@@ -92,7 +92,7 @@ val chapter23Nodes: List<StoryNode> = listOf(
         id = "the_road_to_emberlow",
         chapterId = "chapter_23",
         title = "The Road to Emberlow",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "the_road_to_emberlow",
         narrativeText = """
             Emberlow turns out to be less a village than the memory of one: the kind of place
             that emptied out slowly enough that nobody ever quite decided to leave, and the gate

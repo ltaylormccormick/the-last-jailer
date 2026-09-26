@@ -34,7 +34,7 @@ val chapter19Nodes: List<StoryNode> = listOf(
         id = "what_ilsevet_knew",
         chapterId = "chapter_19",
         title = "What Ilsevet Knew",
-        illustrationId = "threshold_ahead",
+        illustrationId = "what_ilsevet_knew",
         narrativeText = """
             Whatever else changes about what happens to her, Ilsevet has exactly one more honest
             conversation left in her, and she spends it on something Kaelen doesn't expect.
