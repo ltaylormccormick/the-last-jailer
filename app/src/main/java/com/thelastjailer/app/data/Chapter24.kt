@@ -31,7 +31,7 @@ val chapter24Nodes: List<StoryNode> = listOf(
         id = "word_of_greymoor",
         chapterId = "chapter_24",
         title = "Word of Greymoor",
-        illustrationId = "black_door_beneath_the_tree",
+        illustrationId = "word_of_greymoor",
         narrativeText = """
             Three days after Emberlow goes quiet, the prisoner speaks a name Kaelen has been
             dreading since Voss said "the nearest." "Greymoor," it says. "Kestrel's gate. It's
@@ -99,7 +99,7 @@ val chapter24Nodes: List<StoryNode> = listOf(
         id = "the_road_to_greymoor",
         chapterId = "chapter_24",
         title = "The Road to Greymoor",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "the_road_to_greymoor",
         narrativeText = """
             Greymoor hasn't changed since Kaelen last stood in it: the same low grey hills, the
             same watch-post with its door still hanging the way the search party left it months

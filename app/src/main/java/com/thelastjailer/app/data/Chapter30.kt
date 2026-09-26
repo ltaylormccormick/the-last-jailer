@@ -32,7 +32,7 @@ val chapter30Nodes: List<StoryNode> = listOf(
         id = "what_must_happen_next",
         chapterId = "chapter_30",
         title = "What Must Happen Next",
-        illustrationId = "black_door_beneath_the_tree",
+        illustrationId = "what_must_happen_next",
         narrativeText = """
             "It reached all the way into you and lost," the prisoner says, the morning after. "It
             has never once done that before, not in three hundred years. Whatever it is now, it
@@ -98,7 +98,7 @@ val chapter30Nodes: List<StoryNode> = listOf(
         id = "the_road_back_to_the_sundering_ground",
         chapterId = "chapter_30",
         title = "The Road Back to the Sundering Ground",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "the_road_back_to_the_sundering_ground",
         narrativeText = """
             Voss rides beside him without needing to be asked, the way she has since Fenmoor. The
             prisoner is quieter than Kaelen has ever known it, holding, he suspects, every

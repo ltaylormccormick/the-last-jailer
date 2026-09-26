@@ -27,7 +27,7 @@ val chapter28Nodes: List<StoryNode> = listOf(
         id = "what_the_thread_shows_now",
         chapterId = "chapter_28",
         title = "What the Thread Shows Now",
-        illustrationId = "black_door_beneath_the_tree",
+        illustrationId = "what_the_thread_shows_now",
         narrativeText = """
             Three days on the road and the thread still hasn't wavered, pointing steady and
             certain toward a name none of them have ever heard spoken. "Wraithspire," the
@@ -58,7 +58,7 @@ val chapter28Nodes: List<StoryNode> = listOf(
         id = "the_road_to_wraithspire_dangerous",
         chapterId = "chapter_28",
         title = "The Road to Wraithspire",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "the_road_to_wraithspire",
         narrativeText = """
             He says it like a warning to himself as much as to the others, and it colors the
             whole climb that follows: every shadow checked twice, every silence tested before he
@@ -76,7 +76,7 @@ val chapter28Nodes: List<StoryNode> = listOf(
         id = "the_road_to_wraithspire_well_kept",
         chapterId = "chapter_28",
         title = "The Road to Wraithspire",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "the_road_to_wraithspire",
         narrativeText = """
             He says it hoping to be right, and something in the hope makes the climb feel lighter
             even though the ground doesn't. The road climbs somewhere the maps stop agreeing with

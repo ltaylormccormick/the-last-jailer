@@ -27,7 +27,7 @@ val chapter27Nodes: List<StoryNode> = listOf(
         id = "what_the_thread_wants",
         chapterId = "chapter_27",
         title = "What the Thread Wants",
-        illustrationId = "black_door_beneath_the_tree",
+        illustrationId = "what_the_thread_wants",
         narrativeText = """
             The thread won't stay still. Kaelen wakes to find it's worked its way out of the
             pouch he sealed it in and is lying across the floor, pointing at the wall like a

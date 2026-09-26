@@ -51,6 +51,7 @@ object IllustrationCatalog {
         "the_marshals_envoy" to R.drawable.the_marshals_envoy,
         "voss_returns_alone" to R.drawable.voss_returns_alone,
         "the_choice_of_roads" to R.drawable.the_choice_of_roads,
+        "ashfall_sanctum_vista" to R.drawable.ashfall_sanctum_vista,
         "the_device_glimpsed" to R.drawable.the_device_glimpsed,
         "sentinels_close_in" to R.drawable.sentinels_close_in,
         "the_price_of_escape" to R.drawable.the_price_of_escape,
@@ -183,8 +184,21 @@ object IllustrationCatalog {
         "the_vigils_challenge" to R.drawable.the_vigils_challenge,
         "what_wraithspire_reveals" to R.drawable.what_wraithspire_reveals,
         "chapter28_threshold" to R.drawable.chapter28_threshold,
-        // Chapter 30 ("Six, Not One") — id introduced by #86, entry added early since the art arrived first
-        "the_road_back_to_the_sundering_ground" to R.drawable.the_road_back_to_the_sundering_ground
+        // Chapter 29 ("The Whole, Undisguised")
+        "what_reaches_for_kaelen" to R.drawable.what_reaches_for_kaelen,
+        "what_the_prisoner_says_before" to R.drawable.what_the_prisoner_says_before,
+        "into_the_undisguised" to R.drawable.into_the_undisguised,
+        "what_holding_the_line_costs" to R.drawable.what_holding_the_line_costs,
+        "what_kaelen_decides_after" to R.drawable.what_kaelen_decides_after,
+        "chapter29_threshold" to R.drawable.chapter29_threshold,
+        // Chapter 30 ("Six, Not One")
+        "where_it_can_be_found" to R.drawable.where_it_can_be_found,
+        "the_road_back_to_the_sundering_ground" to R.drawable.the_road_back_to_the_sundering_ground,
+        "what_gathers_at_the_ground" to R.drawable.what_gathers_at_the_ground,
+        "the_last_reach" to R.drawable.the_last_reach,
+        "what_the_whole_finally_hears" to R.drawable.what_the_whole_finally_hears,
+        "what_kaelen_offers_at_the_end" to R.drawable.what_kaelen_offers_at_the_end,
+        "chapter30_threshold" to R.drawable.chapter30_threshold
     )
 
     fun get(illustrationId: String): Int? = illustrations[illustrationId]
