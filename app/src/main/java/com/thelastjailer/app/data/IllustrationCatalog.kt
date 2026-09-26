@@ -121,7 +121,70 @@ object IllustrationCatalog {
         "the_duel" to R.drawable.the_duel,
         "what_is_left_of_her" to R.drawable.what_is_left_of_her,
         "what_kaelen_chooses" to R.drawable.what_kaelen_chooses,
-        "chapter18_threshold" to R.drawable.chapter18_threshold
+        "chapter18_threshold" to R.drawable.chapter18_threshold,
+        // Chapter 19 ("What the Dead Left Written")
+        "the_dead_archivist" to R.drawable.the_dead_archivist,
+        "the_prisoners_reaction" to R.drawable.the_prisoners_reaction,
+        "what_selvane_finds" to R.drawable.what_selvane_finds,
+        "the_addressed_names" to R.drawable.the_addressed_names,
+        "chapter19_threshold" to R.drawable.chapter19_threshold,
+        // Chapter 20 ("The Workshop's Own Guardian")
+        "the_road_to_the_workshop" to R.drawable.the_road_to_the_workshop,
+        "what_the_workshop_holds" to R.drawable.what_the_workshop_holds,
+        "the_workshops_own_guardian" to R.drawable.the_workshops_own_guardian,
+        "the_last_page" to R.drawable.the_last_page,
+        // Chapter 21
+        "what_it_was_ch21" to R.drawable.what_it_was_ch21,
+        "voss_hears_it_too" to R.drawable.voss_hears_it_too,
+        "what_the_sixth_wants" to R.drawable.what_the_sixth_wants,
+        // Chapter 22
+        "what_kaelen_offers_first" to R.drawable.what_kaelen_offers_first,
+        "into_the_asking" to R.drawable.into_the_asking,
+        "what_kaelen_commits_to" to R.drawable.what_kaelen_commits_to,
+        "chapter22_threshold" to R.drawable.chapter22_threshold,
+        // Chapter 23 ("Word of Emberlow")
+        "word_of_emberlow" to R.drawable.word_of_emberlow,
+        "what_the_prisoner_senses" to R.drawable.what_the_prisoner_senses,
+        "the_road_to_emberlow" to R.drawable.the_road_to_emberlow,
+        "what_emberlow_kept" to R.drawable.what_emberlow_kept,
+        "what_waits_at_the_threshold" to R.drawable.what_waits_at_the_threshold,
+        "reaching_emberlow" to R.drawable.reaching_emberlow,
+        "chapter23_threshold" to R.drawable.chapter23_threshold,
+        // Chapter 24 ("Word of Greymoor")
+        "what_the_prisoner_recalls" to R.drawable.what_the_prisoner_recalls,
+        "what_greymoor_became" to R.drawable.what_greymoor_became,
+        "what_waits_in_the_keening" to R.drawable.what_waits_in_the_keening,
+        "reaching_greymoor" to R.drawable.reaching_greymoor,
+        "chapter24_threshold" to R.drawable.chapter24_threshold,
+        // Chapter 25 ("Word of Duskmere")
+        "word_of_duskmere" to R.drawable.word_of_duskmere,
+        "what_the_prisoner_fears" to R.drawable.what_the_prisoner_fears,
+        "the_road_to_duskmere" to R.drawable.the_road_to_duskmere,
+        "what_duskmere_became" to R.drawable.what_duskmere_became,
+        "the_answering_shape" to R.drawable.the_answering_shape,
+        "what_yielding_cost" to R.drawable.what_yielding_cost,
+        "chapter25_threshold" to R.drawable.chapter25_threshold,
+        // Chapter 26
+        "what_they_find_there" to R.drawable.what_they_find_there,
+        "what_guards_the_beginning" to R.drawable.what_guards_the_beginning,
+        "what_kaelen_offers_the_forgotten" to R.drawable.what_kaelen_offers_the_forgotten,
+        "chapter26_threshold" to R.drawable.chapter26_threshold,
+        // Chapter 27 ("What It Sent For the Thread")
+        "what_the_thread_wants" to R.drawable.what_the_thread_wants,
+        "what_the_prisoner_warns" to R.drawable.what_the_prisoner_warns,
+        "what_arrives_in_the_dark" to R.drawable.what_arrives_in_the_dark,
+        "the_reclamation" to R.drawable.the_reclamation,
+        "what_the_thread_showed" to R.drawable.what_the_thread_showed,
+        "chapter27_threshold" to R.drawable.chapter27_threshold,
+        // Chapter 28 ("The Last Gate")
+        "what_the_thread_shows_now" to R.drawable.what_the_thread_shows_now,
+        "the_road_to_wraithspire" to R.drawable.the_road_to_wraithspire,
+        "what_guards_wraithspire" to R.drawable.what_guards_wraithspire,
+        "the_vigils_challenge" to R.drawable.the_vigils_challenge,
+        "what_wraithspire_reveals" to R.drawable.what_wraithspire_reveals,
+        "chapter28_threshold" to R.drawable.chapter28_threshold,
+        // Chapter 30 ("Six, Not One") — id introduced by #86, entry added early since the art arrived first
+        "the_road_back_to_the_sundering_ground" to R.drawable.the_road_back_to_the_sundering_ground
     )
 
     fun get(illustrationId: String): Int? = illustrations[illustrationId]
