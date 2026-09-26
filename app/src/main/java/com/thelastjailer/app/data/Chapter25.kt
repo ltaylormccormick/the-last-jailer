@@ -29,7 +29,7 @@ val chapter25Nodes: List<StoryNode> = listOf(
         id = "word_of_duskmere",
         chapterId = "chapter_25",
         title = "Word of Duskmere",
-        illustrationId = "black_door_beneath_the_tree",
+        illustrationId = "word_of_duskmere",
         narrativeText = """
             The prisoner doesn't wake him gently this time. "Duskmere," it says, voice tight in a
             way Kaelen has never heard from it. "It already answered. I felt it happen." The
@@ -91,7 +91,7 @@ val chapter25Nodes: List<StoryNode> = listOf(
         id = "the_road_to_duskmere",
         chapterId = "chapter_25",
         title = "The Road to Duskmere",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "the_road_to_duskmere",
         narrativeText = """
             Duskmere sits low in a fog that doesn't lift even at midday, and Kaelen feels the
             wrongness of the place before he sees it: the ward-stone at its heart isn't failing

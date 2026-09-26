@@ -30,7 +30,7 @@ val chapter29Nodes: List<StoryNode> = listOf(
         id = "what_reaches_for_kaelen_direct",
         chapterId = "chapter_29",
         title = "What Reaches for Kaelen",
-        illustrationId = "black_door_beneath_the_tree",
+        illustrationId = "what_reaches_for_kaelen",
         narrativeText = """
             It doesn't come through the prisoner this time. Kaelen feels it directly, for the
             first time in three years, not a request, not a memory, not a gentle asking. A hand,
@@ -67,7 +67,7 @@ val chapter29Nodes: List<StoryNode> = listOf(
         id = "what_reaches_for_kaelen_patient",
         chapterId = "chapter_29",
         title = "What Reaches for Kaelen",
-        illustrationId = "black_door_beneath_the_tree",
+        illustrationId = "what_reaches_for_kaelen",
         narrativeText = """
             It doesn't come through the prisoner this time. Kaelen feels it directly, for the
             first time in three years, not a request, not a memory, not a gentle asking. A hand,
