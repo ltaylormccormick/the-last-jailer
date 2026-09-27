@@ -1,7 +1,6 @@
 package com.thelastjailer.app
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -57,14 +56,34 @@ class GameStateResolveCombatTest {
     }
 
     @Test
-    fun `combat is never fatal even when damage taken exceeds current health`() {
+    fun `a knockout recovers to a quarter health instead of leaving the next fight at one hp`() {
         val state = GameState(health = 20, maxHealth = 100)
         val outcome = CombatOutcome(victory = false, damageTaken = 999, consumedItemIds = emptyList())
 
         val result = state.resolveCombat(testEncounter, outcome)
 
+        assertEquals(25, result.health)
+        assertTrue(result.health > 0)
+    }
+
+    @Test
+    fun `defeat recovery floor scales with max health and rounds up`() {
+        val state = GameState(health = 20, maxHealth = 109)
+        val outcome = CombatOutcome(victory = false, damageTaken = 999, consumedItemIds = emptyList())
+
+        val result = state.resolveCombat(testEncounter, outcome)
+
+        assertEquals(28, result.health)
+    }
+
+    @Test
+    fun `victory does not receive the defeat recovery floor`() {
+        val state = GameState(health = 20, maxHealth = 100)
+        val outcome = CombatOutcome(victory = true, damageTaken = 19, consumedItemIds = emptyList())
+
+        val result = state.resolveCombat(testEncounter, outcome)
+
         assertEquals(1, result.health)
-        assertFalse(result.health <= 0)
     }
 
     @Test
