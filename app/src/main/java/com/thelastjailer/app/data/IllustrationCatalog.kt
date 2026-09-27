@@ -7,6 +7,9 @@ object IllustrationCatalog {
     private val illustrations: Map<String, Int> = mapOf(
         "kaelen_combat_portrait" to R.drawable.kaelen_combat_portrait,
         "kaelen_combat_portrait_v2" to R.drawable.kaelen_combat_portrait_v2,
+        "cave_lurker_combat" to R.drawable.cave_lurker_combat,
+        "seal_wraith_combat" to R.drawable.seal_wraith_combat,
+        "ashen_vanguard_combat" to R.drawable.ashen_vanguard_combat,
         "black_door_beneath_the_tree" to R.drawable.black_door_beneath_the_tree,
         "iron_door_open_tunnel" to R.drawable.iron_door_open_tunnel,
         "knight_sword_drawn_door" to R.drawable.knight_sword_drawn_door,
