@@ -122,11 +122,16 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                     purchaseCompletedTick = billing.purchaseCompletedTick,
                     onRequestUnlock = onRequestUnlock,
                     onChoiceSelected = { choice ->
+                        // Keep one exact pre-choice snapshot so "go back one step" restores stats,
+                        // flags and items as well as the previous scene.
+                        store.savePreviousState(state.activeSlot, state)
                         state = state.applyChoice(choice)
                         store.save(state.activeSlot, state)
                     },
                     onCombatResolved = { encounter, outcome ->
                         state = state.resolveCombat(encounter, outcome)
+                        // Combat is deliberately irreversible through the one-step story back action.
+                        store.clearPreviousState(state.activeSlot)
                         store.save(state.activeSlot, state)
                     },
                     onOpenJournal = { screen = AppScreen.JOURNAL },
@@ -140,6 +145,8 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                     state = state,
                     onPurchase = { itemId, price ->
                         state = state.purchaseItem(itemId, price)
+                        // Avoid a later story undo also refunding/duplicating a shop transaction.
+                        store.clearPreviousState(state.activeSlot)
                         store.save(state.activeSlot, state)
                     }
                 )
