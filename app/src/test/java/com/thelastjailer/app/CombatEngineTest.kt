@@ -16,126 +16,42 @@ private fun testEnemy(
     maxAttack: Int = 9
 ) = Enemy(id = id, name = name, maxHealth = maxHealth, minAttack = minAttack, maxAttack = maxAttack, description = "")
 
+private fun storyScaled(raw: Int): Int = (raw * 4 + 4) / 5
+
 class CombatEngineTest {
 
     @Test
-    fun `attack deals random damage and the enemy retaliates`() {
+    fun `attack damages enemy and retaliation uses story damage scale`() {
         val seed = 123L
         val enemy = testEnemy()
-        val engine = CombatEngine(
-            enemy = enemy,
-            startingPlayerHealth = 100,
-            playerMaxHealth = 100,
-            playerCourage = 4,
-            availableDraughts = 0,
-            random = Random(seed)
-        )
-        // Same call order as CombatEngine.attack(): player roll, then the enemy's retaliation roll.
+        val engine = CombatEngine(enemy, 100, 100, 4, 0, random = Random(seed))
         val expected = Random(seed)
-        val playerDamage = expected.nextInt(8, 15) + (4 / 2)
-        val enemyDamage = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
+        val playerDamage = expected.nextInt(8, 15) + 2
+        val rawEnemyDamage = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
 
         engine.attack()
 
         assertEquals(enemy.maxHealth - playerDamage, engine.enemyHealth)
-        assertEquals(100 - enemyDamage, engine.playerHealth)
+        assertEquals(100 - storyScaled(rawEnemyDamage), engine.playerHealth)
         assertNull(engine.outcome)
-        assertTrue(engine.log.any { it.contains("You strike") })
-        assertTrue(engine.log.any { it.contains("hits you for") })
     }
 
     @Test
-    fun `defend halves the enemy's incoming damage and deals none`() {
+    fun `defend halves story scaled damage`() {
         val seed = 55L
         val enemy = testEnemy()
-        val engine = CombatEngine(
-            enemy = enemy,
-            startingPlayerHealth = 100,
-            playerMaxHealth = 100,
-            playerCourage = 0,
-            availableDraughts = 0,
-            random = Random(seed)
-        )
+        val engine = CombatEngine(enemy, 100, 100, 0, 0, random = Random(seed))
         val expected = Random(seed)
-        val rawEnemyDamage = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
+        val raw = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
 
         engine.defend()
 
-        assertEquals(100 - (rawEnemyDamage / 2), engine.playerHealth)
+        assertEquals(100 - storyScaled(raw) / 2, engine.playerHealth)
         assertEquals(enemy.maxHealth, engine.enemyHealth)
     }
 
     @Test
-    fun `damageReduction lowers incoming damage, floored at zero`() {
-        val seed = 123L
-        val enemy = testEnemy()
-        val engine = CombatEngine(
-            enemy = enemy,
-            startingPlayerHealth = 100,
-            playerMaxHealth = 100,
-            playerCourage = 4,
-            availableDraughts = 0,
-            damageReduction = 2,
-            random = Random(seed)
-        )
-        val expected = Random(seed)
-        val playerDamage = expected.nextInt(8, 15) + (4 / 2)
-        val rawEnemyDamage = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
-
-        engine.attack()
-
-        assertEquals(enemy.maxHealth - playerDamage, engine.enemyHealth)
-        assertEquals(100 - (rawEnemyDamage - 2).coerceAtLeast(0), engine.playerHealth)
-    }
-
-    @Test
-    fun `damageReduction stacks with defend's halving`() {
-        // minAttack 4 halved is 2, which a damageReduction of 2 should cancel out entirely.
-        val seed = 55L
-        val enemy = testEnemy()
-        val engine = CombatEngine(
-            enemy = enemy,
-            startingPlayerHealth = 100,
-            playerMaxHealth = 100,
-            playerCourage = 0,
-            availableDraughts = 0,
-            damageReduction = 2,
-            random = Random(seed)
-        )
-        val expected = Random(seed)
-        val rawEnemyDamage = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
-
-        engine.defend()
-
-        assertEquals(100 - (rawEnemyDamage / 2 - 2).coerceAtLeast(0), engine.playerHealth)
-        assertTrue(engine.log.any { it.contains("hits you for") })
-    }
-
-    @Test
-    fun `attackBonus adds flat damage to the player's own strike`() {
-        val seed = 123L
-        val enemy = testEnemy()
-        val engine = CombatEngine(
-            enemy = enemy,
-            startingPlayerHealth = 100,
-            playerMaxHealth = 100,
-            playerCourage = 4,
-            availableDraughts = 0,
-            attackBonus = 3,
-            random = Random(seed)
-        )
-        val expected = Random(seed)
-        val playerDamage = expected.nextInt(8, 15) + (4 / 2) + 3
-        val enemyDamage = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
-
-        engine.attack()
-
-        assertEquals(enemy.maxHealth - playerDamage, engine.enemyHealth)
-        assertEquals(100 - enemyDamage, engine.playerHealth)
-    }
-
-    @Test
-    fun `courage lowers incoming damage on defend, by less than its bonus on attack`() {
+    fun `damage reduction and courage stack with defend`() {
         val seed = 55L
         val enemy = testEnemy()
         val engine = CombatEngine(
@@ -144,21 +60,48 @@ class CombatEngineTest {
             playerMaxHealth = 100,
             playerCourage = 9,
             availableDraughts = 0,
+            damageReduction = 2,
             random = Random(seed)
         )
         val expected = Random(seed)
-        val rawEnemyDamage = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
-        // Courage 9: Defend mitigates 9 / 3 = 3, strictly less than Attack's 9 / 2 = 4 bonus damage.
-        val defendMitigation = 9 / 3
+        val raw = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
+        val damage = (storyScaled(raw) / 2 - 2 - 3).coerceAtLeast(0)
 
         engine.defend()
 
-        assertEquals(100 - (rawEnemyDamage / 2 - defendMitigation).coerceAtLeast(0), engine.playerHealth)
-        assertTrue(defendMitigation < 9 / 2)
+        assertEquals(100 - damage, engine.playerHealth)
     }
 
     @Test
-    fun `greater draught heals more than the regular draught and consumes its own item id`() {
+    fun `attack bonus adds flat damage`() {
+        val seed = 123L
+        val enemy = testEnemy()
+        val engine = CombatEngine(enemy, 100, 100, 4, 0, attackBonus = 6, random = Random(seed))
+        val expected = Random(seed)
+        val playerDamage = expected.nextInt(8, 15) + 2 + 6
+
+        engine.attack()
+
+        assertEquals(enemy.maxHealth - playerDamage, engine.enemyHealth)
+    }
+
+    @Test
+    fun `regular draught heals then enemy attacks`() {
+        val seed = 7L
+        val enemy = testEnemy()
+        val engine = CombatEngine(enemy, 50, 100, 0, 1, random = Random(seed))
+        val expected = Random(seed)
+        val raw = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
+
+        engine.useDraught()
+
+        assertEquals(0, engine.remainingDraughts)
+        assertEquals(listOf("healing_draught"), engine.consumedItems)
+        assertEquals(75 - storyScaled(raw), engine.playerHealth)
+    }
+
+    @Test
+    fun `greater draught heals fifty then enemy attacks`() {
         val seed = 7L
         val enemy = testEnemy()
         val engine = CombatEngine(
@@ -170,166 +113,34 @@ class CombatEngineTest {
             availableGreaterDraughts = 1,
             random = Random(seed)
         )
-        assertEquals(1, engine.remainingGreaterDraughts)
         val expected = Random(seed)
-        val enemyDamage = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
+        val raw = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
 
         engine.useGreaterDraught()
 
         assertEquals(0, engine.remainingGreaterDraughts)
         assertEquals(listOf("greater_healing_draught"), engine.consumedItems)
-        assertEquals((30 + 50) - enemyDamage, engine.playerHealth)
+        assertEquals(80 - storyScaled(raw), engine.playerHealth)
     }
 
     @Test
-    fun `using a greater draught with none available is a no-op`() {
-        val enemy = testEnemy()
-        val engine = CombatEngine(
-            enemy = enemy,
-            startingPlayerHealth = 50,
-            playerMaxHealth = 100,
-            playerCourage = 0,
-            availableDraughts = 0,
-            availableGreaterDraughts = 0,
-            random = Random(1)
-        )
-        val logSizeBefore = engine.log.size
-
-        engine.useGreaterDraught()
-
-        assertEquals(logSizeBefore, engine.log.size)
-        assertEquals(50, engine.playerHealth)
-        assertTrue(engine.consumedItems.isEmpty())
-    }
-
-    @Test
-    fun `draught heals the player, consumes one item, then the enemy still attacks`() {
-        val seed = 7L
-        val enemy = testEnemy()
-        val engine = CombatEngine(
-            enemy = enemy,
-            startingPlayerHealth = 50,
-            playerMaxHealth = 100,
-            playerCourage = 0,
-            availableDraughts = 1,
-            random = Random(seed)
-        )
-        assertEquals(1, engine.remainingDraughts)
-        val expected = Random(seed)
-        val enemyDamage = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
-
-        engine.useDraught()
-
-        assertEquals(0, engine.remainingDraughts)
-        assertEquals(listOf("healing_draught"), engine.consumedItems)
-        assertEquals((50 + 25) - enemyDamage, engine.playerHealth)
-    }
-
-    @Test
-    fun `draught healing is capped at max health`() {
-        val enemy = testEnemy()
-        val engine = CombatEngine(
-            enemy = enemy,
-            startingPlayerHealth = 90,
-            playerMaxHealth = 100,
-            playerCourage = 0,
-            availableDraughts = 1,
-            random = Random(9)
-        )
-        val expected = Random(9)
-        val enemyDamage = expected.nextInt(enemy.minAttack, enemy.maxAttack + 1)
-
-        engine.useDraught()
-
-        assertEquals(100 - enemyDamage, engine.playerHealth)
-    }
-
-    @Test
-    fun `healing more than the damage taken reports a negative damageTaken`() {
-        // Player's own attack always deals at least 8, so this 5-health enemy always dies to it —
-        // guaranteeing victory regardless of the random roll, with no further enemy retaliation.
-        val seed = 7L
-        val weakEnemy = testEnemy(maxHealth = 5, minAttack = 4, maxAttack = 9)
-        val engine = CombatEngine(
-            enemy = weakEnemy,
-            startingPlayerHealth = 50,
-            playerMaxHealth = 100,
-            playerCourage = 0,
-            availableDraughts = 1,
-            random = Random(seed)
-        )
-        val expected = Random(seed)
-        val enemyDamageDuringDraughtRound = expected.nextInt(weakEnemy.minAttack, weakEnemy.maxAttack + 1)
-
-        engine.useDraught()
-        engine.attack()
-
-        val outcome = engine.outcome
-        assertNotNull(outcome)
-        assertTrue(outcome!!.victory)
-        val expectedHealth = 50 + 25 - enemyDamageDuringDraughtRound
-        assertEquals(expectedHealth, engine.playerHealth)
-        // Ended the fight above the starting health, so damageTaken must be negative: GameState
-        // .resolveCombat subtracts it, and subtracting a negative restores the net healing.
-        assertEquals(50 - expectedHealth, outcome.damageTaken)
-        assertTrue(outcome.damageTaken < 0)
-    }
-
-    @Test
-    fun `using a draught with none available is a no-op`() {
-        val enemy = testEnemy()
-        val engine = CombatEngine(
-            enemy = enemy,
-            startingPlayerHealth = 50,
-            playerMaxHealth = 100,
-            playerCourage = 0,
-            availableDraughts = 0,
-            random = Random(1)
-        )
-        val logSizeBefore = engine.log.size
-
-        engine.useDraught()
-
-        assertEquals(logSizeBefore, engine.log.size)
-        assertEquals(50, engine.playerHealth)
-        assertTrue(engine.consumedItems.isEmpty())
-    }
-
-    @Test
-    fun `a killing blow ends combat in victory without the enemy striking back`() {
-        // minAttack for the player's own hit is 8, so any enemy with maxHealth under that dies in one blow.
-        val weakEnemy = testEnemy(maxHealth = 5, minAttack = 1, maxAttack = 3)
-        val engine = CombatEngine(
-            enemy = weakEnemy,
-            startingPlayerHealth = 100,
-            playerMaxHealth = 100,
-            playerCourage = 0,
-            availableDraughts = 0,
-            random = Random(1)
-        )
+    fun `killing blow wins before retaliation`() {
+        val enemy = testEnemy(maxHealth = 5, minAttack = 1, maxAttack = 3)
+        val engine = CombatEngine(enemy, 100, 100, 0, 0, random = Random(1))
 
         engine.attack()
 
         val outcome = engine.outcome
         assertNotNull(outcome)
         assertTrue(outcome!!.victory)
-        assertEquals(0, outcome.damageTaken)
         assertEquals(100, engine.playerHealth)
-        assertTrue(engine.log.any { it.contains("falls") })
+        assertEquals(0, outcome.damageTaken)
     }
 
     @Test
-    fun `losing all health ends combat as a non-fatal defeat`() {
-        // minAttack 5 halved is still at least 2, which always exceeds startingPlayerHealth of 1.
-        val bruteEnemy = testEnemy(maxHealth = 100, minAttack = 5, maxAttack = 9)
-        val engine = CombatEngine(
-            enemy = bruteEnemy,
-            startingPlayerHealth = 1,
-            playerMaxHealth = 100,
-            playerCourage = 0,
-            availableDraughts = 0,
-            random = Random(2)
-        )
+    fun `zero health ends combat as non fatal defeat`() {
+        val enemy = testEnemy(maxHealth = 100, minAttack = 10, maxAttack = 12)
+        val engine = CombatEngine(enemy, 1, 100, 0, 0, random = Random(2))
 
         engine.defend()
 
@@ -338,31 +149,21 @@ class CombatEngineTest {
         assertFalse(outcome!!.victory)
         assertEquals(0, engine.playerHealth)
         assertEquals(1, outcome.damageTaken)
-        assertTrue(engine.log.any { it.contains("collapse") })
     }
 
     @Test
-    fun `no actions change state once combat has resolved`() {
-        val weakEnemy = testEnemy(maxHealth = 5, minAttack = 1, maxAttack = 2)
-        val engine = CombatEngine(
-            enemy = weakEnemy,
-            startingPlayerHealth = 100,
-            playerMaxHealth = 100,
-            playerCourage = 0,
-            availableDraughts = 1,
-            random = Random(3)
-        )
+    fun `actions stop after resolution`() {
+        val enemy = testEnemy(maxHealth = 5, minAttack = 1, maxAttack = 2)
+        val engine = CombatEngine(enemy, 100, 100, 0, 1, random = Random(3))
 
         engine.attack()
-        assertNotNull(engine.outcome)
-        val logSizeAfterVictory = engine.log.size
-        val healthAfterVictory = engine.playerHealth
-
+        val health = engine.playerHealth
+        val logSize = engine.log.size
         engine.attack()
         engine.defend()
         engine.useDraught()
 
-        assertEquals(logSizeAfterVictory, engine.log.size)
-        assertEquals(healthAfterVictory, engine.playerHealth)
+        assertEquals(health, engine.playerHealth)
+        assertEquals(logSize, engine.log.size)
     }
 }

@@ -17,13 +17,13 @@ private val testEncounter = CombatEncounter(
 class GameStateResolveCombatTest {
 
     @Test
-    fun `victory applies the encounter's xp, gold, trophy and moves to the victory node`() {
+    fun `victory applies rewards and post-fight recovery`() {
         val state = GameState(health = 100, maxHealth = 100, xp = 0, gold = 0)
         val outcome = CombatOutcome(victory = true, damageTaken = 15, consumedItemIds = emptyList())
 
         val result = state.resolveCombat(testEncounter, outcome)
 
-        assertEquals(85, result.health)
+        assertEquals(100, result.health)
         assertEquals(40, result.xp)
         assertEquals(10, result.gold)
         assertTrue(result.trophies.contains("Test Trophy"))
@@ -56,13 +56,13 @@ class GameStateResolveCombatTest {
     }
 
     @Test
-    fun `a knockout recovers to a quarter health instead of leaving the next fight at one hp`() {
+    fun `a knockout recovers to forty five percent instead of leaving the next fight at one hp`() {
         val state = GameState(health = 20, maxHealth = 100)
         val outcome = CombatOutcome(victory = false, damageTaken = 999, consumedItemIds = emptyList())
 
         val result = state.resolveCombat(testEncounter, outcome)
 
-        assertEquals(25, result.health)
+        assertEquals(45, result.health)
         assertTrue(result.health > 0)
     }
 
@@ -73,27 +73,27 @@ class GameStateResolveCombatTest {
 
         val result = state.resolveCombat(testEncounter, outcome)
 
-        assertEquals(28, result.health)
+        assertEquals(50, result.health)
     }
 
     @Test
-    fun `victory does not receive the defeat recovery floor`() {
+    fun `narrow victory recovers to at least forty percent`() {
         val state = GameState(health = 20, maxHealth = 100)
         val outcome = CombatOutcome(victory = true, damageTaken = 19, consumedItemIds = emptyList())
 
         val result = state.resolveCombat(testEncounter, outcome)
 
-        assertEquals(1, result.health)
+        assertEquals(40, result.health)
     }
 
     @Test
-    fun `a negative damageTaken from net healing raises health above its pre-fight value`() {
+    fun `victory above the floor receives twenty percent recovery capped at max`() {
         val state = GameState(health = 40, maxHealth = 100)
         val outcome = CombatOutcome(victory = true, damageTaken = -20, consumedItemIds = emptyList())
 
         val result = state.resolveCombat(testEncounter, outcome)
 
-        assertEquals(60, result.health)
+        assertEquals(80, result.health)
     }
 
     @Test
@@ -118,6 +118,7 @@ class GameStateResolveCombatTest {
         assertEquals(30, result.xp)
         assertEquals(200, result.xpToNextLevel)
         assertEquals(109, result.maxHealth)
+        assertEquals(109, result.health)
     }
 
     @Test
@@ -128,8 +129,8 @@ class GameStateResolveCombatTest {
 
         val result = state.resolveCombat(hugeReward, outcome)
 
-        // 350 xp: level 1->2 (100), 2->3 (200), leaves 50 short of level 3->4 (300) — two level-ups.
         assertEquals(3, result.level)
         assertEquals(118, result.maxHealth)
+        assertEquals(118, result.health)
     }
 }

@@ -2,22 +2,21 @@ package com.thelastjailer.app
 
 /**
  * Passive heal applied on an ordinary story-scene transition (see [applyChoice] and
- * [GameState.passiveRegenAmount]). At full or near-full health this is deliberately tiny: a typical
- * chapter has ~5-9 such transitions, so even at +1 this totals only ~5-9 HP per chapter - a fraction
- * of what a Healing Draught provides, keeping the shop useful while still easing the walk between
- * fights.
- *
- * [WOUNDED_TRANSITION_REGEN] and [CRITICAL_TRANSITION_REGEN] step up much more sharply once a run is
- * actually in danger. Real playtesting showed that the previous +4/+9 tiers could still leave a
- * player too weak for the next encounter when only one or two story beats separated fights. Healthy
- * runs are unchanged; only sub-50% health recovery is stronger.
+ * [GameState.passiveRegenAmount]). Healthy runs still recover slowly so healing items retain value;
+ * wounded runs recover faster so a difficult fight does not poison the next several encounters.
  */
 private const val SCENE_TRANSITION_REGEN = 1
 private const val WOUNDED_TRANSITION_REGEN = 6
 private const val CRITICAL_TRANSITION_REGEN = 15
 
-/** A combat defeat cannot leave the next stretch of story below 25% max health. */
-private const val DEFEAT_RECOVERY_DIVISOR = 4
+/**
+ * The Last Jailer is story-first: losing a fight changes reward/outcome, but should not strand the
+ * player in a near-certain second loss. Defeats therefore stabilize at 45% max health. Victories
+ * recover 20% max health and cannot leave the player below 40% max health.
+ */
+private const val DEFEAT_RECOVERY_PERCENT = 45
+private const val VICTORY_RECOVERY_PERCENT = 20
+private const val VICTORY_RECOVERY_FLOOR_PERCENT = 40
 
 /** MaxHealth gained per level-up (see [levelAttackBonus]/[levelDamageReduction] for the rest of level's combat payoff). */
 private const val HEALTH_PER_LEVEL = 9
@@ -80,19 +79,20 @@ private fun GameState.withStatDelta(stat: StatType, delta: Int): GameState = whe
     StatType.XP -> applyXpGain(delta)
 }
 
+private fun percentOfMax(maxHealth: Int, percent: Int): Int =
+    (maxHealth * percent + 99) / 100
+
 /**
  * Applies the result of a [CombatEncounter] played out in [com.thelastjailer.app.ui.CombatScreen].
- * Combat is never fatal to the run. A win preserves the health actually left at the end of the
- * fight and grants the encounter's XP/gold/trophy. A loss moves to the defeat node (falling back to
- * the victory node) with no reward and stabilizes health at a minimum of 25% max health, preventing
- * one defeat from turning the next encounter into an unavoidable second defeat. Either way,
- * whatever items were used during the fight are consumed from inventory.
+ * Combat is never fatal to the run. A victory keeps its reward but also gives a modest recovery and
+ * a 40% floor; a defeat gives no reward but stabilizes at 45%. This keeps combat tense without
+ * allowing one bad fight to make later story progress depend on luck or shop access.
  */
 fun GameState.resolveCombat(encounter: CombatEncounter, outcome: CombatOutcome): GameState {
     val survived = copy(health = (health - outcome.damageTaken).coerceIn(1, maxHealth))
         .consumeItems(outcome.consumedItemIds)
     return if (outcome.victory) {
-        survived.applyChoice(
+        val rewarded = survived.applyChoice(
             Choice(
                 label = "",
                 nextNodeId = encounter.victoryNodeId,
@@ -103,10 +103,16 @@ fun GameState.resolveCombat(encounter: CombatEncounter, outcome: CombatOutcome):
             ),
             applyRegen = false
         )
+        val recovered = rewarded.health + percentOfMax(rewarded.maxHealth, VICTORY_RECOVERY_PERCENT)
+        rewarded.copy(
+            health = maxOf(
+                recovered.coerceAtMost(rewarded.maxHealth),
+                percentOfMax(rewarded.maxHealth, VICTORY_RECOVERY_FLOOR_PERCENT)
+            )
+        )
     } else {
-        val defeatRecoveryFloor = (maxHealth + DEFEAT_RECOVERY_DIVISOR - 1) / DEFEAT_RECOVERY_DIVISOR
         survived.copy(
-            health = maxOf(survived.health, defeatRecoveryFloor),
+            health = maxOf(survived.health, percentOfMax(maxHealth, DEFEAT_RECOVERY_PERCENT)),
             sceneId = encounter.defeatNodeId ?: encounter.victoryNodeId
         )
     }
@@ -151,11 +157,7 @@ private fun GameState.applyXpGain(delta: Int): GameState {
  * without this, XP had zero mechanical effect — a Monte Carlo simulation of every encounter
  * (generous play: full combat gear, draughts refreshed each fight) showed combat becoming
  * unwinnable from roughly the back third of the story onward, since enemy stats scale linearly
- * per chapter while player power was hard-capped ([maxHealth] never increased; items cap out at
- * +3 attack/+7 damage reduction total, see [com.thelastjailer.app.data.ItemCatalog]). These two
- * coefficients (plus [HEALTH_PER_LEVEL] above) were tuned by re-running that simulation until the
- * whole curve stayed comfortably winnable, with the final encounter deliberately left as the one
- * real climactic risk rather than flattened to the same near-100% as everything before it.
+ * per chapter while player power was hard-capped.
  */
 fun GameState.levelAttackBonus(): Int = (level - 1) * 7 / 10
 
@@ -235,9 +237,6 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
     private fun readState(prefix: String, activeSlot: Int): GameState? {
         val scene = prefs.getString("$prefix.scene", null) ?: return null
         val level = prefs.getInt("$prefix.level", 1)
-        // A save written before level granted +HEALTH_PER_LEVEL maxHealth per level stored a
-        // maxHealth that never accounted for levels already earned at that point. Recompute the
-        // level-derived floor here for both normal saves and persisted one-step checkpoints.
         val levelDerivedMaxHealth = 100 + HEALTH_PER_LEVEL * (level - 1)
         return GameState(
             activeSlot = activeSlot,

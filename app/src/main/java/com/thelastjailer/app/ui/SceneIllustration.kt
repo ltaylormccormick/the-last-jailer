@@ -21,9 +21,17 @@ import com.thelastjailer.app.data.IllustrationCatalog
  * Real scene art, keyed by [illustrationId] and resolved through [IllustrationCatalog]. Any id
  * without art yet falls back to a plain, clearly-labelled placeholder panel rather than a
  * procedurally drawn scene, so it's obvious at a glance which scenes still need art.
+ *
+ * [imageAlignment] lets callers bias a cropped reuse toward the subject they actually need. Story
+ * scenes keep the centred default; combat portraits can shift toward the enemy without creating a
+ * second set of image assets.
  */
 @Composable
-fun SceneIllustration(illustrationId: String, modifier: Modifier = Modifier) {
+fun SceneIllustration(
+    illustrationId: String,
+    modifier: Modifier = Modifier,
+    imageAlignment: Alignment = Alignment.Center
+) {
     val drawableId = IllustrationCatalog.get(illustrationId)
     Box(modifier = modifier.clip(RoundedCornerShape(8.dp))) {
         if (drawableId != null) {
@@ -31,7 +39,8 @@ fun SceneIllustration(illustrationId: String, modifier: Modifier = Modifier) {
                 painter = painterResource(id = drawableId),
                 contentDescription = illustrationId.replace('_', ' '),
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                alignment = imageAlignment
             )
         } else {
             Box(modifier = Modifier.fillMaxSize().background(JailerColors.Panel)) {

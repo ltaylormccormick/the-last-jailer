@@ -12,6 +12,10 @@ private const val GREATER_HEALING_DRAUGHT_AMOUNT = 50
 private const val PLAYER_ATTACK_MIN = 8
 private const val PLAYER_ATTACK_MAX_EXCLUSIVE = 15
 
+/** Story combat should create tension without making progress hinge on lucky damage rolls. */
+private const val ENEMY_DAMAGE_NUMERATOR = 4
+private const val ENEMY_DAMAGE_DENOMINATOR = 5
+
 /** Some enemy names already carry their own article (e.g. "The Unbound") - avoid doubling it. */
 private fun Enemy.articled(capitalized: Boolean): String {
     if (name.startsWith("The ")) return name
@@ -112,7 +116,8 @@ class CombatEngine(
     /** Enemy strikes back; returns the log line and finalizes [outcome] on a knockout. */
     private fun enemyStrikes(reduced: Boolean): String {
         val raw = random.nextInt(enemy.minAttack, enemy.maxAttack + 1)
-        val halved = if (reduced) raw / 2 else raw
+        val storyScaled = (raw * ENEMY_DAMAGE_NUMERATOR + ENEMY_DAMAGE_DENOMINATOR - 1) / ENEMY_DAMAGE_DENOMINATOR
+        val halved = if (reduced) storyScaled / 2 else storyScaled
         val courageDefense = if (reduced) playerCourage / DEFEND_COURAGE_DIVISOR else 0
         val dmg = (halved - damageReduction - courageDefense).coerceAtLeast(0)
         playerHealth = (playerHealth - dmg).coerceAtLeast(0)
