@@ -3,22 +3,21 @@ package com.thelastjailer.app
 /**
  * Passive heal applied on an ordinary story-scene transition (see [applyChoice] and
  * [GameState.passiveRegenAmount]). At full or near-full health this is deliberately tiny: a typical
- * chapter has ~5-9 such transitions, so even at +1 this totals only ~5-9 HP per chapter (out of 100
- * max health) - a fraction of what a single Healing Draught (40 gold, +25 HP) or Greater Healing
- * Draught (150 gold, +50 HP) provides, so it eases the walk between fights without meaningfully
- * competing with the shop economy.
+ * chapter has ~5-9 such transitions, so even at +1 this totals only ~5-9 HP per chapter - a fraction
+ * of what a Healing Draught provides, keeping the shop useful while still easing the walk between
+ * fights.
  *
- * [WOUNDED_TRANSITION_REGEN] and [CRITICAL_TRANSITION_REGEN] exist because that same +1/transition
- * is negligible as an actual recovery path: a player who ends a losing fight in single digits (combat
- * floors health at 1, never 0 - see [resolveCombat]) had no way to meaningfully recover before an
- * unknown next encounter short of a finite, gold-gated draught. Below half health the passive heal
- * steps up, and below a quarter it steps up again, so a genuinely low-health run recovers over the
- * next several story beats without needing an explicit "rest" scene at a specific location, and
- * without changing anything for a player who's already healthy.
+ * [WOUNDED_TRANSITION_REGEN] and [CRITICAL_TRANSITION_REGEN] step up much more sharply once a run is
+ * actually in danger. Real playtesting showed that the previous +4/+9 tiers could still leave a
+ * player too weak for the next encounter when only one or two story beats separated fights. Healthy
+ * runs are unchanged; only sub-50% health recovery is stronger.
  */
 private const val SCENE_TRANSITION_REGEN = 1
-private const val WOUNDED_TRANSITION_REGEN = 4
-private const val CRITICAL_TRANSITION_REGEN = 9
+private const val WOUNDED_TRANSITION_REGEN = 6
+private const val CRITICAL_TRANSITION_REGEN = 15
+
+/** A combat defeat cannot leave the next stretch of story below 25% max health. */
+private const val DEFEAT_RECOVERY_DIVISOR = 4
 
 /** MaxHealth gained per level-up (see [levelAttackBonus]/[levelDamageReduction] for the rest of level's combat payoff). */
 private const val HEALTH_PER_LEVEL = 9
@@ -83,10 +82,11 @@ private fun GameState.withStatDelta(stat: StatType, delta: Int): GameState = whe
 
 /**
  * Applies the result of a [CombatEncounter] played out in [com.thelastjailer.app.ui.CombatScreen].
- * Combat is never fatal to the run: health always ends up at least 1, however much [CombatOutcome.damageTaken]
- * was. A win grants the encounter's XP/gold/trophy and moves to [CombatEncounter.victoryNodeId];
- * a loss moves to [CombatEncounter.defeatNodeId] (falling back to the same node as victory) with
- * no reward. Either way, whatever items were used during the fight are consumed from inventory.
+ * Combat is never fatal to the run. A win preserves the health actually left at the end of the
+ * fight and grants the encounter's XP/gold/trophy. A loss moves to the defeat node (falling back to
+ * the victory node) with no reward and stabilizes health at a minimum of 25% max health, preventing
+ * one defeat from turning the next encounter into an unavoidable second defeat. Either way,
+ * whatever items were used during the fight are consumed from inventory.
  */
 fun GameState.resolveCombat(encounter: CombatEncounter, outcome: CombatOutcome): GameState {
     val survived = copy(health = (health - outcome.damageTaken).coerceIn(1, maxHealth))
@@ -104,7 +104,11 @@ fun GameState.resolveCombat(encounter: CombatEncounter, outcome: CombatOutcome):
             applyRegen = false
         )
     } else {
-        survived.copy(sceneId = encounter.defeatNodeId ?: encounter.victoryNodeId)
+        val defeatRecoveryFloor = (maxHealth + DEFEAT_RECOVERY_DIVISOR - 1) / DEFEAT_RECOVERY_DIVISOR
+        survived.copy(
+            health = maxOf(survived.health, defeatRecoveryFloor),
+            sceneId = encounter.defeatNodeId ?: encounter.victoryNodeId
+        )
     }
 }
 
@@ -160,49 +164,96 @@ fun GameState.levelDamageReduction(): Int = (level - 1) * 5 / 10
 
 /** Persists [GameState] across numbered save slots, plus which slot is currently active. */
 class SaveStore(private val prefs: android.content.SharedPreferences) {
+    private val stateFields = listOf(
+        "chapter", "scene", "courage", "honour", "health", "maxHealth", "gold", "level",
+        "xp", "xpToNextLevel", "inventory", "trophies", "flags"
+    )
+
     fun save(slot: Int, state: GameState) {
-        prefs.edit()
-            .putString("$slot.chapter", state.chapterId)
-            .putString("$slot.scene", state.sceneId)
-            .putInt("$slot.courage", state.courage)
-            .putInt("$slot.honour", state.honour)
-            .putInt("$slot.health", state.health)
-            .putInt("$slot.maxHealth", state.maxHealth)
-            .putInt("$slot.gold", state.gold)
-            .putInt("$slot.level", state.level)
-            .putInt("$slot.xp", state.xp)
-            .putInt("$slot.xpToNextLevel", state.xpToNextLevel)
-            .putString("$slot.inventory", state.inventory.joinToString(","))
-            .putStringSet("$slot.trophies", state.trophies)
-            .putStringSet("$slot.flags", state.flags)
+        writeState(slot.toString(), state, prefs.edit())
             .putInt("active_slot", slot)
             .apply()
     }
 
-    fun load(slot: Int): GameState? {
-        val scene = prefs.getString("$slot.scene", null) ?: return null
-        val level = prefs.getInt("$slot.level", 1)
-        // A save written before level granted +HEALTH_PER_LEVEL maxHealth per level (see
-        // GameState.applyXpGain) stored a maxHealth that never accounts for levels already
-        // earned at that point - only future level-ups would have added the bonus. Recomputing
-        // the level-derived floor here and taking the higher of the two corrects that backlog for
-        // existing saves without discarding maxHealth from any other source.
+    /**
+     * Persists exactly one pre-choice state for the active slot. Restoring this snapshot is safer
+     * than merely changing sceneId because choices can also change stats, health, flags, items and
+     * trophies. Only ordinary story choices create this checkpoint; combat and shop mutations clear
+     * it so the back action cannot rewind a fight or duplicate purchases.
+     */
+    fun savePreviousState(slot: Int, state: GameState) {
+        writeState(previousPrefix(slot), state, prefs.edit()).apply()
+    }
+
+    fun loadPreviousState(slot: Int): GameState? = readState(previousPrefix(slot), slot)
+
+    fun hasPreviousState(slot: Int): Boolean = prefs.contains("${previousPrefix(slot)}.scene")
+
+    fun clearPreviousState(slot: Int) {
+        val editor = prefs.edit()
+        stateFields.forEach { field -> editor.remove("${previousPrefix(slot)}.$field") }
+        editor.apply()
+    }
+
+    /** Restores and consumes the one-step story checkpoint, and autosaves the restored state. */
+    fun restorePreviousState(slot: Int): GameState? {
+        val previous = loadPreviousState(slot) ?: return null
+        save(slot, previous)
+        clearPreviousState(slot)
+        return previous
+    }
+
+    /** Resets one slot to a clean Chapter I state without affecting entitlements or other slots. */
+    fun restart(slot: Int): GameState {
+        clearPreviousState(slot)
+        val fresh = GameState(activeSlot = slot)
+        save(slot, fresh)
+        return fresh
+    }
+
+    fun load(slot: Int): GameState? = readState(slot.toString(), slot)
+
+    private fun writeState(
+        prefix: String,
+        state: GameState,
+        editor: android.content.SharedPreferences.Editor
+    ): android.content.SharedPreferences.Editor = editor
+        .putString("$prefix.chapter", state.chapterId)
+        .putString("$prefix.scene", state.sceneId)
+        .putInt("$prefix.courage", state.courage)
+        .putInt("$prefix.honour", state.honour)
+        .putInt("$prefix.health", state.health)
+        .putInt("$prefix.maxHealth", state.maxHealth)
+        .putInt("$prefix.gold", state.gold)
+        .putInt("$prefix.level", state.level)
+        .putInt("$prefix.xp", state.xp)
+        .putInt("$prefix.xpToNextLevel", state.xpToNextLevel)
+        .putString("$prefix.inventory", state.inventory.joinToString(","))
+        .putStringSet("$prefix.trophies", state.trophies)
+        .putStringSet("$prefix.flags", state.flags)
+
+    private fun readState(prefix: String, activeSlot: Int): GameState? {
+        val scene = prefs.getString("$prefix.scene", null) ?: return null
+        val level = prefs.getInt("$prefix.level", 1)
+        // A save written before level granted +HEALTH_PER_LEVEL maxHealth per level stored a
+        // maxHealth that never accounted for levels already earned at that point. Recompute the
+        // level-derived floor here for both normal saves and persisted one-step checkpoints.
         val levelDerivedMaxHealth = 100 + HEALTH_PER_LEVEL * (level - 1)
         return GameState(
-            activeSlot = slot,
-            chapterId = prefs.getString("$slot.chapter", null) ?: "chapter_1",
+            activeSlot = activeSlot,
+            chapterId = prefs.getString("$prefix.chapter", null) ?: "chapter_1",
             sceneId = scene,
-            courage = prefs.getInt("$slot.courage", 1),
-            honour = prefs.getInt("$slot.honour", 0),
-            health = prefs.getInt("$slot.health", 100),
-            maxHealth = maxOf(prefs.getInt("$slot.maxHealth", 100), levelDerivedMaxHealth),
-            gold = prefs.getInt("$slot.gold", 25),
+            courage = prefs.getInt("$prefix.courage", 1),
+            honour = prefs.getInt("$prefix.honour", 0),
+            health = prefs.getInt("$prefix.health", 100),
+            maxHealth = maxOf(prefs.getInt("$prefix.maxHealth", 100), levelDerivedMaxHealth),
+            gold = prefs.getInt("$prefix.gold", 25),
             level = level,
-            xp = prefs.getInt("$slot.xp", 0),
-            xpToNextLevel = prefs.getInt("$slot.xpToNextLevel", 100),
-            inventory = readInventory(slot),
-            trophies = prefs.getStringSet("$slot.trophies", emptySet()) ?: emptySet(),
-            flags = prefs.getStringSet("$slot.flags", emptySet()) ?: emptySet()
+            xp = prefs.getInt("$prefix.xp", 0),
+            xpToNextLevel = prefs.getInt("$prefix.xpToNextLevel", 100),
+            inventory = readInventory(prefix),
+            trophies = prefs.getStringSet("$prefix.trophies", emptySet()) ?: emptySet(),
+            flags = prefs.getStringSet("$prefix.flags", emptySet()) ?: emptySet()
         )
     }
 
@@ -211,14 +262,16 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
      * back with [android.content.SharedPreferences.getString] throws ClassCastException on real
      * Android (unlike the JVM test double), so fall back to the legacy format instead of crashing.
      */
-    private fun readInventory(slot: Int): List<String> = try {
-        prefs.getString("$slot.inventory", "")
+    private fun readInventory(prefix: String): List<String> = try {
+        prefs.getString("$prefix.inventory", "")
             ?.split(",")
             ?.filter { it.isNotBlank() }
             ?: emptyList()
     } catch (e: ClassCastException) {
-        prefs.getStringSet("$slot.inventory", emptySet())?.toList() ?: emptyList()
+        prefs.getStringSet("$prefix.inventory", emptySet())?.toList() ?: emptyList()
     }
+
+    private fun previousPrefix(slot: Int): String = "$slot.previous"
 
     fun hasSave(slot: Int): Boolean = prefs.contains("$slot.scene")
 
