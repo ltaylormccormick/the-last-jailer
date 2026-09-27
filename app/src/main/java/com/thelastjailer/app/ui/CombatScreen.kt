@@ -33,11 +33,12 @@ import com.thelastjailer.app.levelDamageReduction
 
 private const val HEALING_DRAUGHT_ID = "healing_draught"
 private const val GREATER_HEALING_DRAUGHT_ID = "greater_healing_draught"
-private const val KAELEN_COMBAT_PORTRAIT = "what_reaches_for_kaelen"
+private const val KAELEN_COMBAT_PORTRAIT = "kaelen_combat_portrait"
 private const val LOW_HEALTH_FRACTION = 0.30f
 
 /**
- * Story-first turn-based combat. Finished scene illustrations are reused as cropped combat portraits,
+ * Story-first turn-based combat. Kaelen uses a dedicated combat portrait; enemy artwork is
+ * currently reused from story scenes pending the full enemy portrait replacement.
  * with the active health state visible at a glance. The full log remains available underneath but
  * no longer has to carry the entire presentation by itself.
  */
