@@ -18,6 +18,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.thelastjailer.app.CombatEncounter
@@ -51,6 +52,7 @@ fun CombatScreen(
     val enemyPortrait = remember(encounter.id) {
         StoryRepository.combatNode(encounter.id)?.illustrationId ?: "black_door_beneath_the_tree"
     }
+    val enemyPortraitAlignment = remember(encounter.enemyId) { enemyPortraitAlignment(encounter.enemyId) }
     val equipment = remember(playerState.inventory) { ItemCatalog.resolve(playerState.inventory) }
     val equipmentDamageReduction = equipment.sumOf { it.combatEffect?.damageReduction ?: 0 }
     val equipmentAttackBonus = equipment.sumOf { it.combatEffect?.attackBonus ?: 0 }
@@ -86,6 +88,7 @@ fun CombatScreen(
                 illustrationId = enemyPortrait,
                 health = engine.enemyHealth,
                 maxHealth = enemy.maxHealth,
+                portraitAlignment = enemyPortraitAlignment,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -161,12 +164,31 @@ fun CombatScreen(
     }
 }
 
+/**
+ * A few of the finished fight illustrations are wide compositions where Kaelen/Voss sit near the
+ * centre and the actual foe is pushed to one side. Bias only those known cases so the combat card
+ * reads as an enemy portrait rather than a miniature replay of the whole scene. Everything else
+ * stays centred until a real phone test says otherwise.
+ */
+private fun enemyPortraitAlignment(enemyId: String): Alignment = when (enemyId) {
+    "cave_lurker",
+    "seal_wraith",
+    "unbound_horror",
+    "loyalist_enforcer",
+    "sanctum_sentinel" -> Alignment.CenterEnd
+
+    "cinder_adept" -> Alignment.CenterStart
+
+    else -> Alignment.Center
+}
+
 @Composable
 private fun CombatantCard(
     name: String,
     illustrationId: String,
     health: Int,
     maxHealth: Int,
+    portraitAlignment: Alignment = Alignment.Center,
     modifier: Modifier = Modifier
 ) {
     val progress = (health.toFloat() / maxHealth.coerceAtLeast(1)).coerceIn(0f, 1f)
@@ -176,7 +198,8 @@ private fun CombatantCard(
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(5.dp)) {
         SceneIllustration(
             illustrationId = illustrationId,
-            modifier = Modifier.fillMaxWidth().height(128.dp)
+            modifier = Modifier.fillMaxWidth().height(128.dp),
+            imageAlignment = portraitAlignment
         )
         Text(name, style = MaterialTheme.typography.labelMedium, color = JailerColors.Gold)
         LinearProgressIndicator(
