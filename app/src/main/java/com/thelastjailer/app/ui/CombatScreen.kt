@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -25,17 +26,18 @@ import com.thelastjailer.app.CombatOutcome
 import com.thelastjailer.app.GameState
 import com.thelastjailer.app.data.EnemyCatalog
 import com.thelastjailer.app.data.ItemCatalog
+import com.thelastjailer.app.data.StoryRepository
 import com.thelastjailer.app.levelAttackBonus
 import com.thelastjailer.app.levelDamageReduction
 
 private const val HEALING_DRAUGHT_ID = "healing_draught"
 private const val GREATER_HEALING_DRAUGHT_ID = "greater_healing_draught"
+private const val KAELEN_COMBAT_PORTRAIT = "what_reaches_for_kaelen"
 
 /**
- * A turn-based fight: Attack / Defend / (if carried) drink a Healing Draught, resolved one round
- * at a time against the enemy's own attack. Never fatal to the run — a loss still continues the
- * story via [CombatEncounter.defeatNodeId], just with no reward. All the actual resolution logic
- * lives in [CombatEngine]; this screen just renders it and forwards button taps.
+ * Story-first turn-based combat. Finished scene illustrations are reused as cropped combat portraits,
+ * with the active health state visible at a glance. The full log remains available underneath but
+ * no longer has to carry the entire presentation by itself.
  */
 @Composable
 fun CombatScreen(
@@ -44,37 +46,71 @@ fun CombatScreen(
     onResolved: (CombatOutcome) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val enemy = remember(encounter.id) { EnemyCatalog.get(encounter.enemyId) }
+    val enemyPortrait = remember(encounter.id) {
+        StoryRepository.combatNode(encounter.id)?.illustrationId ?: "black_door_beneath_the_tree"
+    }
+    val equipment = remember(playerState.inventory) { ItemCatalog.resolve(playerState.inventory) }
+    val equipmentDamageReduction = equipment.sumOf { it.combatEffect?.damageReduction ?: 0 }
+    val equipmentAttackBonus = equipment.sumOf { it.combatEffect?.attackBonus ?: 0 }
+
     val engine = remember(encounter.id) {
         CombatEngine(
-            enemy = EnemyCatalog.get(encounter.enemyId),
+            enemy = enemy,
             startingPlayerHealth = playerState.health,
             playerMaxHealth = playerState.maxHealth,
             playerCourage = playerState.courage,
             availableDraughts = playerState.inventory.count { it == HEALING_DRAUGHT_ID },
             availableGreaterDraughts = playerState.inventory.count { it == GREATER_HEALING_DRAUGHT_ID },
-            damageReduction = ItemCatalog.resolve(playerState.inventory)
-                .sumOf { it.combatEffect?.damageReduction ?: 0 } + playerState.levelDamageReduction(),
-            attackBonus = ItemCatalog.resolve(playerState.inventory)
-                .sumOf { it.combatEffect?.attackBonus ?: 0 } + playerState.levelAttackBonus()
+            // Purchased/found gear should feel materially useful, not merely shave a point or two
+            // off attacks that can otherwise land in the teens and twenties.
+            damageReduction = equipmentDamageReduction * 2 + playerState.levelDamageReduction(),
+            attackBonus = equipmentAttackBonus * 2 + playerState.levelAttackBonus()
         )
     }
-    val enemy = remember(encounter.id) { EnemyCatalog.get(encounter.enemyId) }
 
     Column(modifier = modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("⚔ ${enemy.name.uppercase()}", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
 
-        OrnatePanel(modifier = Modifier.fillMaxWidth()) {
-            Text(enemy.name, style = MaterialTheme.typography.titleMedium)
-            Text(enemy.description, style = MaterialTheme.typography.bodyMedium)
-            Spacer(Modifier.height(6.dp))
-            Text("Enemy health: ${engine.enemyHealth}/${enemy.maxHealth}", style = MaterialTheme.typography.bodyMedium)
-            Text("Your health: ${engine.playerHealth.coerceAtLeast(1)}/${playerState.maxHealth}", style = MaterialTheme.typography.bodyMedium)
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            CombatantCard(
+                name = "KAELEN",
+                illustrationId = KAELEN_COMBAT_PORTRAIT,
+                health = engine.playerHealth.coerceAtLeast(0),
+                maxHealth = playerState.maxHealth,
+                modifier = Modifier.weight(1f)
+            )
+            CombatantCard(
+                name = enemy.name.uppercase(),
+                illustrationId = enemyPortrait,
+                health = engine.enemyHealth,
+                maxHealth = enemy.maxHealth,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Text(enemy.description, style = MaterialTheme.typography.bodyMedium, color = JailerColors.TextPrimary)
+
+        val latest = engine.log.lastOrNull()
+        if (latest != null) {
+            OrnatePanel(modifier = Modifier.fillMaxWidth()) {
+                Text("LATEST", style = MaterialTheme.typography.labelSmall, color = JailerColors.Gold)
+                Text(latest, style = MaterialTheme.typography.bodyLarge)
+            }
         }
 
         LazyColumn(
-            modifier = Modifier.fillMaxWidth().weight(1f).background(JailerColors.Panel, RoundedCornerShape(8.dp)).padding(10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .background(JailerColors.Panel, RoundedCornerShape(8.dp))
+                .padding(10.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
+            item {
+                Text("COMBAT LOG", style = MaterialTheme.typography.labelSmall, color = JailerColors.Gold)
+                Spacer(Modifier.height(4.dp))
+            }
             items(engine.log.asReversed()) { line ->
                 Text("• $line", style = MaterialTheme.typography.bodyMedium)
             }
@@ -85,29 +121,64 @@ fun CombatScreen(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(modifier = Modifier.weight(1f), onClick = { engine.attack() }) { Text("ATTACK") }
                 OutlinedButton(modifier = Modifier.weight(1f), onClick = { engine.defend() }) { Text("DEFEND") }
-                if (engine.remainingDraughts > 0) {
-                    OutlinedButton(modifier = Modifier.weight(1f), onClick = { engine.useDraught() }) { Text("DRINK DRAUGHT (+HP)") }
+            }
+            if (engine.remainingDraughts > 0) {
+                OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = { engine.useDraught() }) {
+                    Text("HEALING DRAUGHT +25 HP (${engine.remainingDraughts})")
                 }
-                if (engine.remainingGreaterDraughts > 0) {
-                    OutlinedButton(modifier = Modifier.weight(1f), onClick = { engine.useGreaterDraught() }) { Text("DRINK GREATER DRAUGHT (+HP)") }
+            }
+            if (engine.remainingGreaterDraughts > 0) {
+                OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = { engine.useGreaterDraught() }) {
+                    Text("GREATER DRAUGHT +50 HP (${engine.remainingGreaterDraughts})")
                 }
             }
         } else {
-            Text(
-                if (currentOutcome.victory) "VICTORY" else "YOU SURVIVE, BATTERED",
-                style = MaterialTheme.typography.labelLarge,
-                color = JailerColors.Gold
-            )
-            if (currentOutcome.victory) {
+            OrnatePanel(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    "+${encounter.goldReward} gold, +${encounter.xpReward} XP",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = JailerColors.TextPrimary
+                    if (currentOutcome.victory) "VICTORY" else "YOU SURVIVE, BATTERED",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = JailerColors.Gold
                 )
+                if (currentOutcome.victory) {
+                    Text(
+                        "+${encounter.goldReward} gold  •  +${encounter.xpReward} XP",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = JailerColors.TextPrimary
+                    )
+                } else {
+                    Text(
+                        "The story continues. You recover enough to carry on.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = JailerColors.TextPrimary
+                    )
+                }
             }
             Button(modifier = Modifier.fillMaxWidth(), onClick = { onResolved(currentOutcome) }) {
                 Text("CONTINUE")
             }
         }
+    }
+}
+
+@Composable
+private fun CombatantCard(
+    name: String,
+    illustrationId: String,
+    health: Int,
+    maxHealth: Int,
+    modifier: Modifier = Modifier
+) {
+    val progress = (health.toFloat() / maxHealth.coerceAtLeast(1)).coerceIn(0f, 1f)
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        SceneIllustration(
+            illustrationId = illustrationId,
+            modifier = Modifier.fillMaxWidth().height(128.dp)
+        )
+        Text(name, style = MaterialTheme.typography.labelMedium, color = JailerColors.Gold)
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier.fillMaxWidth().height(8.dp)
+        )
+        Text("$health / $maxHealth HP", style = MaterialTheme.typography.bodySmall)
     }
 }
