@@ -33,7 +33,7 @@ import com.thelastjailer.app.levelDamageReduction
 
 private const val HEALING_DRAUGHT_ID = "healing_draught"
 private const val GREATER_HEALING_DRAUGHT_ID = "greater_healing_draught"
-private const val KAELEN_COMBAT_PORTRAIT = "kaelen_combat_portrait"
+private const val KAELEN_COMBAT_PORTRAIT = "kaelen_combat_portrait_v2"
 private const val LOW_HEALTH_FRACTION = 0.30f
 
 /**

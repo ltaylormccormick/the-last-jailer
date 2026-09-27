@@ -6,6 +6,7 @@ import com.thelastjailer.app.R
 object IllustrationCatalog {
     private val illustrations: Map<String, Int> = mapOf(
         "kaelen_combat_portrait" to R.drawable.kaelen_combat_portrait,
+        "kaelen_combat_portrait_v2" to R.drawable.kaelen_combat_portrait_v2,
         "black_door_beneath_the_tree" to R.drawable.black_door_beneath_the_tree,
         "iron_door_open_tunnel" to R.drawable.iron_door_open_tunnel,
         "knight_sword_drawn_door" to R.drawable.knight_sword_drawn_door,
