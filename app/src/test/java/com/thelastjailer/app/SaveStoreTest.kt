@@ -147,4 +147,99 @@ class SaveStoreTest {
 
         assertEquals(5, loaded?.activeSlot)
     }
+
+    @Test
+    fun `previous state round-trips the full game state`() {
+        val previous = GameState(
+            activeSlot = 2,
+            chapterId = "chapter_12",
+            sceneId = "before_choice",
+            courage = 11,
+            honour = 9,
+            health = 37,
+            maxHealth = 127,
+            gold = 88,
+            level = 4,
+            xp = 45,
+            xpToNextLevel = 400,
+            inventory = listOf("healing_draught", "kestrels_locket"),
+            trophies = setOf("First Blood"),
+            flags = setOf("remember_this")
+        )
+
+        store.savePreviousState(2, previous)
+
+        assertTrue(store.hasPreviousState(2))
+        assertEquals(previous, store.loadPreviousState(2))
+    }
+
+    @Test
+    fun `previous state survives recreating the save store`() {
+        val previous = GameState(activeSlot = 1, sceneId = "before_choice", health = 41, gold = 73)
+        store.savePreviousState(1, previous)
+
+        val reopenedStore = SaveStore(prefs)
+
+        assertTrue(reopenedStore.hasPreviousState(1))
+        assertEquals(previous, reopenedStore.loadPreviousState(1))
+    }
+
+    @Test
+    fun `restoring previous state rewinds the whole save and consumes the checkpoint`() {
+        val before = GameState(
+            activeSlot = 1,
+            sceneId = "before_choice",
+            courage = 4,
+            honour = 3,
+            health = 35,
+            gold = 70,
+            inventory = listOf("dwarven_token"),
+            flags = setOf("old_flag")
+        )
+        val after = before.copy(
+            sceneId = "after_choice",
+            courage = 5,
+            health = 50,
+            gold = 30,
+            inventory = before.inventory + "healing_draught",
+            flags = before.flags + "new_flag"
+        )
+        store.savePreviousState(1, before)
+        store.save(1, after)
+
+        val restored = store.restorePreviousState(1)
+
+        assertEquals(before, restored)
+        assertEquals(before, store.load(1))
+        assertFalse(store.hasPreviousState(1))
+        assertNull(store.loadPreviousState(1))
+    }
+
+    @Test
+    fun `previous checkpoints are isolated by slot`() {
+        store.savePreviousState(1, GameState(activeSlot = 1, sceneId = "slot_one_previous"))
+        store.savePreviousState(2, GameState(activeSlot = 2, sceneId = "slot_two_previous"))
+
+        store.clearPreviousState(1)
+
+        assertFalse(store.hasPreviousState(1))
+        assertTrue(store.hasPreviousState(2))
+        assertEquals("slot_two_previous", store.loadPreviousState(2)?.sceneId)
+    }
+
+    @Test
+    fun `restart resets only the chosen slot and clears its previous checkpoint`() {
+        store.save(1, GameState(activeSlot = 1, sceneId = "late_game", health = 12, gold = 999, level = 8))
+        store.savePreviousState(1, GameState(activeSlot = 1, sceneId = "one_step_back"))
+        val untouched = GameState(activeSlot = 2, sceneId = "other_slot", health = 77, gold = 44)
+        store.save(2, untouched)
+
+        val fresh = store.restart(1)
+
+        assertEquals(GameState(activeSlot = 1), fresh)
+        assertEquals(GameState(activeSlot = 1), store.load(1))
+        assertEquals(untouched, store.load(2))
+        assertFalse(store.hasPreviousState(1))
+        assertEquals(1, store.currentActiveSlot())
+    }
 }
