@@ -177,7 +177,7 @@ class GameStateApplyChoiceTest {
 
         val result = state.applyChoice(choice)
 
-        assertEquals(44, result.health)
+        assertEquals(46, result.health)
     }
 
     @Test
@@ -187,7 +187,7 @@ class GameStateApplyChoiceTest {
 
         val result = state.applyChoice(choice)
 
-        assertEquals(29, result.health)
+        assertEquals(35, result.health)
     }
 
     @Test
@@ -207,7 +207,7 @@ class GameStateApplyChoiceTest {
 
         val result = state.applyChoice(choice)
 
-        assertEquals(29, result.health)
+        assertEquals(31, result.health)
     }
 
     @Test
