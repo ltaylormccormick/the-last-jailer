@@ -99,7 +99,7 @@ val chapter24Nodes: List<StoryNode> = listOf(
         id = "the_road_to_greymoor",
         chapterId = "chapter_24",
         title = "The Road to Greymoor",
-        illustrationId = "the_road_to_greymoor",
+        illustrationId = "greymoor_ward",
         narrativeText = """
             Greymoor hasn't changed since Kaelen last stood in it: the same low grey hills, the
             same watch-post with its door still hanging the way the search party left it months
