@@ -33,6 +33,7 @@ import com.thelastjailer.app.levelDamageReduction
 private const val HEALING_DRAUGHT_ID = "healing_draught"
 private const val GREATER_HEALING_DRAUGHT_ID = "greater_healing_draught"
 private const val KAELEN_COMBAT_PORTRAIT = "what_reaches_for_kaelen"
+private const val LOW_HEALTH_FRACTION = 0.30f
 
 /**
  * Story-first turn-based combat. Finished scene illustrations are reused as cropped combat portraits,
@@ -169,6 +170,9 @@ private fun CombatantCard(
     modifier: Modifier = Modifier
 ) {
     val progress = (health.toFloat() / maxHealth.coerceAtLeast(1)).coerceIn(0f, 1f)
+    val lowHealth = progress <= LOW_HEALTH_FRACTION
+    val healthColor = if (lowHealth) MaterialTheme.colorScheme.error else JailerColors.Gold
+
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(5.dp)) {
         SceneIllustration(
             illustrationId = illustrationId,
@@ -177,8 +181,13 @@ private fun CombatantCard(
         Text(name, style = MaterialTheme.typography.labelMedium, color = JailerColors.Gold)
         LinearProgressIndicator(
             progress = { progress },
-            modifier = Modifier.fillMaxWidth().height(8.dp)
+            modifier = Modifier.fillMaxWidth().height(8.dp),
+            color = healthColor
         )
-        Text("$health / $maxHealth HP", style = MaterialTheme.typography.bodySmall)
+        Text(
+            "$health / $maxHealth HP",
+            style = MaterialTheme.typography.bodySmall,
+            color = if (lowHealth) healthColor else JailerColors.TextPrimary
+        )
     }
 }
