@@ -32,7 +32,7 @@ val chapter30Nodes: List<StoryNode> = listOf(
         id = "what_must_happen_next",
         chapterId = "chapter_30",
         title = "What Must Happen Next",
-        illustrationId = "what_must_happen_next",
+        illustrationId = "black_door_beneath_the_tree",
         narrativeText = """
             "It reached all the way into you and lost," the prisoner says, the morning after. "It
             has never once done that before, not in three hundred years. Whatever it is now, it
