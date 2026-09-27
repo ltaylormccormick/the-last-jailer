@@ -2,13 +2,13 @@
 
 Baseline: PR #91, commit `6261b42fbea4320d7576c89d99a405dc7cfd977b`.
 
-All 26 `CombatEncounter` definitions have one or more launching story nodes. The combat screen currently uses the first launching node's `illustrationId`, then crops that entire landscape illustration into a 128 dp card. This is an inventory of the art actually selected by that code, not an approval of it as enemy portrait art. Story illustration files must remain intact.
+All 26 `CombatEncounter` definitions have one or more launching story nodes. The combat screen uses dedicated portraits where mapped, and otherwise uses the first launching node's `illustrationId` cropped into a 128 dp card. The table records original story art and current review status. Story illustration files remain intact.
 
 | Chapter | Encounter / enemy | Current scene art | Portrait assessment |
 | --- | --- | --- | --- |
-| 1 | first_blood / Cave Lurker | `cavern_ambush` | Creature at right; requires deliberate close crop. |
-| 2 | seal_breaker / Seal-Bound Wraith | `seal_breaker_ambush` | Diffuse shape in broad scene; dedicated art likely needed. |
-| 4 | siege / Ashen Vanguard | `dwarven_hold_gate` or `road_away_from_tree` | **Wrong subject / route-dependent. Dedicated portrait required.** |
+| 1 | first_blood / Cave Lurker | `cavern_ambush` | Dedicated `cave_lurker_combat` now selected; phone acceptance pending. |
+| 2 | seal_breaker / Seal-Bound Wraith | `seal_breaker_ambush` | Dedicated `seal_wraith_combat` now selected; phone acceptance pending. |
+| 4 | siege / Ashen Vanguard | `dwarven_hold_gate` or `road_away_from_tree` | Dedicated `ashen_vanguard_combat` selected on both routes; phone acceptance pending. |
 | 5 | cinder_envoy / Cinder Adept | `cinder_adept_ambush` | Hooded enemy left; close crop candidate. |
 | 6 | unbound / Unbound Horror | `the_unbound_creature` | Creature at right; close crop candidate. |
 | 7 | loyalist_ambush / Cinder Loyalist Enforcer | `loyalists_ambush` | Multiple combatants; dedicated portrait required. |

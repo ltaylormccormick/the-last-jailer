@@ -36,10 +36,16 @@ private const val GREATER_HEALING_DRAUGHT_ID = "greater_healing_draught"
 private const val KAELEN_COMBAT_PORTRAIT = "kaelen_combat_portrait_v2"
 private const val LOW_HEALTH_FRACTION = 0.30f
 
+/** Explicit opponent art avoids selecting a different story scene on different routes. */
+private val dedicatedEnemyPortraits = mapOf(
+    "cave_lurker" to "cave_lurker_combat",
+    "seal_wraith" to "seal_wraith_combat",
+    "ashen_vanguard" to "ashen_vanguard_combat"
+)
+
 /**
  * Story-first turn-based combat. Kaelen uses a dedicated combat portrait; enemy artwork is
- * currently reused from story scenes pending the full enemy portrait replacement.
- * with the active health state visible at a glance. The full log remains available underneath but
+ * gradually gaining dedicated enemy portraits. The full log remains available underneath but
  * no longer has to carry the entire presentation by itself.
  */
 @Composable
@@ -50,10 +56,14 @@ fun CombatScreen(
     modifier: Modifier = Modifier
 ) {
     val enemy = remember(encounter.id) { EnemyCatalog.get(encounter.enemyId) }
-    val enemyPortrait = remember(encounter.id) {
-        StoryRepository.combatNode(encounter.id)?.illustrationId ?: "black_door_beneath_the_tree"
+    val dedicatedPortrait = dedicatedEnemyPortraits[encounter.enemyId]
+    val enemyPortrait = remember(encounter.id, encounter.enemyId) {
+        dedicatedPortrait ?: StoryRepository.combatNode(encounter.id)?.illustrationId
+            ?: "black_door_beneath_the_tree"
     }
-    val enemyPortraitAlignment = remember(encounter.enemyId) { enemyPortraitAlignment(encounter.enemyId) }
+    val enemyPortraitAlignment = remember(encounter.enemyId) {
+        if (dedicatedPortrait != null) Alignment.Center else enemyPortraitAlignment(encounter.enemyId)
+    }
     val equipment = remember(playerState.inventory) { ItemCatalog.resolve(playerState.inventory) }
     val equipmentDamageReduction = equipment.sumOf { it.combatEffect?.damageReduction ?: 0 }
     val equipmentAttackBonus = equipment.sumOf { it.combatEffect?.attackBonus ?: 0 }
