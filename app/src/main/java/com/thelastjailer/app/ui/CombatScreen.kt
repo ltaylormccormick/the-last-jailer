@@ -40,7 +40,11 @@ private const val LOW_HEALTH_FRACTION = 0.30f
 private val dedicatedEnemyPortraits = mapOf(
     "cave_lurker" to "cave_lurker_combat",
     "seal_wraith" to "seal_wraith_combat",
-    "ashen_vanguard" to "ashen_vanguard_combat"
+    "ashen_vanguard" to "ashen_vanguard_combat",
+    "cinder_adept" to "cinder_adept_combat",
+    "unbound_horror" to "unbound_horror_combat",
+    "loyalist_enforcer" to "loyalist_enforcer_combat",
+    "sanctum_sentinel" to "sanctum_sentinel_combat"
 )
 
 /**
