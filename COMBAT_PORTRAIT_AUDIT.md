@@ -13,10 +13,10 @@ All 26 `CombatEncounter` definitions have one or more launching story nodes. The
 | 6 | unbound / Unbound Horror | `the_unbound_creature` | Dedicated `unbound_horror_combat` now selected; phone acceptance pending. |
 | 7 | loyalist_ambush / Cinder Loyalist Enforcer | `loyalists_ambush` | Dedicated `loyalist_enforcer_combat` now selected; phone acceptance pending. |
 | 8 | sanctum_sentinel / Sanctum Sentinel | `sentinels_close_in` | Dedicated `sanctum_sentinel_combat` now selected; phone acceptance pending. |
-| 9 | right_hand / Castellan Ordrun | `the_right_hand_intercepts` | Several figures; dedicated portrait required. |
-| 10 | stonebeard_siege / Ilsevet's Vanguard Captain | `the_gate_falls` | Foreground armoured figure, but other soldiers; crop candidate. |
-| 11 | fenmoor_extraction / Cinder Extraction Leader | `the_marsh_holds` | Multiple figures; dedicated portrait required. |
-| 12 | unfinished_thing / The Unfinished Thing | `the_unfinished_thing` | Large central creature; close crop candidate. |
+| 9 | right_hand / Castellan Ordrun | `the_right_hand_intercepts` | Dedicated `cinder_castellan_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 10 | stonebeard_siege / Ilsevet's Vanguard Captain | `the_gate_falls` | Dedicated `ilsevets_vanguard_captain_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 11 | fenmoor_extraction / Cinder Extraction Leader | `the_marsh_holds` | Dedicated `cinder_extraction_leader_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 12 | unfinished_thing / The Unfinished Thing | `the_unfinished_thing` | Dedicated `the_unfinished_combat` selected; decoded and visually checked, phone acceptance pending. |
 | 14 | memory_confrontation / The Memory Itself | `inside_the_memory` | Abstract force; scene may suit creature identity, inspect on phone. |
 | 15 | reprisal_squad / Cinder Reprisal Leader | `the_reprisal` | Central hooded figure with others; crop candidate. |
 | 16 | reliquary_thief / Cinder Reliquary Thief | `the_reliquary_thief` | Hooded figure at right; crop candidate. |
