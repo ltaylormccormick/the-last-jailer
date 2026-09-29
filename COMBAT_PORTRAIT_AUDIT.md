@@ -9,10 +9,10 @@ All 26 `CombatEncounter` definitions have one or more launching story nodes. The
 | 1 | first_blood / Cave Lurker | `cavern_ambush` | Dedicated `cave_lurker_combat` now selected; phone acceptance pending. |
 | 2 | seal_breaker / Seal-Bound Wraith | `seal_breaker_ambush` | Dedicated `seal_wraith_combat` now selected; phone acceptance pending. |
 | 4 | siege / Ashen Vanguard | `dwarven_hold_gate` or `road_away_from_tree` | Dedicated `ashen_vanguard_combat` selected on both routes; phone acceptance pending. |
-| 5 | cinder_envoy / Cinder Adept | `cinder_adept_ambush` | Hooded enemy left; close crop candidate. |
-| 6 | unbound / Unbound Horror | `the_unbound_creature` | Creature at right; close crop candidate. |
-| 7 | loyalist_ambush / Cinder Loyalist Enforcer | `loyalists_ambush` | Multiple combatants; dedicated portrait required. |
-| 8 | sanctum_sentinel / Sanctum Sentinel | `sentinels_close_in` | Distant construct and multiple figures; dedicated portrait required. |
+| 5 | cinder_envoy / Cinder Adept | `cinder_adept_ambush` | Dedicated `cinder_adept_combat` now selected; phone acceptance pending. |
+| 6 | unbound / Unbound Horror | `the_unbound_creature` | Dedicated `unbound_horror_combat` now selected; phone acceptance pending. |
+| 7 | loyalist_ambush / Cinder Loyalist Enforcer | `loyalists_ambush` | Dedicated `loyalist_enforcer_combat` now selected; phone acceptance pending. |
+| 8 | sanctum_sentinel / Sanctum Sentinel | `sentinels_close_in` | Dedicated `sanctum_sentinel_combat` now selected; phone acceptance pending. |
 | 9 | right_hand / Castellan Ordrun | `the_right_hand_intercepts` | Several figures; dedicated portrait required. |
 | 10 | stonebeard_siege / Ilsevet's Vanguard Captain | `the_gate_falls` | Foreground armoured figure, but other soldiers; crop candidate. |
 | 11 | fenmoor_extraction / Cinder Extraction Leader | `the_marsh_holds` | Multiple figures; dedicated portrait required. |

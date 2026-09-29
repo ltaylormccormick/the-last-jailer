@@ -4,6 +4,19 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// Empty image resources can package successfully but crash painterResource at runtime.
+val validateDrawableAssets by tasks.registering {
+    val drawables = fileTree("src/main/res") { include("drawable*/**/*") }
+    inputs.files(drawables)
+    doLast {
+        val emptyFiles = drawables.files.filter { it.length() == 0L }
+        check(emptyFiles.isEmpty()) {
+            "Empty drawable resources: " + emptyFiles.joinToString { it.name }
+        }
+    }
+}
+tasks.named("preBuild") { dependsOn(validateDrawableAssets) }
+
 android {
     namespace = "com.thelastjailer.app"
     compileSdk = 35
