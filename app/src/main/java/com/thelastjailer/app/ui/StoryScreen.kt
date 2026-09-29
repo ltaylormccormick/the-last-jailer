@@ -60,6 +60,7 @@ fun StoryScreen(
     entitlements: EntitlementRepository,
     purchaseCompletedTick: Int,
     onRequestUnlock: () -> Unit,
+    onRestorePurchase: () -> Unit,
     onChoiceSelected: (Choice) -> Unit,
     onCombatResolved: (CombatEncounter, CombatOutcome) -> Unit,
     onOpenJournal: () -> Unit,
@@ -93,9 +94,10 @@ fun StoryScreen(
 
         if (!chapterUnlocked) {
             LockedChapterScreen(
-                node = node,
                 entitlements = entitlements,
                 onRequestUnlock = onRequestUnlock,
+                onRestorePurchase = onRestorePurchase,
+                onNotNow = onOpenMenu,
                 onDebugUnlocked = { chapterUnlocked = true },
                 modifier = Modifier.fillMaxSize()
             )
@@ -335,23 +337,26 @@ private fun leadsToSignaledCombat(nodeId: String): Boolean {
 
 @Composable
 private fun LockedChapterScreen(
-    node: StoryNode,
     entitlements: EntitlementRepository,
     onRequestUnlock: () -> Unit,
+    onRestorePurchase: () -> Unit,
+    onNotNow: () -> Unit,
     onDebugUnlocked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.Center) {
-        Text("CHAPTER LOCKED", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
+    Column(modifier = modifier.verticalScroll(rememberScrollState()).padding(vertical = 24.dp), verticalArrangement = Arrangement.Center) {
+        Text("THANK YOU FOR READING THIS FAR", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
         Spacer(Modifier.height(12.dp))
         Text(
-            "${node.title} is part of the full story. Unlock it with a one-time purchase to continue Kaelen's tale beyond Chapter V.",
+            "I hope you’re enjoying The Last Jailer, my first project. There’s still much more of Kaelen’s story to discover.\n\nFor a one-time payment of £1.99, you can unlock the rest of the book — Chapters 10–30, with no further story purchases. Your support will help me gradually spend more time creating and developing projects like this.\n\nThank you for giving my first adventure a chance.",
             style = MaterialTheme.typography.bodyLarge
         )
         Spacer(Modifier.height(20.dp))
         Button(onClick = onRequestUnlock) {
-            Text("UNLOCK FULL STORY")
+            Text("UNLOCK THE REST OF THE STORY — £1.99")
         }
+        TextButton(onClick = onRestorePurchase) { Text("Restore purchase") }
+        TextButton(onClick = onNotNow) { Text("Not now") }
         if (BuildConfig.DEBUG) {
             Spacer(Modifier.height(12.dp))
             OutlinedButton(onClick = {

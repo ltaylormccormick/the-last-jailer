@@ -2,6 +2,7 @@ package com.thelastjailer.app.data
 
 import android.app.Activity
 import android.content.Context
+import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -37,6 +38,8 @@ class BillingRepository(
 
     var purchaseCompletedTick by mutableStateOf(0)
         private set
+
+    private val appContext = context.applicationContext
 
     private var productDetails: ProductDetails? = null
 
@@ -86,20 +89,29 @@ class BillingRepository(
     }
 
     /** Queries purchases already owned by this Play account (reinstall, new device) and unlocks silently if found. */
-    private fun restorePastPurchases() {
+    fun restorePastPurchases(showFeedback: Boolean = false) {
         val params = QueryPurchasesParams.newBuilder()
             .setProductType(BillingClient.ProductType.INAPP)
             .build()
         billingClient.queryPurchasesAsync(params) { billingResult, purchases ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                 handlePurchases(purchases)
+                if (showFeedback) {
+                    val message = if (entitlements.hasUnlockedFullStory()) "Full story restored." else "No completed story purchase found for this Google Play account."
+                    Toast.makeText(appContext, message, Toast.LENGTH_LONG).show()
+                }
+            } else if (showFeedback) {
+                Toast.makeText(appContext, "Could not restore purchases. Please try again when Google Play is available.", Toast.LENGTH_LONG).show()
             }
         }
     }
 
-    /** Launches Play's purchase UI for the unlock-full-story product. A no-op if product details haven't loaded yet. */
+    /** Launches Play's purchase UI for the unlock-full-story product. Shows feedback if product details have not loaded yet. */
     fun launchPurchaseFlow(activity: Activity) {
-        val details = productDetails ?: return
+        val details = productDetails ?: run {
+            Toast.makeText(appContext, "Purchases are unavailable right now. Please try again when Google Play is available.", Toast.LENGTH_LONG).show()
+            return
+        }
         val params = BillingFlowParams.newBuilder()
             .setProductDetailsParamsList(
                 listOf(

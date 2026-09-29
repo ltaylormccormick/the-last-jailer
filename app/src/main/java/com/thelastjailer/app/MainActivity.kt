@@ -121,6 +121,7 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                     entitlements = entitlements,
                     purchaseCompletedTick = billing.purchaseCompletedTick,
                     onRequestUnlock = onRequestUnlock,
+                    onRestorePurchase = { billing.restorePastPurchases(showFeedback = true) },
                     onChoiceSelected = { choice ->
                         // Keep one exact pre-choice snapshot so "go back one step" restores stats,
                         // flags and items as well as the previous scene.
