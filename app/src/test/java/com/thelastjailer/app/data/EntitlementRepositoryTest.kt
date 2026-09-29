@@ -16,18 +16,13 @@ class EntitlementRepositoryTest {
     }
 
     @Test
-    fun `chapters I through V are unlocked by default`() {
-        assertTrue(repository.isChapterUnlocked("chapter_1"))
-        assertTrue(repository.isChapterUnlocked("chapter_2"))
-        assertTrue(repository.isChapterUnlocked("chapter_3"))
-        assertTrue(repository.isChapterUnlocked("chapter_4"))
-        assertTrue(repository.isChapterUnlocked("chapter_5"))
+    fun `chapters I through IX are unlocked by default`() {
+        (1..9).forEach { assertTrue(repository.isChapterUnlocked("chapter_$it")) }
     }
 
     @Test
-    fun `chapter VI and beyond are locked by default`() {
-        assertFalse(repository.isChapterUnlocked("chapter_6"))
-        assertFalse(repository.isChapterUnlocked("chapter_9"))
+    fun `chapters X through XXX are locked by default`() {
+        (10..30).forEach { assertFalse(repository.isChapterUnlocked("chapter_$it")) }
     }
 
     @Test
@@ -45,7 +40,7 @@ class EntitlementRepositoryTest {
         repository.unlockFullStory()
 
         assertTrue(repository.hasUnlockedFullStory())
-        assertTrue(repository.isChapterUnlocked("chapter_6"))
+        (1..30).forEach { assertTrue(repository.isChapterUnlocked("chapter_$it")) }
         assertEquals(LocalEntitlementRepository.UNLOCKED_SAVE_SLOTS, repository.maxSaveSlots())
     }
 
@@ -59,6 +54,8 @@ class EntitlementRepositoryTest {
         repository.setDebugPurchaseSimulated(false)
 
         assertFalse(repository.hasUnlockedFullStory())
+        assertTrue(repository.isChapterUnlocked("chapter_9"))
+        assertFalse(repository.isChapterUnlocked("chapter_10"))
     }
 
     @Test
