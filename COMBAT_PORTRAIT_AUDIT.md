@@ -25,10 +25,10 @@ All 26 `CombatEncounter` definitions have one or more launching story nodes. The
 | 20 | ghostwriter / The Ghostwriter | `the_workshops_own_guardian` | Dedicated `the_ghostwriter_combat` selected; decoded and visually checked, phone acceptance pending. |
 | 22 | patient_voice / The Patient Voice | `into_the_asking` | Dedicated `the_patient_voice_combat` selected; decoded and visually checked, phone acceptance pending. |
 | 23 | emberlow_stragglers / Cinder Straggler Captain | `what_waits_at_the_threshold` | Dedicated `cinder_straggler_captain_combat` selected; decoded and visually checked, phone acceptance pending. |
-| 24 | greymoor_unraveling / Greymoor Ward-Wraith | `what_waits_in_the_keening` | Diffuse wraith to right; crop candidate. |
-| 25 | duskmere_threshold / The Answering Door | `the_answering_shape` | Central construct; crop candidate. |
-| 26 | sundering_ground / The Unremembering | `what_guards_the_beginning` | Diffuse figure; dedicated portrait likely needed. |
-| 27 | the_reclamation / The Reclamation | `the_reclamation` | Right-hand creature; close crop candidate. |
+| 24 | greymoor_unraveling / Greymoor Ward-Wraith | `what_waits_in_the_keening` | Dedicated `greymoor_ward_wraith_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 25 | duskmere_threshold / The Answering Door | `the_answering_shape` | Dedicated `the_answering_door_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 26 | sundering_ground / The Unremembering | `what_guards_the_beginning` | Dedicated `the_unremembering_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 27 | the_reclamation / The Reclamation | `the_reclamation` | Dedicated `the_reclamation_combat` selected; decoded and visually checked, phone acceptance pending. |
 | 28 | wraithspire_vigil / Vigil Captain | `the_vigils_challenge` | Several fighters; dedicated portrait required. |
 | 29 | the_whole / The Whole, Undisguised | `into_the_undisguised` | Abstract entity fills scene; crop candidate. |
 | 30 | the_last_reach / The Whole at Full Reach | `the_last_reach` | Distant figure and Kaelen; dedicated portrait required. |
