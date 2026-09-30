@@ -52,12 +52,23 @@ private val dedicatedEnemyPortraits = mapOf(
     "the_memory_itself" to "the_memory_itself_combat",
     "cinder_reprisal_leader" to "cinder_reprisal_leader_combat",
     "cinder_reliquary_thief" to "cinder_reliquary_thief_combat",
-    "sanctum_construct" to "sanctum_construct_combat"
+    "sanctum_construct" to "sanctum_construct_combat",
+    "ilsevet_the_cinder_marshal" to "ilsevet_the_cinder_marshal_combat",
+    "the_ghostwriter" to "the_ghostwriter_combat",
+    "the_patient_voice" to "the_patient_voice_combat",
+    "cinder_straggler_captain" to "cinder_straggler_captain_combat",
+    "greymoor_ward_wraith" to "greymoor_ward_wraith_combat",
+    "the_answering_door" to "the_answering_door_combat",
+    "the_unremembering" to "the_unremembering_combat",
+    "the_reclamation" to "the_reclamation_combat",
+    "vigil_captain_of_wraithspire" to "vigil_captain_of_wraithspire_combat",
+    "the_whole_undisguised" to "the_whole_undisguised_combat",
+    "the_whole_at_full_reach" to "the_whole_at_full_reach_combat"
 )
 
 /**
- * Story-first turn-based combat. Kaelen uses a dedicated combat portrait; enemy artwork is
- * gradually gaining dedicated enemy portraits. The full log remains available underneath but
+ * Story-first turn-based combat. Kaelen uses a dedicated combat portrait; all 26 enemies use dedicated
+ * enemy portraits. The full log remains available underneath but
  * no longer has to carry the entire presentation by itself.
  */
 @Composable

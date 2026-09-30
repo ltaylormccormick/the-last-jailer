@@ -2,6 +2,8 @@
 
 Baseline: PR #91, commit `6261b42fbea4320d7576c89d99a405dc7cfd977b`.
 
+As of 30 September 2026, all 26 enemies have explicit dedicated portrait mappings. Later batches still await Android build and phone acceptance.
+
 All 26 `CombatEncounter` definitions have one or more launching story nodes. The combat screen uses dedicated portraits where mapped, and otherwise uses the first launching node's `illustrationId` cropped into a 128 dp card. The table records original story art and current review status. Story illustration files remain intact.
 
 | Chapter | Encounter / enemy | Current scene art | Portrait assessment |
@@ -21,16 +23,16 @@ All 26 `CombatEncounter` definitions have one or more launching story nodes. The
 | 15 | reprisal_squad / Cinder Reprisal Leader | `the_reprisal` | Dedicated `cinder_reprisal_leader_combat` selected; decoded and visually checked, phone acceptance pending. |
 | 16 | reliquary_thief / Cinder Reliquary Thief | `the_reliquary_thief` | Dedicated `cinder_reliquary_thief_combat` selected; decoded and visually checked, phone acceptance pending. |
 | 17 | chamber_guardian / Sanctum Construct | `the_chamber_defended` | Dedicated `sanctum_construct_combat` selected; decoded and visually checked, phone acceptance pending. |
-| 18 | ilsevet_duel / Ilsevet the Cinder Marshal | `the_duel` | Opponent among two fighters; dedicated portrait preferable. |
-| 20 | ghostwriter / The Ghostwriter | `the_workshops_own_guardian` | Spectral figure at right; crop candidate. |
-| 22 | patient_voice / The Patient Voice | `into_the_asking` | **Only Kaelen at door; dedicated enemy visual required.** |
-| 23 | emberlow_stragglers / Cinder Straggler Captain | `what_waits_at_the_threshold` | Multiple fighters; dedicated portrait required. |
-| 24 | greymoor_unraveling / Greymoor Ward-Wraith | `what_waits_in_the_keening` | Diffuse wraith to right; crop candidate. |
-| 25 | duskmere_threshold / The Answering Door | `the_answering_shape` | Central construct; crop candidate. |
-| 26 | sundering_ground / The Unremembering | `what_guards_the_beginning` | Diffuse figure; dedicated portrait likely needed. |
-| 27 | the_reclamation / The Reclamation | `the_reclamation` | Right-hand creature; close crop candidate. |
-| 28 | wraithspire_vigil / Vigil Captain | `the_vigils_challenge` | Several fighters; dedicated portrait required. |
-| 29 | the_whole / The Whole, Undisguised | `into_the_undisguised` | Abstract entity fills scene; crop candidate. |
-| 30 | the_last_reach / The Whole at Full Reach | `the_last_reach` | Distant figure and Kaelen; dedicated portrait required. |
+| 18 | ilsevet_duel / Ilsevet the Cinder Marshal | `the_duel` | Dedicated `ilsevet_the_cinder_marshal_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 20 | ghostwriter / The Ghostwriter | `the_workshops_own_guardian` | Dedicated `the_ghostwriter_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 22 | patient_voice / The Patient Voice | `into_the_asking` | Dedicated `the_patient_voice_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 23 | emberlow_stragglers / Cinder Straggler Captain | `what_waits_at_the_threshold` | Dedicated `cinder_straggler_captain_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 24 | greymoor_unraveling / Greymoor Ward-Wraith | `what_waits_in_the_keening` | Dedicated `greymoor_ward_wraith_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 25 | duskmere_threshold / The Answering Door | `the_answering_shape` | Dedicated `the_answering_door_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 26 | sundering_ground / The Unremembering | `what_guards_the_beginning` | Dedicated `the_unremembering_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 27 | the_reclamation / The Reclamation | `the_reclamation` | Dedicated `the_reclamation_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 28 | wraithspire_vigil / Vigil Captain | `the_vigils_challenge` | Dedicated `vigil_captain_of_wraithspire_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 29 | the_whole / The Whole, Undisguised | `into_the_undisguised` | Dedicated `the_whole_undisguised_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 30 | the_last_reach / The Whole at Full Reach | `the_last_reach` | Dedicated `the_whole_at_full_reach_combat` selected; decoded and visually checked, phone acceptance pending. |
 
 A crop candidate is **unverified**. Each needs a portrait-sized preview and phone acceptance. Do not mark the full enemy-art task complete until every row has a deliberate, visually checked portrait (asset or verified crop), including both siege routes. Kaelen now has a separate draft portrait; verify its canon details and phone crop before acceptance. Combat mechanics, XP and HP progression stay outside this art pass.
