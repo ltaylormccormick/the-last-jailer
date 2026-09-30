@@ -1,6 +1,7 @@
 package com.thelastjailer.app.data
 
 import com.thelastjailer.app.Choice
+import com.thelastjailer.app.BuildConfig
 import com.thelastjailer.app.ChoiceRequirement
 import com.thelastjailer.app.GameState
 import com.thelastjailer.app.StatType
@@ -22,12 +23,13 @@ class StoryRepositoryTest {
     }
 
     @Test
-    fun `node crashes loudly on an unknown id in a debug build`() {
-        // Unit tests run against the debug variant, where BuildConfig.DEBUG is true — this should
-        // fail where a tester can see it rather than silently teleporting to Chapter I's start
-        // node, which is release-build-only behavior (see StoryRepository.node's doc comment).
-        assertThrows(IllegalStateException::class.java) {
-            StoryRepository.node("this_id_does_not_exist_anywhere")
+    fun `unknown nodes fail in debug and recover in release`() {
+        if (BuildConfig.DEBUG) {
+            assertThrows(IllegalStateException::class.java) {
+                StoryRepository.node("this_id_does_not_exist_anywhere")
+            }
+        } else {
+            assertEquals("fallen_knight", StoryRepository.node("this_id_does_not_exist_anywhere").id)
         }
     }
 
