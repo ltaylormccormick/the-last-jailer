@@ -48,7 +48,11 @@ private val dedicatedEnemyPortraits = mapOf(
     "cinder_castellan" to "cinder_castellan_combat",
     "ilsevets_vanguard_captain" to "ilsevets_vanguard_captain_combat",
     "cinder_extraction_leader" to "cinder_extraction_leader_combat",
-    "the_unfinished" to "the_unfinished_combat"
+    "the_unfinished" to "the_unfinished_combat",
+    "the_memory_itself" to "the_memory_itself_combat",
+    "cinder_reprisal_leader" to "cinder_reprisal_leader_combat",
+    "cinder_reliquary_thief" to "cinder_reliquary_thief_combat",
+    "sanctum_construct" to "sanctum_construct_combat"
 )
 
 /**
