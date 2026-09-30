@@ -1,6 +1,7 @@
 package com.thelastjailer.app.data
 
 import com.thelastjailer.app.FakeSharedPreferences
+import com.thelastjailer.app.BuildConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -45,11 +46,11 @@ class EntitlementRepositoryTest {
     }
 
     @Test
-    fun `the debug purchase toggle unlocks the full story`() {
+    fun `the purchase simulation only unlocks debug builds`() {
         repository.setDebugPurchaseSimulated(true)
 
-        assertTrue(repository.hasUnlockedFullStory())
-        assertTrue(repository.isChapterUnlocked("chapter_10"))
+        assertEquals(BuildConfig.DEBUG, repository.hasUnlockedFullStory())
+        assertEquals(BuildConfig.DEBUG, repository.isChapterUnlocked("chapter_10"))
 
         repository.setDebugPurchaseSimulated(false)
 

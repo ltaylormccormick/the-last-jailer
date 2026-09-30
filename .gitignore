@@ -3,6 +3,10 @@
 /build/
 */build/
 local.properties
+*.jks
+*.keystore
+*.p12
+keystore.properties
 
 # Android Studio
 .idea/

@@ -25,7 +25,13 @@ android {
         applicationId = "com.thelastjailer.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
+        versionCode = providers.gradleProperty("playVersionCode").orNull?.let { value ->
+            val code = value.toIntOrNull()
+            require(code != null && code in 1..2100000000) {
+                "playVersionCode must be an integer from 1 to 2100000000"
+            }
+            code
+        } ?: 1
         versionName = "0.1.0"
     }
 
