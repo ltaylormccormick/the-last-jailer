@@ -17,10 +17,10 @@ All 26 `CombatEncounter` definitions have one or more launching story nodes. The
 | 10 | stonebeard_siege / Ilsevet's Vanguard Captain | `the_gate_falls` | Dedicated `ilsevets_vanguard_captain_combat` selected; decoded and visually checked, phone acceptance pending. |
 | 11 | fenmoor_extraction / Cinder Extraction Leader | `the_marsh_holds` | Dedicated `cinder_extraction_leader_combat` selected; decoded and visually checked, phone acceptance pending. |
 | 12 | unfinished_thing / The Unfinished Thing | `the_unfinished_thing` | Dedicated `the_unfinished_combat` selected; decoded and visually checked, phone acceptance pending. |
-| 14 | memory_confrontation / The Memory Itself | `inside_the_memory` | Abstract force; scene may suit creature identity, inspect on phone. |
-| 15 | reprisal_squad / Cinder Reprisal Leader | `the_reprisal` | Central hooded figure with others; crop candidate. |
-| 16 | reliquary_thief / Cinder Reliquary Thief | `the_reliquary_thief` | Hooded figure at right; crop candidate. |
-| 17 | chamber_guardian / Sanctum Construct | `the_chamber_defended` | Central construct; crop candidate. |
+| 14 | memory_confrontation / The Memory Itself | `inside_the_memory` | Dedicated `the_memory_itself_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 15 | reprisal_squad / Cinder Reprisal Leader | `the_reprisal` | Dedicated `cinder_reprisal_leader_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 16 | reliquary_thief / Cinder Reliquary Thief | `the_reliquary_thief` | Dedicated `cinder_reliquary_thief_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 17 | chamber_guardian / Sanctum Construct | `the_chamber_defended` | Dedicated `sanctum_construct_combat` selected; decoded and visually checked, phone acceptance pending. |
 | 18 | ilsevet_duel / Ilsevet the Cinder Marshal | `the_duel` | Opponent among two fighters; dedicated portrait preferable. |
 | 20 | ghostwriter / The Ghostwriter | `the_workshops_own_guardian` | Spectral figure at right; crop candidate. |
 | 22 | patient_voice / The Patient Voice | `into_the_asking` | **Only Kaelen at door; dedicated enemy visual required.** |
