@@ -21,10 +21,10 @@ All 26 `CombatEncounter` definitions have one or more launching story nodes. The
 | 15 | reprisal_squad / Cinder Reprisal Leader | `the_reprisal` | Dedicated `cinder_reprisal_leader_combat` selected; decoded and visually checked, phone acceptance pending. |
 | 16 | reliquary_thief / Cinder Reliquary Thief | `the_reliquary_thief` | Dedicated `cinder_reliquary_thief_combat` selected; decoded and visually checked, phone acceptance pending. |
 | 17 | chamber_guardian / Sanctum Construct | `the_chamber_defended` | Dedicated `sanctum_construct_combat` selected; decoded and visually checked, phone acceptance pending. |
-| 18 | ilsevet_duel / Ilsevet the Cinder Marshal | `the_duel` | Opponent among two fighters; dedicated portrait preferable. |
-| 20 | ghostwriter / The Ghostwriter | `the_workshops_own_guardian` | Spectral figure at right; crop candidate. |
-| 22 | patient_voice / The Patient Voice | `into_the_asking` | **Only Kaelen at door; dedicated enemy visual required.** |
-| 23 | emberlow_stragglers / Cinder Straggler Captain | `what_waits_at_the_threshold` | Multiple fighters; dedicated portrait required. |
+| 18 | ilsevet_duel / Ilsevet the Cinder Marshal | `the_duel` | Dedicated `ilsevet_the_cinder_marshal_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 20 | ghostwriter / The Ghostwriter | `the_workshops_own_guardian` | Dedicated `the_ghostwriter_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 22 | patient_voice / The Patient Voice | `into_the_asking` | Dedicated `the_patient_voice_combat` selected; decoded and visually checked, phone acceptance pending. |
+| 23 | emberlow_stragglers / Cinder Straggler Captain | `what_waits_at_the_threshold` | Dedicated `cinder_straggler_captain_combat` selected; decoded and visually checked, phone acceptance pending. |
 | 24 | greymoor_unraveling / Greymoor Ward-Wraith | `what_waits_in_the_keening` | Diffuse wraith to right; crop candidate. |
 | 25 | duskmere_threshold / The Answering Door | `the_answering_shape` | Central construct; crop candidate. |
 | 26 | sundering_ground / The Unremembering | `what_guards_the_beginning` | Diffuse figure; dedicated portrait likely needed. |
