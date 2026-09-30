@@ -60,12 +60,15 @@ private val dedicatedEnemyPortraits = mapOf(
     "greymoor_ward_wraith" to "greymoor_ward_wraith_combat",
     "the_answering_door" to "the_answering_door_combat",
     "the_unremembering" to "the_unremembering_combat",
-    "the_reclamation" to "the_reclamation_combat"
+    "the_reclamation" to "the_reclamation_combat",
+    "vigil_captain_of_wraithspire" to "vigil_captain_of_wraithspire_combat",
+    "the_whole_undisguised" to "the_whole_undisguised_combat",
+    "the_whole_at_full_reach" to "the_whole_at_full_reach_combat"
 )
 
 /**
- * Story-first turn-based combat. Kaelen uses a dedicated combat portrait; enemy artwork is
- * gradually gaining dedicated enemy portraits. The full log remains available underneath but
+ * Story-first turn-based combat. Kaelen uses a dedicated combat portrait; all 26 enemies use dedicated
+ * enemy portraits. The full log remains available underneath but
  * no longer has to carry the entire presentation by itself.
  */
 @Composable
