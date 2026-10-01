@@ -19,12 +19,12 @@ tasks.named("preBuild") { dependsOn(validateDrawableAssets) }
 
 android {
     namespace = "com.thelastjailer.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.thelastjailer.app"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = providers.gradleProperty("playVersionCode").orNull?.let { value ->
             val code = value.toIntOrNull()
             require(code != null && code in 1..2100000000) {

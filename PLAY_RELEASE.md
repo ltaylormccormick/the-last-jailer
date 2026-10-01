@@ -40,10 +40,17 @@ Copy the base64 directly to the clipboard without displaying it:
 ```
 
 Paste it into the first secret's Value field. Clear the clipboard afterward with
-`Set-Clipboard -Value ""`. Repository secrets are visible to trusted workflows with
+`Set-Clipboard -Value "cleared"`. Repository secrets are visible to trusted workflows with
 access to them; restrict repository write access accordingly.
 
 ## Build and upload
+
+Builds compile and target Android 16 (API 36), using Android Gradle Plugin 8.10.1,
+Gradle 8.11.1 and JDK 17. The minimum supported Android version remains API 26.
+
+If Play has already accepted version code 1, use code 2 for the API 36 replacement,
+even if the first internal release was blocked before publication. Remove the old
+API 35 bundle from the draft release and upload the new signed AAB.
 
 1. Merge the release workflow PR once its debug and release checks pass.
 2. Open Actions > Google Play bundle > Run workflow. Select main.
