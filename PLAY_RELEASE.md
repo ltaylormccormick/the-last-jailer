@@ -5,6 +5,14 @@ Google Play bundle is a separate, manual workflow for a signed release AAB. It r
 from main and does not upload to Play or publish a release. Release builds disable the
 existing debug purchase simulation; use Google Play license testers for billing tests.
 
+Select `internalTest` in the Google Play bundle workflow to include a visible
+**TESTER: Unlock full story** button at the Chapter 10 wall. It opens Chapters 10–30
+and ten save slots without payment, persists across app restarts, and never records a
+purchase. The separate tester preference is ignored by normal `release` builds.
+Select `release` for production; never promote an internalTest bundle to production.
+Google Play tracks do not change the compiled build flag. Real billing remains available
+in both builds so license testers can test it before using the tester unlock.
+
 ## One-time upload key setup on Windows
 
 Check for Java's keytool in PowerShell: `Get-Command keytool`.
@@ -53,11 +61,11 @@ even if the first internal release was blocked before publication. Remove the ol
 API 35 bundle from the draft release and upload the new signed AAB.
 
 1. Merge the release workflow PR once its debug and release checks pass.
-2. Open Actions > Google Play bundle > Run workflow. Select main.
+2. Open Actions > Google Play bundle > Run workflow. Select main and choose `internalTest` for testers or `release` for production.
 3. Enter version code 1 for the first Play upload. Increase it for each subsequent upload;
    a rerun with the same number does not create a new version code.
-4. Download the `the-last-jailer-play-<code>` artifact from the successful run and extract
-   `app-release.aab` from the ZIP.
+4. Download the `the-last-jailer-play-<build_kind>-<code>` artifact from the successful run and extract
+   `app-internalTest.aab` (testers) or `app-release.aab` (production) from the ZIP.
 5. Upload that AAB to the internal testing release. Complete Play App Signing as prompted.
 6. Review Console validation, add release notes, and roll out to internal testers when ready.
 

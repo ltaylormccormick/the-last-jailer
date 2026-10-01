@@ -8,6 +8,15 @@ on:
         required: true
         type: string
 
+      build_kind:
+        description: 'Internal test includes free tester unlock; production does not'
+        required: true
+        default: internalTest
+        type: choice
+        options:
+          - internalTest
+          - release
+
 permissions:
   contents: read
 
@@ -30,6 +39,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
       - name: Build release bundle and run release unit tests
         env:
+          BUILD_KIND: ${{ inputs.build_kind }}
           PLAY_VERSION_CODE: ${{ inputs.version_code }}
         run: |
           python - <<'PY'
@@ -38,19 +48,26 @@ jobs:
           if not value.isascii() or not value.isdecimal() or not 1 <= int(value) <= 2100000000:
               raise SystemExit('Version code must be an integer from 1 to 2100000000')
           PY
-          ./gradlew bundleRelease testReleaseUnitTest "-PplayVersionCode=$PLAY_VERSION_CODE" --stacktrace
+          case "$BUILD_KIND" in
+            internalTest) ./gradlew bundleInternalTest testInternalTestUnitTest "-PplayVersionCode=$PLAY_VERSION_CODE" --stacktrace ;;
+            release) ./gradlew bundleRelease testReleaseUnitTest "-PplayVersionCode=$PLAY_VERSION_CODE" --stacktrace ;;
+            *) echo "Invalid build kind"; exit 1 ;;
+          esac
       - name: Sign and verify bundle with upload key
         env:
+          BUILD_KIND: ${{ inputs.build_kind }}
           ANDROID_UPLOAD_KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
           ANDROID_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
           ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
           ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
-        run: bash scripts/sign-play-bundle.sh app/build/outputs/bundle/release/app-release.aab
+        run: |
+          case "$BUILD_KIND" in internalTest|release) ;; *) exit 1 ;; esac
+          bash scripts/sign-play-bundle.sh "app/build/outputs/bundle/$BUILD_KIND/app-$BUILD_KIND.aab"
       - name: Upload signed Play bundle
         uses: actions/upload-artifact@v7
         with:
-          name: the-last-jailer-play-${{ inputs.version_code }}
-          path: app/build/outputs/bundle/release/app-release.aab
+          name: the-last-jailer-play-${{ inputs.build_kind }}-${{ inputs.version_code }}
+          path: app/build/outputs/bundle/${{ inputs.build_kind }}/app-${{ inputs.build_kind }}.aab
           if-no-files-found: error
           retention-days: 14
       - name: Upload release test results
@@ -58,4 +75,4 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: the-last-jailer-release-tests
-          path: app/build/reports/tests/testReleaseUnitTest
+          path: app/build/reports/tests/test*UnitTest

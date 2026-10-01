@@ -33,6 +33,15 @@ android {
             code
         } ?: 1
         versionName = "0.1.0"
+        buildConfigField("boolean", "TESTER_UNLOCK_ENABLED", "false")
+    }
+
+    buildTypes {
+        create("internalTest") {
+            initWith(getByName("release"))
+            matchingFallbacks += listOf("release")
+            buildConfigField("boolean", "TESTER_UNLOCK_ENABLED", "true")
+        }
     }
 
     buildFeatures {

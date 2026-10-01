@@ -357,6 +357,16 @@ private fun LockedChapterScreen(
         }
         TextButton(onClick = onRestorePurchase) { Text("Restore purchase") }
         TextButton(onClick = onNotNow) { Text("Not now") }
+        if (BuildConfig.TESTER_UNLOCK_ENABLED) {
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(onClick = {
+                entitlements.unlockForTesting()
+                onDebugUnlocked()
+            }) {
+                Text("TESTER: Unlock full story", color = JailerColors.Gold)
+            }
+            Text("Free access for this test build. No purchase is made.", style = MaterialTheme.typography.bodySmall)
+        }
         if (BuildConfig.DEBUG) {
             Spacer(Modifier.height(12.dp))
             OutlinedButton(onClick = {

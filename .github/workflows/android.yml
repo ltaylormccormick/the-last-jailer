@@ -26,6 +26,8 @@ jobs:
         run: ./gradlew testDebugUnitTest --stacktrace
       - name: Validate release build and unit tests (unsigned)
         run: ./gradlew bundleRelease testReleaseUnitTest --stacktrace
+      - name: Validate internal tester bundle and entitlement tests
+        run: ./gradlew bundleInternalTest testInternalTestUnitTest --stacktrace
       - name: Validate upload signing with a disposable test key
         run: python3 scripts/test-play-signing.py
       - name: Upload APK
