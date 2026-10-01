@@ -60,6 +60,31 @@ class EntitlementRepositoryTest {
     }
 
     @Test
+    fun `tester unlock follows the build flag and survives reopening`() {
+        val prefs = FakeSharedPreferences()
+        val first = LocalEntitlementRepository(prefs)
+        first.unlockForTesting()
+        val reopened = LocalEntitlementRepository(prefs)
+        assertEquals(BuildConfig.TESTER_UNLOCK_ENABLED, reopened.hasUnlockedFullStory())
+        (10..30).forEach {
+            assertEquals(BuildConfig.TESTER_UNLOCK_ENABLED, reopened.isChapterUnlocked("chapter_$it"))
+        }
+        assertFalse("Tester access must never create a purchase", prefs.getBoolean("unlocked_full_story", false))
+    }
+
+    @Test
+    fun `stored tester access is ignored by production builds`() {
+        val prefs = FakeSharedPreferences()
+        prefs.edit().putBoolean("internal_test_full_story", true).apply()
+        val repository = LocalEntitlementRepository(prefs)
+        assertEquals(BuildConfig.TESTER_UNLOCK_ENABLED, repository.hasUnlockedFullStory())
+        assertEquals(
+            if (BuildConfig.TESTER_UNLOCK_ENABLED) 10 else 3,
+            repository.maxSaveSlots()
+        )
+    }
+
+    @Test
     fun `a real purchase is independent of the debug toggle`() {
         repository.unlockFullStory()
 

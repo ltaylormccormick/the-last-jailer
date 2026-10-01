@@ -20,6 +20,9 @@ interface EntitlementRepository {
     /** Grants full-story access (the eventual result of a successful Play Billing purchase). */
     fun unlockFullStory()
 
+    /** Grants tester access only in the dedicated internalTest build. */
+    fun unlockForTesting()
+
     fun maxSaveSlots(): Int
 
     /** No-op outside a debug build; lets the "unlock full story" purchase be simulated while developing. */
@@ -38,11 +41,17 @@ class LocalEntitlementRepository(private val prefs: SharedPreferences) : Entitle
     override fun hasUnlockedFullStory(): Boolean {
         val purchased = prefs.getBoolean(KEY_UNLOCKED, false)
         val debugSimulated = BuildConfig.DEBUG && prefs.getBoolean(KEY_DEBUG_SIMULATE_PURCHASE, false)
-        return purchased || debugSimulated
+        val testerUnlocked = BuildConfig.TESTER_UNLOCK_ENABLED && prefs.getBoolean(KEY_TESTER_UNLOCKED, false)
+        return purchased || debugSimulated || testerUnlocked
     }
 
     override fun unlockFullStory() {
         prefs.edit().putBoolean(KEY_UNLOCKED, true).apply()
+    }
+
+    override fun unlockForTesting() {
+        if (!BuildConfig.TESTER_UNLOCK_ENABLED) return
+        prefs.edit().putBoolean(KEY_TESTER_UNLOCKED, true).apply()
     }
 
     override fun maxSaveSlots(): Int = if (hasUnlockedFullStory()) UNLOCKED_SAVE_SLOTS else FREE_SAVE_SLOTS
@@ -57,6 +66,7 @@ class LocalEntitlementRepository(private val prefs: SharedPreferences) : Entitle
         const val FREE_SAVE_SLOTS = 3
         const val UNLOCKED_SAVE_SLOTS = 10
 
+        private const val KEY_TESTER_UNLOCKED = "internal_test_full_story"
         private const val KEY_UNLOCKED = "unlocked_full_story"
         private const val KEY_DEBUG_SIMULATE_PURCHASE = "debug_simulate_purchase"
     }
