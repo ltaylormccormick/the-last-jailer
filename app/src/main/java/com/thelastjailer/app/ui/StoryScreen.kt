@@ -131,7 +131,10 @@ fun StoryScreen(
                 }
                 Spacer(Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ActionArea(encounter, choices, onEngage = { inCombat = true }, onChoiceSelected)
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        if (StoryRepository.isEnding(node)) CompletionPanel(state, onOpenCharacter)
+                        ActionArea(encounter, choices, onEngage = { inCombat = true }, onChoiceSelected)
+                    }
                     Column {
                         StatsBar(state)
                         Spacer(Modifier.height(8.dp))
@@ -156,6 +159,10 @@ fun StoryScreen(
                     .verticalScroll(phoneScrollState)
             ) {
                 NarrativeContent(node)
+                if (StoryRepository.isEnding(node)) {
+                    Spacer(Modifier.height(12.dp))
+                    CompletionPanel(state, onOpenCharacter)
+                }
                 Spacer(Modifier.height(8.dp))
                 StatsBar(state)
                 Spacer(Modifier.height(8.dp))
@@ -363,6 +370,33 @@ private fun LockedChapterScreen(
             }) {
                 Text("DEBUG: SIMULATE PURCHASE", color = JailerColors.Gold)
             }
+        }
+    }
+}
+
+@Composable
+private fun CompletionPanel(state: GameState, onViewTrophies: () -> Unit) {
+    val earned = state.trophies.intersect(StoryRepository.availableTrophies)
+    OrnatePanel(Modifier.fillMaxWidth()) {
+        Text("THANK YOU FOR PLAYING THE LAST JAILER", style = MaterialTheme.typography.headlineSmall)
+        Spacer(Modifier.height(8.dp))
+        Text("Thank you for seeing Kaelen’s tale through. This is my first project, and I hope you’ve enjoyed the journey. Your time and support mean a great deal to me. — Lee", style = MaterialTheme.typography.bodyLarge)
+        Spacer(Modifier.height(12.dp))
+        Text("YOUR JOURNEY", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
+        Text("Level ${state.level} · XP ${state.xp}/${state.xpToNextLevel}")
+        Text("Courage ${state.courage} · Honour ${state.honour}")
+        Text("Health ${state.health}/${state.maxHealth} · Gold ${state.gold}")
+        Spacer(Modifier.height(8.dp))
+        Text("TROPHIES · ${earned.size} / ${StoryRepository.availableTrophies.size}", color = JailerColors.Gold)
+        Text("Different choices and victories reveal different trophies.", style = MaterialTheme.typography.bodySmall)
+        earned.filter { it in setOf("Six, Not One", "The Whole, Undisguised", "The Last Gate") }.forEach {
+            Text("🏆 $it", style = MaterialTheme.typography.titleMedium)
+        }
+        Button(onClick = onViewTrophies, modifier = Modifier.fillMaxWidth()) { Text("VIEW TROPHIES") }
+        Spacer(Modifier.height(8.dp))
+        Text("Begin the tale again using the choice below. Your current stats, equipment and trophies carry over.", style = MaterialTheme.typography.bodySmall)
+        if ("The Watch Goes On" !in state.trophies) {
+            Text("Beginning again earns ‘The Watch Goes On’.", style = MaterialTheme.typography.bodySmall)
         }
     }
 }

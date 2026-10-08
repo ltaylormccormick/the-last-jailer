@@ -27,6 +27,21 @@ object StoryRepository {
                 chapter26Nodes + chapter27Nodes + chapter28Nodes + chapter29Nodes + chapter30Nodes
             ).associateBy { it.id }
 
+    /** Authored rewards, deduplicated across alternative story routes and combat. */
+    val availableTrophies: Set<String> by lazy {
+        nodesById.values.flatMap { node ->
+            node.choices.mapNotNull { it.consequences.unlockTrophy } +
+                listOfNotNull(node.combatEncounterId?.let { CombatRepository.encounter(it).unlockTrophy })
+        }.toSet()
+    }
+
+    fun isEnding(node: StoryNode): Boolean = node.chapterId == "chapter_30" &&
+        node.id in setOf(
+            "the_watch_continues_dark_aid_captured", "the_watch_continues_dark_aid_mercy",
+            "the_watch_continues_dark_aid_deferred", "the_watch_continues_unaided_captured",
+            "the_watch_continues_unaided_mercy", "the_watch_continues_unaided_deferred"
+        )
+
     /**
      * Debug builds crash loudly on an unknown [id] instead of silently teleporting the player back
      * to Chapter I's start node — a typo in a `nextNodeId`/`combatEncounterId`/`victoryNodeId`/

@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.thelastjailer.app.GameState
+import com.thelastjailer.app.data.StoryRepository
 
 @Composable
 fun CharacterScreen(state: GameState, modifier: Modifier = Modifier) {
@@ -42,7 +43,7 @@ fun CharacterScreen(state: GameState, modifier: Modifier = Modifier) {
         }
 
         OrnatePanel(modifier = Modifier.fillMaxWidth()) {
-            Text("TROPHIES", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
+            Text("TROPHIES · ${state.trophies.intersect(StoryRepository.availableTrophies).size} / ${StoryRepository.availableTrophies.size}", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
             if (state.trophies.isEmpty()) {
                 Text("None earned yet.", style = MaterialTheme.typography.bodyMedium)
             } else {
