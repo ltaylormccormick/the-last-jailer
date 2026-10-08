@@ -126,7 +126,7 @@ fun StoryScreen(
                     NarrativePanel(node, modifier = Modifier.fillMaxSize())
                 }
                 Spacer(Modifier.width(16.dp))
-                Column(modifier = Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.SpaceBetween) {
+                Column(modifier = Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     ActionArea(encounter, choices, onEngage = { inCombat = true }, onChoiceSelected)
                     Column {
                         StatsBar(state)
@@ -254,7 +254,7 @@ private fun NarrativePanel(node: StoryNode, modifier: Modifier = Modifier) {
 @Composable
 private fun NarrativeContent(node: StoryNode, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxWidth()) {
-        SceneIllustration(node.illustrationId, Modifier.fillMaxWidth().height(220.dp))
+        SceneIllustration(node.illustrationId, Modifier.fillMaxWidth(), naturalAspectRatio = true)
         Spacer(Modifier.height(12.dp))
         Text(node.title, style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))

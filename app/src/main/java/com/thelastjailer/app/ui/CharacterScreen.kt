@@ -1,12 +1,12 @@
 package com.thelastjailer.app.ui
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,7 +16,7 @@ import com.thelastjailer.app.GameState
 
 @Composable
 fun CharacterScreen(state: GameState, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("CHARACTER", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
 
         OrnatePanel(modifier = Modifier.fillMaxWidth()) {
@@ -46,8 +46,8 @@ fun CharacterScreen(state: GameState, modifier: Modifier = Modifier) {
             if (state.trophies.isEmpty()) {
                 Text("None earned yet.", style = MaterialTheme.typography.bodyMedium)
             } else {
-                LazyColumn {
-                    items(state.trophies.toList()) { trophy ->
+                Column {
+                    state.trophies.forEach { trophy ->
                         Text("🏆 $trophy", style = MaterialTheme.typography.bodyMedium)
                     }
                 }
