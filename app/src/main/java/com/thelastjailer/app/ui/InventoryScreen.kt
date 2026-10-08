@@ -60,8 +60,8 @@ private fun statEffectLine(item: Item): String? {
 }
 
 @Composable
-fun InventoryScreen(state: GameState, onPurchase: (itemId: String, price: Int) -> Unit = { _, _ -> }, modifier: Modifier = Modifier) {
-    var selectedTab by remember { mutableStateOf(InventoryTab.ITEMS) }
+fun InventoryScreen(state: GameState, onPurchase: (itemId: String, price: Int) -> Unit = { _, _ -> }, modifier: Modifier = Modifier, openShop: Boolean = false) {
+    var selectedTab by remember(openShop) { mutableStateOf(if (openShop) InventoryTab.SHOP else InventoryTab.ITEMS) }
     Column(modifier = modifier.fillMaxSize().padding(14.dp)) {
         Text("INVENTORY", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
         Spacer(Modifier.height(8.dp))

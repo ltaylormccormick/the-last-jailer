@@ -1,5 +1,17 @@
 package com.thelastjailer.app.ui
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -7,6 +19,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -106,7 +119,9 @@ fun CombatScreen(
         )
     }
 
-    Column(modifier = modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    var actionLabel by remember(encounter.id) { mutableStateOf("Choose your action") }
+
+    Column(modifier = modifier.verticalScroll(rememberScrollState()).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("⚔ ${enemy.name.uppercase()}", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -115,6 +130,7 @@ fun CombatScreen(
                 illustrationId = KAELEN_COMBAT_PORTRAIT,
                 health = engine.playerHealth.coerceAtLeast(0),
                 maxHealth = playerState.maxHealth,
+                showCondition = true,
                 modifier = Modifier.weight(1f)
             )
             CombatantCard(
@@ -140,7 +156,7 @@ fun CombatScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .heightIn(min = 100.dp, max = 180.dp)
                 .background(JailerColors.Panel, RoundedCornerShape(8.dp))
                 .padding(10.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -154,19 +170,20 @@ fun CombatScreen(
             }
         }
 
+        Text(actionLabel, style = MaterialTheme.typography.labelMedium, color = JailerColors.Gold)
         val currentOutcome = engine.outcome
         if (currentOutcome == null) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(modifier = Modifier.weight(1f), onClick = { engine.attack() }) { Text("ATTACK") }
-                OutlinedButton(modifier = Modifier.weight(1f), onClick = { engine.defend() }) { Text("DEFEND") }
+                Button(modifier = Modifier.weight(1f), onClick = { actionLabel = "ATTACK · You strike"; engine.attack() }) { Text("ATTACK") }
+                OutlinedButton(modifier = Modifier.weight(1f), onClick = { actionLabel = "DEFEND · You brace"; engine.defend() }) { Text("DEFEND") }
             }
             if (engine.remainingDraughts > 0) {
-                OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = { engine.useDraught() }) {
+                OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = { actionLabel = "HEAL · Draught used"; engine.useDraught() }) {
                     Text("HEALING DRAUGHT +25 HP (${engine.remainingDraughts})")
                 }
             }
             if (engine.remainingGreaterDraughts > 0) {
-                OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = { engine.useGreaterDraught() }) {
+                OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = { actionLabel = "HEAL · Greater draught used"; engine.useGreaterDraught() }) {
                     Text("GREATER DRAUGHT +50 HP (${engine.remainingGreaterDraughts})")
                 }
             }
@@ -223,21 +240,55 @@ private fun CombatantCard(
     health: Int,
     maxHealth: Int,
     portraitAlignment: Alignment = Alignment.Center,
+    showCondition: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val progress = (health.toFloat() / maxHealth.coerceAtLeast(1)).coerceIn(0f, 1f)
+    val animatedProgress by animateFloatAsState(progress, tween(250), label = "health")
+    val impact = remember { Animatable(0f) }
+    var previousHealth by remember { mutableStateOf(health) }
+    LaunchedEffect(health) {
+        val damaged = health < previousHealth
+        previousHealth = health
+        if (damaged) {
+            impact.snapTo(1f)
+            impact.animateTo(0f, tween(280))
+        }
+    }
+    val condition = when {
+        progress <= LOW_HEALTH_FRACTION -> "CRITICAL"
+        progress <= .5f -> "WOUNDED"
+        else -> "NORMAL"
+    }
+    val conditionTint = when (condition) {
+        "CRITICAL" -> JailerColors.HealthRed.copy(alpha = .25f)
+        "WOUNDED" -> JailerColors.GoldSoft.copy(alpha = .15f)
+        else -> Color.Transparent
+    }
     val lowHealth = progress <= LOW_HEALTH_FRACTION
     val healthColor = if (lowHealth) MaterialTheme.colorScheme.error else JailerColors.Gold
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        SceneIllustration(
-            illustrationId = illustrationId,
-            modifier = Modifier.fillMaxWidth().height(128.dp),
-            imageAlignment = portraitAlignment
-        )
+        Box(Modifier.fillMaxWidth().height(128.dp).graphicsLayer {
+            translationX = impact.value * 5.dp.toPx()
+        }) {
+            SceneIllustration(
+                illustrationId = illustrationId,
+                modifier = Modifier.matchParentSize(),
+                imageAlignment = portraitAlignment
+            )
+            if (showCondition) {
+                Box(Modifier.matchParentSize().background(conditionTint))
+                Text(condition, modifier = Modifier.align(Alignment.BottomStart)
+                    .background(JailerColors.Panel.copy(alpha = .9f)).padding(4.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (lowHealth) JailerColors.HealthRed else JailerColors.TextPrimary)
+            }
+            Box(Modifier.matchParentSize().background(JailerColors.HealthRed.copy(alpha = impact.value * .18f)))
+        }
         Text(name, style = MaterialTheme.typography.labelMedium, color = JailerColors.Gold)
         LinearProgressIndicator(
-            progress = { progress },
+            progress = { animatedProgress },
             modifier = Modifier.fillMaxWidth().height(8.dp),
             color = healthColor
         )

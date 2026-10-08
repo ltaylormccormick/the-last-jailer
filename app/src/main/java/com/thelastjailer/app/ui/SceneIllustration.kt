@@ -3,6 +3,8 @@ package com.thelastjailer.app.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,24 +24,29 @@ import com.thelastjailer.app.data.IllustrationCatalog
  * without art yet falls back to a plain, clearly-labelled placeholder panel rather than a
  * procedurally drawn scene, so it's obvious at a glance which scenes still need art.
  *
- * [imageAlignment] lets callers bias a cropped reuse toward the subject they actually need. Story
- * scenes keep the centred default; combat portraits can shift toward the enemy without creating a
- * second set of image assets.
+ * Fits the complete composition by default. Story scenes use the asset aspect ratio;
+ * bounded portrait cards may retain empty space rather than cutting off their subjects.
  */
 @Composable
 fun SceneIllustration(
     illustrationId: String,
     modifier: Modifier = Modifier,
-    imageAlignment: Alignment = Alignment.Center
+    imageAlignment: Alignment = Alignment.Center,
+    contentScale: ContentScale = ContentScale.Fit,
+    naturalAspectRatio: Boolean = false
 ) {
     val drawableId = IllustrationCatalog.get(illustrationId)
-    Box(modifier = modifier.clip(RoundedCornerShape(8.dp))) {
-        if (drawableId != null) {
+    val painter = drawableId?.let { painterResource(id = it) }
+    val size = painter?.intrinsicSize
+    val ratio = if (size != null && size.width.isFinite() && size.height.isFinite() && size.width > 0 && size.height > 0) size.width / size.height else 16f / 9f
+    val frame = if (naturalAspectRatio) modifier.fillMaxWidth().aspectRatio(ratio) else modifier
+    Box(modifier = frame.clip(RoundedCornerShape(8.dp)).background(JailerColors.Panel)) {
+        if (painter != null) {
             Image(
-                painter = painterResource(id = drawableId),
+                painter = painter,
                 contentDescription = illustrationId.replace('_', ' '),
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
+                contentScale = contentScale,
                 alignment = imageAlignment
             )
         } else {

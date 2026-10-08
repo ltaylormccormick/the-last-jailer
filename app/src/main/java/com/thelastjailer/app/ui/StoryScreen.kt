@@ -65,6 +65,7 @@ fun StoryScreen(
     onCombatResolved: (CombatEncounter, CombatOutcome) -> Unit,
     onOpenJournal: () -> Unit,
     onOpenInventory: () -> Unit,
+    onOpenShop: () -> Unit,
     onOpenCharacter: () -> Unit,
     onOpenMenu: () -> Unit,
     isExpandedWidth: Boolean = false,
@@ -117,7 +118,10 @@ fun StoryScreen(
             return@Column
         }
 
-        ChapterThumbnailStrip(node)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) { ChapterThumbnailStrip(node) }
+            TextButton(onClick = onOpenShop) { Text("SHOP · ${state.gold} gold") }
+        }
         Spacer(Modifier.height(10.dp))
 
         if (isExpandedWidth) {
@@ -126,8 +130,11 @@ fun StoryScreen(
                     NarrativePanel(node, modifier = Modifier.fillMaxSize())
                 }
                 Spacer(Modifier.width(16.dp))
-                Column(modifier = Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.SpaceBetween) {
-                    ActionArea(encounter, choices, onEngage = { inCombat = true }, onChoiceSelected)
+                Column(modifier = Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        if (StoryRepository.isEnding(node)) CompletionPanel(state, onOpenCharacter)
+                        ActionArea(encounter, choices, onEngage = { inCombat = true }, onChoiceSelected)
+                    }
                     Column {
                         StatsBar(state)
                         Spacer(Modifier.height(8.dp))
@@ -152,6 +159,10 @@ fun StoryScreen(
                     .verticalScroll(phoneScrollState)
             ) {
                 NarrativeContent(node)
+                if (StoryRepository.isEnding(node)) {
+                    Spacer(Modifier.height(12.dp))
+                    CompletionPanel(state, onOpenCharacter)
+                }
                 Spacer(Modifier.height(8.dp))
                 StatsBar(state)
                 Spacer(Modifier.height(8.dp))
@@ -209,27 +220,11 @@ private fun StoryHeader(
 private fun ChapterThumbnailStrip(activeNode: StoryNode) {
     val nodes = StoryRepository.nodesInChapter(activeNode.chapterId)
     val activeIndex = nodes.indexOfFirst { it.id == activeNode.id }.coerceAtLeast(0)
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            "SCENE ${activeIndex + 1} OF ${nodes.size}",
-            color = JailerColors.TextPrimary.copy(alpha = .7f),
-            fontSize = 10.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            items(nodes) { n ->
-                val active = n.id == activeNode.id
-                Box(
-                    modifier = Modifier
-                        .size(if (active) 9.dp else 6.dp)
-                        .background(
-                            if (active) JailerColors.Gold else JailerColors.TextPrimary.copy(alpha = .3f),
-                            CircleShape
-                        )
-                )
-            }
-        }
-    }
+    Text(
+        "SCENE ${activeIndex + 1} / ${nodes.size}",
+        color = JailerColors.TextPrimary.copy(alpha = .7f),
+        style = MaterialTheme.typography.labelSmall
+    )
 }
 
 /**
@@ -254,11 +249,11 @@ private fun NarrativePanel(node: StoryNode, modifier: Modifier = Modifier) {
 @Composable
 private fun NarrativeContent(node: StoryNode, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxWidth()) {
-        SceneIllustration(node.illustrationId, Modifier.fillMaxWidth().height(220.dp))
+        SceneIllustration(node.illustrationId, Modifier.fillMaxWidth(), naturalAspectRatio = true)
         Spacer(Modifier.height(12.dp))
         Text(node.title, style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))
-        Text(node.narrativeText, style = MaterialTheme.typography.bodyLarge)
+        Text(readingText(node.narrativeText), style = MaterialTheme.typography.bodyLarge)
     }
 }
 
@@ -375,6 +370,33 @@ private fun LockedChapterScreen(
             }) {
                 Text("DEBUG: SIMULATE PURCHASE", color = JailerColors.Gold)
             }
+        }
+    }
+}
+
+@Composable
+private fun CompletionPanel(state: GameState, onViewTrophies: () -> Unit) {
+    val earned = state.trophies.intersect(StoryRepository.availableTrophies)
+    OrnatePanel(Modifier.fillMaxWidth()) {
+        Text("THANK YOU FOR PLAYING THE LAST JAILER", style = MaterialTheme.typography.headlineSmall)
+        Spacer(Modifier.height(8.dp))
+        Text("Thank you for seeing Kaelen’s tale through. This is my first project, and I hope you’ve enjoyed the journey. Your time and support mean a great deal to me. — Lee", style = MaterialTheme.typography.bodyLarge)
+        Spacer(Modifier.height(12.dp))
+        Text("YOUR JOURNEY", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
+        Text("Level ${state.level} · XP ${state.xp}/${state.xpToNextLevel}")
+        Text("Courage ${state.courage} · Honour ${state.honour}")
+        Text("Health ${state.health}/${state.maxHealth} · Gold ${state.gold}")
+        Spacer(Modifier.height(8.dp))
+        Text("TROPHIES · ${earned.size} / ${StoryRepository.availableTrophies.size}", color = JailerColors.Gold)
+        Text("Different choices and victories reveal different trophies.", style = MaterialTheme.typography.bodySmall)
+        earned.filter { it in setOf("Six, Not One", "The Whole, Undisguised", "The Last Gate") }.forEach {
+            Text("🏆 $it", style = MaterialTheme.typography.titleMedium)
+        }
+        Button(onClick = onViewTrophies, modifier = Modifier.fillMaxWidth()) { Text("VIEW TROPHIES") }
+        Spacer(Modifier.height(8.dp))
+        Text("Begin the tale again using the choice below. Your current stats, equipment and trophies carry over.", style = MaterialTheme.typography.bodySmall)
+        if ("The Watch Goes On" !in state.trophies) {
+            Text("Beginning again earns ‘The Watch Goes On’.", style = MaterialTheme.typography.bodySmall)
         }
     }
 }
