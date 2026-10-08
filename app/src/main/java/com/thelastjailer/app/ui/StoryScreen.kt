@@ -65,6 +65,7 @@ fun StoryScreen(
     onCombatResolved: (CombatEncounter, CombatOutcome) -> Unit,
     onOpenJournal: () -> Unit,
     onOpenInventory: () -> Unit,
+    onOpenShop: () -> Unit,
     onOpenCharacter: () -> Unit,
     onOpenMenu: () -> Unit,
     isExpandedWidth: Boolean = false,
@@ -117,7 +118,10 @@ fun StoryScreen(
             return@Column
         }
 
-        ChapterThumbnailStrip(node)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) { ChapterThumbnailStrip(node) }
+            TextButton(onClick = onOpenShop) { Text("SHOP · ${state.gold} gold") }
+        }
         Spacer(Modifier.height(10.dp))
 
         if (isExpandedWidth) {
@@ -209,27 +213,11 @@ private fun StoryHeader(
 private fun ChapterThumbnailStrip(activeNode: StoryNode) {
     val nodes = StoryRepository.nodesInChapter(activeNode.chapterId)
     val activeIndex = nodes.indexOfFirst { it.id == activeNode.id }.coerceAtLeast(0)
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            "SCENE ${activeIndex + 1} OF ${nodes.size}",
-            color = JailerColors.TextPrimary.copy(alpha = .7f),
-            fontSize = 10.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            items(nodes) { n ->
-                val active = n.id == activeNode.id
-                Box(
-                    modifier = Modifier
-                        .size(if (active) 9.dp else 6.dp)
-                        .background(
-                            if (active) JailerColors.Gold else JailerColors.TextPrimary.copy(alpha = .3f),
-                            CircleShape
-                        )
-                )
-            }
-        }
-    }
+    Text(
+        "SCENE ${activeIndex + 1} / ${nodes.size}",
+        color = JailerColors.TextPrimary.copy(alpha = .7f),
+        style = MaterialTheme.typography.labelSmall
+    )
 }
 
 /**
@@ -258,7 +246,7 @@ private fun NarrativeContent(node: StoryNode, modifier: Modifier = Modifier) {
         Spacer(Modifier.height(12.dp))
         Text(node.title, style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))
-        Text(node.narrativeText, style = MaterialTheme.typography.bodyLarge)
+        Text(readingText(node.narrativeText), style = MaterialTheme.typography.bodyLarge)
     }
 }
 

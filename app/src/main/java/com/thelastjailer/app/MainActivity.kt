@@ -83,6 +83,7 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
         mutableStateOf(store.load(slot) ?: GameState(activeSlot = slot))
     }
     var screen by remember { mutableStateOf(AppScreen.STORY) }
+    var openShop by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = JailerColors.Night,
@@ -91,7 +92,7 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                 bottomNavScreens.forEach { s ->
                     NavigationBarItem(
                         selected = screen == s,
-                        onClick = { screen = s },
+                        onClick = { openShop = false; screen = s },
                         icon = {
                             when (s) {
                                 AppScreen.STORY -> Icon(Icons.Filled.AutoStories, contentDescription = s.label, tint = JailerColors.Gold)
@@ -136,7 +137,8 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                         store.save(state.activeSlot, state)
                     },
                     onOpenJournal = { screen = AppScreen.JOURNAL },
-                    onOpenInventory = { screen = AppScreen.INVENTORY },
+                    onOpenInventory = { openShop = false; screen = AppScreen.INVENTORY },
+                    onOpenShop = { openShop = true; screen = AppScreen.INVENTORY },
                     onOpenCharacter = { screen = AppScreen.CHARACTER },
                     onOpenMenu = { /* menu drawer is future work */ },
                     isExpandedWidth = isExpandedWidth
@@ -144,6 +146,7 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                 AppScreen.CHARACTER -> CharacterScreen(state)
                 AppScreen.INVENTORY -> InventoryScreen(
                     state = state,
+                    openShop = openShop,
                     onPurchase = { itemId, price ->
                         state = state.purchaseItem(itemId, price)
                         // Avoid a later story undo also refunding/duplicating a shop transaction.
