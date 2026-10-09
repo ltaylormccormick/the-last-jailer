@@ -36,6 +36,9 @@ private const val DEFEND_COURAGE_DIVISOR = 3
  * [outcome]), it doesn't throw or leave the engine in an invalid state. Whether a loss floors the
  * run's actual health above 0 is decided by the caller (see [GameState.resolveCombat]).
  */
+enum class CombatAction { ATTACK, DEFEND, HEAL }
+data class CombatFeedback(val turn: Int, val action: CombatAction, val playerDamage: Int, val enemyDamage: Int)
+
 class CombatEngine(
     private val enemy: Enemy,
     startingPlayerHealth: Int,
@@ -70,8 +73,18 @@ class CombatEngine(
     val remainingGreaterDraughts: Int
         get() = availableGreaterDraughts - consumedItems.count { it == GREATER_HEALING_DRAUGHT_ID }
 
+    var feedback: CombatFeedback? by mutableStateOf(null)
+        private set
+    private var lastEnemyDamage = 0
+
+    private fun report(action: CombatAction, enemyDamage: Int = 0) {
+        feedback = CombatFeedback((feedback?.turn ?: 0) + 1, action, lastEnemyDamage, enemyDamage)
+    }
+
     fun attack() {
         if (outcome != null) return
+        lastEnemyDamage = 0
+        val previousEnemyHealth = enemyHealth
         val dmg = random.nextInt(PLAYER_ATTACK_MIN, PLAYER_ATTACK_MAX_EXCLUSIVE) + (playerCourage / 2) + attackBonus
         enemyHealth = (enemyHealth - dmg).coerceAtLeast(0)
         val round = mutableListOf("You strike ${enemy.articled(capitalized = false)} for $dmg damage.")
@@ -83,6 +96,7 @@ class CombatEngine(
             if (outcome != null) round += "You collapse — but you're still breathing."
         }
         log = log + round
+        report(CombatAction.ATTACK, previousEnemyHealth - enemyHealth)
     }
 
     fun defend() {
@@ -91,6 +105,7 @@ class CombatEngine(
         round += enemyStrikes(reduced = true)
         if (outcome != null) round += "You collapse — but you're still breathing."
         log = log + round
+        report(CombatAction.DEFEND)
     }
 
     fun useDraught() {
@@ -101,6 +116,7 @@ class CombatEngine(
         round += enemyStrikes(reduced = false)
         if (outcome != null) round += "You collapse — but you're still breathing."
         log = log + round
+        report(CombatAction.HEAL)
     }
 
     fun useGreaterDraught() {
@@ -111,6 +127,7 @@ class CombatEngine(
         round += enemyStrikes(reduced = false)
         if (outcome != null) round += "You collapse — but you're still breathing."
         log = log + round
+        report(CombatAction.HEAL)
     }
 
     /** Enemy strikes back; returns the log line and finalizes [outcome] on a knockout. */
@@ -120,6 +137,7 @@ class CombatEngine(
         val halved = if (reduced) storyScaled / 2 else storyScaled
         val courageDefense = if (reduced) playerCourage / DEFEND_COURAGE_DIVISOR else 0
         val dmg = (halved - damageReduction - courageDefense).coerceAtLeast(0)
+        lastEnemyDamage = minOf(dmg, playerHealth)
         playerHealth = (playerHealth - dmg).coerceAtLeast(0)
         if (playerHealth <= 0) finish(victory = false)
         return "${enemy.articled(capitalized = true)} hits you for $dmg damage."

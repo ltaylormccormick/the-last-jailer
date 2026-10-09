@@ -1,5 +1,8 @@
 package com.thelastjailer.app.ui
 
+import android.animation.ValueAnimator
+import com.thelastjailer.app.CombatAction
+import com.thelastjailer.app.CombatFeedback
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.animation.core.Animatable
@@ -47,7 +50,6 @@ import com.thelastjailer.app.levelDamageReduction
 private const val HEALING_DRAUGHT_ID = "healing_draught"
 private const val GREATER_HEALING_DRAUGHT_ID = "greater_healing_draught"
 private const val KAELEN_COMBAT_PORTRAIT = "kaelen_combat_portrait_v2"
-private const val LOW_HEALTH_FRACTION = 0.30f
 
 /** Explicit opponent art avoids selecting a different story scene on different routes. */
 private val dedicatedEnemyPortraits = mapOf(
@@ -131,6 +133,7 @@ fun CombatScreen(
                 health = engine.playerHealth.coerceAtLeast(0),
                 maxHealth = playerState.maxHealth,
                 showCondition = true,
+                feedback = engine.feedback,
                 modifier = Modifier.weight(1f)
             )
             CombatantCard(
@@ -139,6 +142,7 @@ fun CombatScreen(
                 health = engine.enemyHealth,
                 maxHealth = enemy.maxHealth,
                 portraitAlignment = enemyPortraitAlignment,
+                feedback = engine.feedback,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -150,23 +154,6 @@ fun CombatScreen(
             OrnatePanel(modifier = Modifier.fillMaxWidth()) {
                 Text("LATEST", style = MaterialTheme.typography.labelSmall, color = JailerColors.Gold)
                 Text(latest, style = MaterialTheme.typography.bodyLarge)
-            }
-        }
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 100.dp, max = 180.dp)
-                .background(JailerColors.Panel, RoundedCornerShape(8.dp))
-                .padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            item {
-                Text("COMBAT LOG", style = MaterialTheme.typography.labelSmall, color = JailerColors.Gold)
-                Spacer(Modifier.height(4.dp))
-            }
-            items(engine.log.asReversed()) { line ->
-                Text("• $line", style = MaterialTheme.typography.bodyMedium)
             }
         }
 
@@ -212,6 +199,24 @@ fun CombatScreen(
                 Text("CONTINUE")
             }
         }
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 100.dp, max = 180.dp)
+                .background(JailerColors.Panel, RoundedCornerShape(8.dp))
+                .padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            item {
+                Text("COMBAT LOG", style = MaterialTheme.typography.labelSmall, color = JailerColors.Gold)
+                Spacer(Modifier.height(4.dp))
+            }
+            items(engine.log.asReversed()) { line ->
+                Text("• $line", style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+
+
     }
 }
 
@@ -241,56 +246,51 @@ private fun CombatantCard(
     maxHealth: Int,
     portraitAlignment: Alignment = Alignment.Center,
     showCondition: Boolean = false,
+    feedback: CombatFeedback? = null,
     modifier: Modifier = Modifier
 ) {
     val progress = (health.toFloat() / maxHealth.coerceAtLeast(1)).coerceIn(0f, 1f)
     val animatedProgress by animateFloatAsState(progress, tween(250), label = "health")
     val impact = remember { Animatable(0f) }
-    var previousHealth by remember { mutableStateOf(health) }
-    LaunchedEffect(health) {
-        val damaged = health < previousHealth
-        previousHealth = health
-        if (damaged) {
-            impact.snapTo(1f)
+    val defending = showCondition && feedback?.action == CombatAction.DEFEND
+    LaunchedEffect(feedback?.turn) {
+        impact.snapTo(0f)
+        val event = feedback ?: return@LaunchedEffect
+        val damage = if (showCondition) event.playerDamage else event.enemyDamage
+        if (ValueAnimator.areAnimatorsEnabled() && (damage > 0 || defending)) {
+            impact.snapTo(if (damage >= maxHealth * .2f) 1f else .65f)
             impact.animateTo(0f, tween(280))
         }
     }
-    val condition = when {
-        progress <= LOW_HEALTH_FRACTION -> "CRITICAL"
-        progress <= .5f -> "WOUNDED"
-        else -> "NORMAL"
-    }
-    val conditionTint = when (condition) {
-        "CRITICAL" -> JailerColors.HealthRed.copy(alpha = .25f)
-        "WOUNDED" -> JailerColors.GoldSoft.copy(alpha = .15f)
-        else -> Color.Transparent
-    }
-    val lowHealth = progress <= LOW_HEALTH_FRACTION
+    val condition = CombatCondition.fromHealth(health, maxHealth)
+    val lowHealth = condition == CombatCondition.CRITICAL
     val healthColor = if (lowHealth) MaterialTheme.colorScheme.error else JailerColors.Gold
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(5.dp)) {
         Box(Modifier.fillMaxWidth().height(128.dp).graphicsLayer {
-            translationX = impact.value * 5.dp.toPx()
+            translationX = if (defending) 0f else impact.value * 5.dp.toPx()
         }) {
             SceneIllustration(
-                illustrationId = illustrationId,
+                illustrationId = if (showCondition) condition.portrait else illustrationId,
                 modifier = Modifier.matchParentSize(),
                 imageAlignment = portraitAlignment
             )
             if (showCondition) {
-                Box(Modifier.matchParentSize().background(conditionTint))
-                Text(condition, modifier = Modifier.align(Alignment.BottomStart)
+                Text(condition.name, modifier = Modifier.align(Alignment.BottomStart)
                     .background(JailerColors.Panel.copy(alpha = .9f)).padding(4.dp),
                     style = MaterialTheme.typography.labelSmall,
                     color = if (lowHealth) JailerColors.HealthRed else JailerColors.TextPrimary)
             }
-            Box(Modifier.matchParentSize().background(JailerColors.HealthRed.copy(alpha = impact.value * .18f)))
+            Box(Modifier.matchParentSize().background((if (defending) JailerColors.HonourBlue else JailerColors.HealthRed).copy(alpha = impact.value * .25f)))
         }
         Text(name, style = MaterialTheme.typography.labelMedium, color = JailerColors.Gold)
         LinearProgressIndicator(
             progress = { animatedProgress },
             modifier = Modifier.fillMaxWidth().height(8.dp),
-            color = healthColor
+            color = healthColor,
+            trackColor = JailerColors.Panel,
+            gapSize = 0.dp,
+            drawStopIndicator = {}
         )
         Text(
             "$health / $maxHealth HP",
