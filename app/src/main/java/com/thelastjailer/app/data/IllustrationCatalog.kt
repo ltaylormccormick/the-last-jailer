@@ -5,6 +5,8 @@ import com.thelastjailer.app.R
 /** Maps a [com.thelastjailer.app.StoryNode.illustrationId] to its real drawable resource, if art exists for it yet. */
 object IllustrationCatalog {
     private val illustrations: Map<String, Int> = mapOf(
+        "kaelen_combat_wounded" to R.drawable.kaelen_combat_wounded,
+        "kaelen_combat_critical" to R.drawable.kaelen_combat_critical,
         "kaelen_combat_portrait" to R.drawable.kaelen_combat_portrait,
         "kaelen_combat_portrait_v2" to R.drawable.kaelen_combat_portrait_v2,
         "cave_lurker_combat" to R.drawable.cave_lurker_combat,

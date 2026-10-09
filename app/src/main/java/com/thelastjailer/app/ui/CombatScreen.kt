@@ -256,17 +256,8 @@ private fun CombatantCard(
             impact.animateTo(0f, tween(280))
         }
     }
-    val condition = when {
-        progress <= LOW_HEALTH_FRACTION -> "CRITICAL"
-        progress <= .5f -> "WOUNDED"
-        else -> "NORMAL"
-    }
-    val conditionTint = when (condition) {
-        "CRITICAL" -> JailerColors.HealthRed.copy(alpha = .25f)
-        "WOUNDED" -> JailerColors.GoldSoft.copy(alpha = .15f)
-        else -> Color.Transparent
-    }
-    val lowHealth = progress <= LOW_HEALTH_FRACTION
+    val condition = CombatCondition.fromHealth(health, maxHealth)
+    val lowHealth = condition == CombatCondition.CRITICAL
     val healthColor = if (lowHealth) MaterialTheme.colorScheme.error else JailerColors.Gold
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -274,13 +265,12 @@ private fun CombatantCard(
             translationX = impact.value * 5.dp.toPx()
         }) {
             SceneIllustration(
-                illustrationId = illustrationId,
+                illustrationId = if (showCondition) condition.portrait else illustrationId,
                 modifier = Modifier.matchParentSize(),
                 imageAlignment = portraitAlignment
             )
             if (showCondition) {
-                Box(Modifier.matchParentSize().background(conditionTint))
-                Text(condition, modifier = Modifier.align(Alignment.BottomStart)
+                Text(condition.name, modifier = Modifier.align(Alignment.BottomStart)
                     .background(JailerColors.Panel.copy(alpha = .9f)).padding(4.dp),
                     style = MaterialTheme.typography.labelSmall,
                     color = if (lowHealth) JailerColors.HealthRed else JailerColors.TextPrimary)
