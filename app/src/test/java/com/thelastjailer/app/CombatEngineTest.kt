@@ -166,4 +166,39 @@ class CombatEngineTest {
         assertEquals(health, engine.playerHealth)
         assertEquals(logSize, engine.log.size)
     }
+
+    @Test
+    fun `feedback tracks accepted turns and impact even when healing raises HP`() {
+        val engine = CombatEngine(testEnemy(minAttack = 10, maxAttack = 10),
+            30, 100, 0, 1, availableGreaterDraughts = 1)
+        engine.useDraught()
+        assertEquals(47, engine.playerHealth)
+        assertEquals(CombatFeedback(1, CombatAction.HEAL, 8, 0), engine.feedback)
+        engine.useDraught() // unavailable: no turn or duplicate event
+        assertEquals(1, engine.feedback!!.turn)
+        engine.useGreaterDraught()
+        assertEquals(89, engine.playerHealth)
+        assertEquals(CombatFeedback(2, CombatAction.HEAL, 8, 0), engine.feedback)
+        engine.defend()
+        assertEquals(CombatFeedback(3, CombatAction.DEFEND, 4, 0), engine.feedback)
+        engine.attack()
+        assertEquals(4, engine.feedback!!.turn)
+        assertEquals(100 - engine.enemyHealth, engine.feedback!!.enemyDamage)
+        assertEquals(8, engine.feedback!!.playerDamage)
+    }
+
+    @Test
+    fun `blocked defence still emits feedback and victory does not reuse old impact`() {
+        val engine = CombatEngine(testEnemy(maxHealth = 5, minAttack = 10, maxAttack = 10),
+            100, 100, 0, 0, damageReduction = 4)
+        engine.defend()
+        assertEquals(CombatFeedback(1, CombatAction.DEFEND, 0, 0), engine.feedback)
+        engine.attack()
+        assertEquals(CombatFeedback(2, CombatAction.ATTACK, 0, 5), engine.feedback)
+        engine.attack()
+        engine.defend()
+        engine.useGreaterDraught()
+        assertEquals(2, engine.feedback!!.turn)
+        assertEquals(100, engine.playerHealth)
+    }
 }

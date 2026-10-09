@@ -99,6 +99,7 @@ fun StoryScreen(
             onDismissMenu = { menuExpanded = false },
             onOpenShop = { menuExpanded = false; onOpenShop() },
             shopEnabled = !inCombat && chapterUnlocked,
+            inventoryEnabled = !inCombat,
             onOpenJournal = onOpenJournal,
             onOpenInventory = onOpenInventory,
             onOpenTrophies = onOpenCharacter,
@@ -193,6 +194,7 @@ private fun StoryHeader(
     onDismissMenu: () -> Unit,
     onOpenShop: () -> Unit,
     shopEnabled: Boolean,
+    inventoryEnabled: Boolean,
     onOpenJournal: () -> Unit,
     onOpenInventory: () -> Unit,
     onOpenTrophies: () -> Unit,
@@ -207,7 +209,7 @@ private fun StoryHeader(
             TextButton(onClick = onOpenMenu) { Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = JailerColors.Gold) }
             DropdownMenu(expanded = menuExpanded, onDismissRequest = onDismissMenu) {
                 DropdownMenuItem(text = { Text(if (shopEnabled) "Shop" else "Shop (unavailable here)") }, enabled = shopEnabled, onClick = onOpenShop)
-                DropdownMenuItem(text = { Text("Inventory") }, enabled = shopEnabled, onClick = { onDismissMenu(); onOpenInventory() })
+                DropdownMenuItem(text = { Text("Inventory") }, enabled = inventoryEnabled, onClick = { onDismissMenu(); onOpenInventory() })
                 DropdownMenuItem(text = { Text("Journal") }, onClick = { onDismissMenu(); onOpenJournal() })
                 DropdownMenuItem(text = { Text("Character & trophies") }, onClick = { onDismissMenu(); onOpenTrophies() })
             }
@@ -220,7 +222,7 @@ private fun StoryHeader(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.weight(1f)
         )
-        TextButton(onClick = onOpenInventory, enabled = shopEnabled) { Icon(Icons.Filled.Backpack, contentDescription = "Inventory", tint = JailerColors.Gold) }
+        TextButton(onClick = onOpenInventory, enabled = inventoryEnabled) { Icon(Icons.Filled.Backpack, contentDescription = "Inventory", tint = JailerColors.Gold) }
         TextButton(onClick = onOpenTrophies) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.EmojiEvents, contentDescription = "Trophies", tint = JailerColors.Gold)
