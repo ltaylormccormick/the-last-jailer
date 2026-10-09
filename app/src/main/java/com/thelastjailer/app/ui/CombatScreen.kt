@@ -1,5 +1,8 @@
 package com.thelastjailer.app.ui
 
+import android.animation.ValueAnimator
+import com.thelastjailer.app.CombatAction
+import com.thelastjailer.app.CombatFeedback
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.animation.core.Animatable
@@ -131,6 +134,7 @@ fun CombatScreen(
                 health = engine.playerHealth.coerceAtLeast(0),
                 maxHealth = playerState.maxHealth,
                 showCondition = true,
+                feedback = engine.feedback,
                 modifier = Modifier.weight(1f)
             )
             CombatantCard(
@@ -139,6 +143,7 @@ fun CombatScreen(
                 health = engine.enemyHealth,
                 maxHealth = enemy.maxHealth,
                 portraitAlignment = enemyPortraitAlignment,
+                feedback = engine.feedback,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -242,17 +247,19 @@ private fun CombatantCard(
     maxHealth: Int,
     portraitAlignment: Alignment = Alignment.Center,
     showCondition: Boolean = false,
+    feedback: CombatFeedback? = null,
     modifier: Modifier = Modifier
 ) {
     val progress = (health.toFloat() / maxHealth.coerceAtLeast(1)).coerceIn(0f, 1f)
     val animatedProgress by animateFloatAsState(progress, tween(250), label = "health")
     val impact = remember { Animatable(0f) }
-    var previousHealth by remember { mutableStateOf(health) }
-    LaunchedEffect(health) {
-        val damaged = health < previousHealth
-        previousHealth = health
-        if (damaged) {
-            impact.snapTo(1f)
+    val defending = showCondition && feedback?.action == CombatAction.DEFEND
+    LaunchedEffect(feedback?.turn) {
+        impact.snapTo(0f)
+        val event = feedback ?: return@LaunchedEffect
+        val damage = if (showCondition) event.playerDamage else event.enemyDamage
+        if (ValueAnimator.areAnimatorsEnabled() && (damage > 0 || defending)) {
+            impact.snapTo(if (damage >= maxHealth * .2f) 1f else .65f)
             impact.animateTo(0f, tween(280))
         }
     }
@@ -262,7 +269,7 @@ private fun CombatantCard(
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(5.dp)) {
         Box(Modifier.fillMaxWidth().height(128.dp).graphicsLayer {
-            translationX = impact.value * 5.dp.toPx()
+            translationX = if (defending) 0f else impact.value * 5.dp.toPx()
         }) {
             SceneIllustration(
                 illustrationId = if (showCondition) condition.portrait else illustrationId,
@@ -275,13 +282,16 @@ private fun CombatantCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = if (lowHealth) JailerColors.HealthRed else JailerColors.TextPrimary)
             }
-            Box(Modifier.matchParentSize().background(JailerColors.HealthRed.copy(alpha = impact.value * .18f)))
+            Box(Modifier.matchParentSize().background((if (defending) JailerColors.HonourBlue else JailerColors.HealthRed).copy(alpha = impact.value * .25f)))
         }
         Text(name, style = MaterialTheme.typography.labelMedium, color = JailerColors.Gold)
         LinearProgressIndicator(
             progress = { animatedProgress },
             modifier = Modifier.fillMaxWidth().height(8.dp),
-            color = healthColor
+            color = healthColor,
+            trackColor = JailerColors.Panel,
+            gapSize = 0.dp,
+            drawStopIndicator = {}
         )
         Text(
             "$health / $maxHealth HP",

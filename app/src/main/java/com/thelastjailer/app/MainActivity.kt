@@ -83,6 +83,7 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
         mutableStateOf(store.load(slot) ?: GameState(activeSlot = slot))
     }
     var screen by remember { mutableStateOf(AppScreen.STORY) }
+    var combatActive by remember { mutableStateOf(false) }
     var openShop by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -92,6 +93,7 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                 bottomNavScreens.forEach { s ->
                     NavigationBarItem(
                         selected = screen == s,
+                        enabled = !(combatActive && s == AppScreen.INVENTORY),
                         onClick = { openShop = false; screen = s },
                         icon = {
                             when (s) {
@@ -138,9 +140,9 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                     },
                     onOpenJournal = { screen = AppScreen.JOURNAL },
                     onOpenInventory = { openShop = false; screen = AppScreen.INVENTORY },
-                    onOpenShop = { openShop = true; screen = AppScreen.INVENTORY },
+                    onOpenShop = { if (!combatActive) { openShop = true; screen = AppScreen.INVENTORY } },
+                    onCombatActiveChanged = { combatActive = it },
                     onOpenCharacter = { screen = AppScreen.CHARACTER },
-                    onOpenMenu = { /* menu drawer is future work */ },
                     isExpandedWidth = isExpandedWidth
                 )
                 AppScreen.CHARACTER -> CharacterScreen(state)

@@ -25,6 +25,8 @@ import androidx.compose.material.icons.filled.Backpack
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -32,6 +34,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -66,8 +69,8 @@ fun StoryScreen(
     onOpenJournal: () -> Unit,
     onOpenInventory: () -> Unit,
     onOpenShop: () -> Unit,
+    onCombatActiveChanged: (Boolean) -> Unit,
     onOpenCharacter: () -> Unit,
-    onOpenMenu: () -> Unit,
     isExpandedWidth: Boolean = false,
     modifier: Modifier = Modifier
 ) {
@@ -82,10 +85,20 @@ fun StoryScreen(
     val encounter = node.combatEncounterId?.let { CombatRepository.encounter(it) }
     var inCombat by remember(node.id) { mutableStateOf(false) }
 
+    DisposableEffect(inCombat) {
+        onCombatActiveChanged(inCombat)
+        onDispose { onCombatActiveChanged(false) }
+    }
+    var menuExpanded by remember { mutableStateOf(false) }
+
     Column(modifier = modifier.fillMaxSize().padding(horizontal = 14.dp)) {
         StoryHeader(
             node = node,
-            onOpenMenu = onOpenMenu,
+            menuExpanded = menuExpanded,
+            onOpenMenu = { menuExpanded = true },
+            onDismissMenu = { menuExpanded = false },
+            onOpenShop = { menuExpanded = false; onOpenShop() },
+            shopEnabled = !inCombat && chapterUnlocked,
             onOpenJournal = onOpenJournal,
             onOpenInventory = onOpenInventory,
             onOpenTrophies = onOpenCharacter,
@@ -98,7 +111,7 @@ fun StoryScreen(
                 entitlements = entitlements,
                 onRequestUnlock = onRequestUnlock,
                 onRestorePurchase = onRestorePurchase,
-                onNotNow = onOpenMenu,
+                onNotNow = { menuExpanded = true },
                 onDebugUnlocked = { chapterUnlocked = true },
                 modifier = Modifier.fillMaxSize()
             )
@@ -118,10 +131,7 @@ fun StoryScreen(
             return@Column
         }
 
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) { ChapterThumbnailStrip(node) }
-            TextButton(onClick = onOpenShop) { Text("SHOP · ${state.gold} gold") }
-        }
+        ChapterThumbnailStrip(node)
         Spacer(Modifier.height(10.dp))
 
         if (isExpandedWidth) {
@@ -179,6 +189,10 @@ fun StoryScreen(
 private fun StoryHeader(
     node: StoryNode,
     onOpenMenu: () -> Unit,
+    menuExpanded: Boolean,
+    onDismissMenu: () -> Unit,
+    onOpenShop: () -> Unit,
+    shopEnabled: Boolean,
     onOpenJournal: () -> Unit,
     onOpenInventory: () -> Unit,
     onOpenTrophies: () -> Unit,
@@ -189,7 +203,15 @@ private fun StoryHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        TextButton(onClick = onOpenMenu) { Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = JailerColors.Gold) }
+        Box {
+            TextButton(onClick = onOpenMenu) { Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = JailerColors.Gold) }
+            DropdownMenu(expanded = menuExpanded, onDismissRequest = onDismissMenu) {
+                DropdownMenuItem(text = { Text(if (shopEnabled) "Shop" else "Shop (unavailable here)") }, enabled = shopEnabled, onClick = onOpenShop)
+                DropdownMenuItem(text = { Text("Inventory") }, enabled = shopEnabled, onClick = { onDismissMenu(); onOpenInventory() })
+                DropdownMenuItem(text = { Text("Journal") }, onClick = { onDismissMenu(); onOpenJournal() })
+                DropdownMenuItem(text = { Text("Character & trophies") }, onClick = { onDismissMenu(); onOpenTrophies() })
+            }
+        }
         TextButton(onClick = onOpenJournal) { Icon(Icons.Filled.MenuBook, contentDescription = "Journal", tint = JailerColors.Gold) }
         Text(
             "THE LAST JAILER",
@@ -198,7 +220,7 @@ private fun StoryHeader(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.weight(1f)
         )
-        TextButton(onClick = onOpenInventory) { Icon(Icons.Filled.Backpack, contentDescription = "Inventory", tint = JailerColors.Gold) }
+        TextButton(onClick = onOpenInventory, enabled = shopEnabled) { Icon(Icons.Filled.Backpack, contentDescription = "Inventory", tint = JailerColors.Gold) }
         TextButton(onClick = onOpenTrophies) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.EmojiEvents, contentDescription = "Trophies", tint = JailerColors.Gold)
