@@ -153,23 +153,6 @@ fun CombatScreen(
             }
         }
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 100.dp, max = 180.dp)
-                .background(JailerColors.Panel, RoundedCornerShape(8.dp))
-                .padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            item {
-                Text("COMBAT LOG", style = MaterialTheme.typography.labelSmall, color = JailerColors.Gold)
-                Spacer(Modifier.height(4.dp))
-            }
-            items(engine.log.asReversed()) { line ->
-                Text("• $line", style = MaterialTheme.typography.bodyMedium)
-            }
-        }
-
         Text(actionLabel, style = MaterialTheme.typography.labelMedium, color = JailerColors.Gold)
         val currentOutcome = engine.outcome
         if (currentOutcome == null) {
@@ -212,6 +195,24 @@ fun CombatScreen(
                 Text("CONTINUE")
             }
         }
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 100.dp, max = 180.dp)
+                .background(JailerColors.Panel, RoundedCornerShape(8.dp))
+                .padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            item {
+                Text("COMBAT LOG", style = MaterialTheme.typography.labelSmall, color = JailerColors.Gold)
+                Spacer(Modifier.height(4.dp))
+            }
+            items(engine.log.asReversed()) { line ->
+                Text("• $line", style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+
+
     }
 }
 
