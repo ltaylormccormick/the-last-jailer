@@ -34,9 +34,19 @@ android {
         } ?: 1
         versionName = "0.1.0"
         buildConfigField("boolean", "TESTER_UNLOCK_ENABLED", "false")
+        // Launcher label, substituted into the manifest. Only the debug build type overrides it.
+        manifestPlaceholders["appLabel"] = "The Last Jailer"
     }
 
     buildTypes {
+        // The debug build installs ALONGSIDE the Play/tester app instead of replacing it: a different
+        // application ID gives it its own storage (saves, entitlements) and it cannot overwrite or be
+        // confused with production data. Release and internalTest keep "com.thelastjailer.app".
+        // The code namespace stays "com.thelastjailer.app" so no source file is affected.
+        getByName("debug") {
+            applicationIdSuffix = ".debug"
+            manifestPlaceholders["appLabel"] = "The Last Jailer QA"
+        }
         create("internalTest") {
             initWith(getByName("release"))
             matchingFallbacks += listOf("release")
