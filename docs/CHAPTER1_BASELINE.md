@@ -61,7 +61,7 @@ planned redesign flags; each later batch that introduces one must update it in t
 | Behaviour today | Expected to change in |
 |---|---|
 | Replay keeps stats, level, XP, gold, items, trophies and all flags; only adds "The Watch Goes On" | unchanged (by design) |
-| Route flags stack across tellings (`opened_black_door` and `walked_away` can both be set) | C1-2 (opening flag reset) |
+| ~~Route flags stack across tellings (`opened_black_door` and `walked_away` can both be set)~~ | **Changed in C1-2**: every `fallen_knight` choice clears the opening family (see below) |
 | ~~A stale `helped_dwarf` makes the buckler offer appear after "Move on" on a replay~~ | **Changed in C1-1**: the hold clears the Stonebeard family and the dead buckler offers are removed (see below) |
 | Replay grants the Stonebeard items and buckler a second time | separate ticket, not part of Chapter 1 |
 | New Game (`SaveStore.restart`) is a full reset | unchanged |
@@ -81,3 +81,18 @@ and say so in its report. An unexplained failure in these tests means something 
   entering or loading a scene, and no later scene clears anything. Existing saves are not modified on load.
 - `Chapter1ReplayBaselineTest` now asserts the new replay behaviour; `Chapter1StonebeardResetTest` covers the rest.
 - Still as before: replay re-grants the Stonebeard items and buckler (separate ticket); the opening route flags still stack (C1-2).
+
+## C1-2 changes (intentional)
+
+- **Route A.** `OPEN THE DOOR` now leads to the new `ch1_door_witness`, whose single exit "Go through." leads to the
+  unchanged `black_door_opened`. Courage +2 is still granted by the opening choice; the route costs no HP, gold or items.
+  Route A flags: `opened_black_door` and `hunted_on_the_road` (opening choice), `hunters_saw_door` and `met_red_cord_rider` (witness exit).
+  Routes B and C (`sword_drawn`, `walked_the_road`) are untouched apart from the reset below.
+- **Opening reset.** All three `fallen_knight` choices clear `OPENING_FAMILY` (`opened_black_door`, `drew_sword`,
+  `walked_away`, `hunted_on_the_road`, `hunters_saw_door`, `met_red_cord_rider`) and then set their own flags. It fires on choosing, never on
+  loading or entering a scene. A stale `drew_sword` can no longer unlock the Forge sneak option on a later telling.
+  Later batches add their own opening flags to the family as they introduce them.
+- **Baseline table.** The 15 door rows of the golden table gained the three new Route A flags; the other 38 rows and all numbers are unchanged.
+  Door paths now need one extra "continue" step in the path-following tests.
+- **Journal.** `hunters_saw_door` is now a visible line; `hunted_on_the_road` and `met_red_cord_rider` stay hidden internal flags.
+- The legacy-node text hashes still pass untouched.

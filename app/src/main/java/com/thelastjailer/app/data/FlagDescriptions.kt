@@ -52,6 +52,7 @@ object FlagDescriptions {
         JournalEntry("opened_black_door", JournalCategory.DECISIONS, "I opened the black door beneath the tree.", "door"),
         JournalEntry("drew_sword", JournalCategory.DECISIONS, "I drew my sword instead of opening the door.", "door"),
         JournalEntry("walked_away", JournalCategory.DECISIONS, "I walked away from the black door.", "door"),
+        JournalEntry("hunters_saw_door", JournalCategory.DISCOVERIES, "A rider with a red cord wound round his left hand watched me go through the black door.", null),
         JournalEntry("kept_the_token", JournalCategory.DISCOVERIES, "I kept the tarnished King's Guard clasp I found in the roots.", "clasp"),
         JournalEntry("buried_the_past", JournalCategory.DISCOVERIES, "I left a tarnished King's Guard clasp where I found it, in the roots.", "clasp"),
         JournalEntry("helped_dwarf", JournalCategory.PEOPLE, "I helped the Stonebeard smith mend his broken gate.", "smith"),
@@ -267,7 +268,6 @@ object FlagDescriptions {
         "fell_through_the_door" to HiddenReason.PLANNED_INTERNAL,
         "fought_the_riders" to HiddenReason.PLANNED_INTERNAL,
         "hunted_on_the_road" to HiddenReason.PLANNED_INTERNAL,
-        "hunters_saw_door" to HiddenReason.PLANNED_INTERNAL,
         "met_red_cord_rider" to HiddenReason.PLANNED_INTERNAL,
         // TONE_ONLY
         "accepted_the_duel_readily" to HiddenReason.TONE_ONLY,
