@@ -195,6 +195,32 @@ class FlagDescriptionsTest {
             }
     }
 
+    // ---------- the initial refusal (Chapter 3) ----------
+
+    @Test
+    fun `an initial refusal is recorded as a refusal and stays true if Kaelen later accepts`() {
+        val refusalOnly = FlagDescriptions.sections(setOf("refused_once")).flatMap { it.lines }
+        assertEquals(listOf("I refused the office when it was first offered to me."), refusalOnly)
+
+        // If a later route also sets an acceptance, both lines stand: the refusal is not rewritten or collapsed.
+        val both = FlagDescriptions.sections(setOf("refused_once", "accepted_reluctantly")).flatMap { it.lines }
+        assertEquals(2, both.size)
+        assertTrue(both.contains("I refused the office when it was first offered to me."))
+        assertTrue(both.contains("I agreed to hold the gate until someone better is found."))
+    }
+
+    @Test
+    fun `refused_once is set only by the refusal at the first offer of the office`() {
+        val setters = nodes.flatMap { n -> n.choices.filter { "refused_once" in it.consequences.setFlags }.map { n.id to it } }
+        assertEquals(1, setters.size)
+        val (nodeId, choice) = setters.single()
+        assertEquals("the_answer", nodeId)
+        // The same node is where the office is first accepted, so this really is the first offer.
+        val siblings = nodes.single { it.id == nodeId }.choices.flatMap { it.consequences.setFlags }
+        assertTrue("accepted_fully" in siblings && "accepted_reluctantly" in siblings)
+        assertTrue(choice.label.startsWith("\"I need time"))
+    }
+
     // ---------- spoiler safety ----------
 
     /** Names and terms the player only learns at some point in the story. */
