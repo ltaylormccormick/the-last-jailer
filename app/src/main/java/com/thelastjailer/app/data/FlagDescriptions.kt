@@ -160,7 +160,7 @@ object FlagDescriptions {
         JournalEntry("robbed_the_rider", JournalCategory.DECISIONS, "I took what I could from a fallen rider.", "rider"),
         JournalEntry("rider_clue", JournalCategory.DECISIONS, "I took a scraped wax disc from a rider I questioned.", "rider"),
         JournalEntry("found_red_cord", JournalCategory.DISCOVERIES, "I found a length of red cord in the gully.", null),
-        JournalEntry("found_the_old_shaft", JournalCategory.DISCOVERIES, "I found an old shaft among the trees.", null),
+        JournalEntry("found_the_old_shaft", JournalCategory.DISCOVERIES, "I found an old shaft cut into the hillside, breathing warm air.", null),
         JournalEntry("smith_vouched", JournalCategory.PEOPLE, "The Stonebeard smith vouched for me to Halvard.", null),
         JournalEntry("took_from_the_bench", JournalCategory.DECISIONS, "I took a draught from the smith's bench without asking.", "bench"),
         JournalEntry("returned_the_draught", JournalCategory.DECISIONS, "I paid the smith back for the draught I took.", "bench")

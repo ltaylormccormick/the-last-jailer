@@ -52,8 +52,9 @@ internal object Chapter1Paths {
     // only choice at their node ("Descend into the dark.", "Follow the tunnel...") are omitted.
     private val codes = listOf(
         "OPEN THE DOOR" to "door", "DRAW YOUR SWORD" to "sword", "WALK AWAY" to "walk",
+        "Search the gully" to "search", "Leave it" to "leave",
         "Keep the token" to "keep", "Leave the past" to "bury",
-        "Call out" to "call", "Wait, and listen" to "wait", "Move without a sound" to "creep",
+        "Call out" to "call", "Wait, and listen" to "wait", "Move without a sound" to "creep", "Find the old shaft" to "shaft",
         "Help him" to "help", "Tell him honestly" to "confess", "Move on without" to "moveon",
         "Take the buckler" to "buckler", "Heed his warning" to "heed"
     )

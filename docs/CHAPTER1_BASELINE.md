@@ -96,3 +96,17 @@ and say so in its report. An unexplained failure in these tests means something 
   Door paths now need one extra "continue" step in the path-following tests.
 - **Journal.** `hunters_saw_door` is now a visible line; `hunted_on_the_road` and `met_red_cord_rider` stay hidden internal flags.
 - The legacy-node text hashes still pass untouched.
+
+## C1-3 changes (intentional)
+
+- **Route C (the trees).** `WALK AWAY` now leads to `ch1_into_the_trees` (a fall, HP -8, Honour +1 as before), then a real
+  choice: search the gully (HP -5, keeps the gold, finds the red cord, flag `found_red_cord`) or leave it (-10 gold, no cord).
+  Both reach `ch1_the_old_shaft` (sets `evaded_the_riders`, `found_the_old_shaft`) and then the unchanged `walked_the_road`.
+  `hunted_on_the_road` is set by the opening choice.
+- **Forge.** A fourth Forge option, "Find the old shaft and watch from above." (Courage +1, same as the other sneak),
+  requires `found_the_old_shaft`, shows an unobserved scene (`ch1_watched_from_above`) and rejoins `stonebeard_hold`.
+- **Reset.** `OPENING_FAMILY` gains `evaded_the_riders`, `found_the_old_shaft`, `found_red_cord`.
+- **Baseline numbers.** Paths from the opening to the first fight: 85 (15 door, 22 sword, 48 trees; was 53). Door and sword rows are
+  unchanged. Trees rows are regenerated: searching ends at 25 gold and 97 to 98 HP (passive regeneration returns most of the 13),
+  leaving ends at 15 gold and 100 HP. The "every path ends with 25 gold and 100 HP" statement above now holds only for the door and sword routes.
+- **Not changed here.** Chapter 3 `the_answer` still says "ten steps taken and reconsidered on a ruined road"; that remains a separate decision.

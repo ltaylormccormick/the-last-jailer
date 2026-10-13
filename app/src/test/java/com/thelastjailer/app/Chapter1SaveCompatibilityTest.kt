@@ -20,12 +20,13 @@ class Chapter1SaveCompatibilityTest {
 
     /**
      * Flags the redesign has still to introduce (see FlagDescriptions.plannedFlags). C1-2 activated
-     * `hunted_on_the_road`, `hunters_saw_door` and `met_red_cord_rider`, so they left this list in that commit.
+     * `hunted_on_the_road`, `hunters_saw_door` and `met_red_cord_rider`; C1-3 activated `found_red_cord`,
+     * `found_the_old_shaft` and `evaded_the_riders`. Each left this list in its own commit.
      */
     private val plannedOpeningFlags = setOf(
-        "spared_the_rider", "robbed_the_rider", "rider_clue", "found_red_cord", "found_the_old_shaft",
+        "spared_the_rider", "robbed_the_rider", "rider_clue",
         "smith_vouched", "took_from_the_bench", "returned_the_draught",
-        "fought_the_riders", "evaded_the_riders", "fell_through_the_door"
+        "fought_the_riders", "fell_through_the_door"
     )
 
     private val stopAt = setOf("first_blood", "chapter1_end", "the_tended_dark", "word_at_stonebeard")
@@ -97,7 +98,7 @@ class Chapter1SaveCompatibilityTest {
         // needs Honour 1). It must never see fewer: every path a new game has is still playable.
         val fresh = Chapter1Paths.enumerate(GameState(), setOf("first_blood")).map { Chapter1Paths.routeKey(it.labels) }.toSet()
         assertTrue(ends.map { Chapter1Paths.routeKey(it.labels) }.toSet().containsAll(fresh))
-        assertEquals(53, fresh.size)
+        assertEquals(85, fresh.size)
     }
 
     @Test

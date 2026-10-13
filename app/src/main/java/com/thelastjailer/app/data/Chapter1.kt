@@ -23,7 +23,8 @@ val STONEBEARD_FAMILY: Set<String> = setOf("helped_dwarf", "confessed_to_dwarf",
  */
 val OPENING_FAMILY: Set<String> = setOf(
     "opened_black_door", "drew_sword", "walked_away",
-    "hunted_on_the_road", "hunters_saw_door", "met_red_cord_rider"
+    "hunted_on_the_road", "hunters_saw_door", "met_red_cord_rider",
+    "evaded_the_riders", "found_the_old_shaft", "found_red_cord"
 )
 
 /**
@@ -84,11 +85,11 @@ val chapter1Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "WALK AWAY",
-                nextNodeId = "walked_the_road",
+                nextNodeId = "ch1_into_the_trees",
                 consequences = Consequences(
-                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    statDeltas = mapOf(StatType.HONOUR to 1, StatType.HEALTH to -8),
                     clearFlags = OPENING_FAMILY,
-                    setFlags = setOf("walked_away")
+                    setFlags = setOf("walked_away", "hunted_on_the_road")
                 )
             )
         )
@@ -117,6 +118,110 @@ val chapter1Nodes: List<StoryNode> = listOf(
                 nextNodeId = "black_door_opened",
                 consequences = Consequences(setFlags = setOf("hunters_saw_door", "met_red_cord_rider"))
             )
+        )
+    ),
+    StoryNode(
+        id = "ch1_into_the_trees",
+        chapterId = "chapter_1",
+        title = "Off the Road",
+        illustrationId = "road_away_from_tree",
+        narrativeText = """
+            Hooves on the ruined road behind him, many and driven hard, and a horn calling them on.
+
+            Kaelen does not draw, and he does not run for the iron. He looks at the door, at the road, at the black wall of trees beside it, and chooses the trees. A man on foot in the dark can watch horses go by. Horses cannot watch him.
+
+            He breaks left, off the road, into brush that tears at his sleeves.
+
+            The ground falls away under him. He goes down a wet bank ribs-first and lies at the bottom with his breath gone, as the hooves thunder past above. A voice shouts that he is close. A rider dismounts. Boots on the bank.
+
+            Then the horn sounds again, and the boots stop, and go back up.
+
+            Kaelen lies still until the sound of them has moved on along the road. His purse has torn from his belt in the fall. It is somewhere in the dark, down the slope.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Search the gully for what the fall took.",
+                nextNodeId = "ch1_gully_searched",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HEALTH to -5),
+                    setFlags = setOf("found_red_cord")
+                )
+            ),
+            Choice(
+                label = "Leave it. It isn't worth the noise.",
+                nextNodeId = "ch1_gully_left",
+                consequences = Consequences(statDeltas = mapOf(StatType.GOLD to -10))
+            )
+        )
+    ),
+    StoryNode(
+        id = "ch1_gully_searched",
+        chapterId = "chapter_1",
+        title = "What the Gully Kept",
+        illustrationId = "road_away_from_tree",
+        narrativeText = """
+            He works along the bottom of the gully on his hands and knees, one ear on the slope above, and every handful of mud costs his ribs a little more.
+
+            The purse is wedged among roots, split at the seam but not empty. Beside it, snagged where a boot came down hard on the bank and stopped, lies a length of red cord. Plaited, thick as a finger, torn rather than cut, the torn end stiff and dark. Someone wound this tight around a hand. Someone did not get it back.
+
+            Kaelen coils it and puts it away without quite deciding to.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Climb out along the gully.", nextNodeId = "ch1_the_old_shaft")
+        )
+    ),
+    StoryNode(
+        id = "ch1_gully_left",
+        chapterId = "chapter_1",
+        title = "What the Gully Kept",
+        illustrationId = "road_away_from_tree",
+        narrativeText = """
+            He gives the slope one long look and leaves it. The purse has burst somewhere in the mud, and what it held is scattered through roots and rain where he cannot find it without making a noise. What is left in his coat will have to be enough.
+
+            Some things are worth being heard for. A handful of coin is not.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Climb out along the gully.", nextNodeId = "ch1_the_old_shaft")
+        )
+    ),
+    StoryNode(
+        id = "ch1_the_old_shaft",
+        chapterId = "chapter_1",
+        title = "The Old Shaft",
+        illustrationId = "road_away_from_tree",
+        narrativeText = """
+            The hooves have gone. Up on the road the horn sounds once more, further away, and then there is only rain. The knocking at the door, which stopped when the horses came, has not begun again.
+
+            At the far end of the gully the bank has been cut away, and Kaelen stops.
+
+            The cut is too straight to be natural. Behind a curtain of roots a narrow shaft runs into the hillside, its mouth framed in dressed stone, breathing out a draught that is warm, and wrong for a night this wet, and smells of iron and coal. It is far too steep and narrow for a man in armour. It is old. Whoever cut it never meant it to be found from above.
+
+            He marks it, the way a soldier marks a gate he may need later, and turns back toward the road.
+
+            Nobody saw where he went.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Go back up to the road.",
+                nextNodeId = "walked_the_road",
+                consequences = Consequences(setFlags = setOf("evaded_the_riders", "found_the_old_shaft"))
+            )
+        )
+    ),
+    StoryNode(
+        id = "ch1_watched_from_above",
+        chapterId = "chapter_1",
+        title = "From Above",
+        illustrationId = "silent_forge",
+        narrativeText = """
+            The draught on the hillside did not lie. A low side-cut leads off the landing, dry and hardly wider than his shoulders, and it climbs until it ends at a grille of rusted iron set high in the wall of the hold.
+
+            Below him, the smith is alone. He is not working. He stands with his good hand flat on the anvil and he is talking, low and level, the way a man talks to people who are not in the room. He names the tools on the rack, one by one. Kaelen understands that each name belonged to somebody.
+
+            He was not meant to see this. He lets the smith finish. Then he works the grille loose without a sound and lowers himself down into the forge-light, where he can be seen before he can be mistaken for anything worse.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Step into the light.", nextNodeId = "stonebeard_hold")
         )
     ),
     StoryNode(
@@ -289,6 +394,12 @@ val chapter1Nodes: List<StoryNode> = listOf(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     setFlags = setOf("crept_in")
                 )
+            ),
+            Choice(
+                label = "Find the old shaft and watch from above.",
+                nextNodeId = "ch1_watched_from_above",
+                requirements = ChoiceRequirement(requiredFlags = setOf("found_the_old_shaft")),
+                consequences = Consequences(statDeltas = mapOf(StatType.COURAGE to 1))
             )
         )
     ),
