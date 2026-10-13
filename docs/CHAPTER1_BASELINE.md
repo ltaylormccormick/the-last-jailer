@@ -1,0 +1,72 @@
+# Chapter 1 baseline (C1-0)
+
+Captured from `main` at `9c388da`, before any Chapter 1 redesign work. The tests that pin everything
+below live in `app/src/test/java/com/thelastjailer/app/` (`Chapter1OpeningBaselineTest`,
+`Chapter1LegacyNodesTest`, `Chapter1SaveCompatibilityTest`, `Chapter1ReplayBaselineTest`, helper
+`data/Chapter1Paths`). This document explains them; the tests are the source of truth.
+
+## Branch arrangement
+
+C1-0 lives on `chapter1-c1-0-baseline`, cut from `main`, with its own draft PR against `main`.
+It is tests and this document only, so it depends on **nothing** from Phase 0 (PR #107) and measures the
+story exactly as it ships today. The same tests were also run on top of the Phase 0 branch and pass
+there, so the baseline is valid on both.
+
+C1-1 onward needs Phase 0 (`Consequences.clearFlags`). Those batches must therefore be based on the
+Phase 0 branch (or on `main` after Phase 0 merges). That dependency is recorded here deliberately; it is
+not accidental. This branch should be merged (or rebased) before C1-1 begins so the baseline tests ride
+along with it.
+
+## The opening today
+
+`fallen_knight` offers three choices; each leads through one single-purpose node to `beneath_the_roots`.
+
+| Choice | Courage | Honour | Flag | Route |
+|---|---|---|---|---|
+| OPEN THE DOOR | +2 | | `opened_black_door` | `black_door_opened` |
+| DRAW YOUR SWORD | +1 | | `drew_sword` | `sword_drawn` |
+| WALK AWAY | | +1 | `walked_away` | `walked_the_road` |
+
+Then: token (Keep: Courage +1, `kept_the_token`, item; or Bury: Honour +1, `buried_the_past`), the
+Forge (call out: Courage +1; wait: Honour +1; sneak: Courage +1, needs `drew_sword`), Stonebeard Hold
+(help; confess, needs Honour 1; move on), a smith aftermath node, then the first fight.
+
+## Pinned results
+
+- 53 selectable paths from `fallen_knight` to `first_blood`: 15 via the door, 22 via the sword, 16 via the walk.
+- **Every path reaches the first fight with 25 gold, 100 health, 0 XP and level 1.** The opening neither
+  costs nor pays gold, health or XP. Only Courage, Honour, items, trophies and flags differ.
+- Courage at the first fight: door 3 to 5, sword 2 to 4, walk 1 to 3. Honour: door 0 to 3, sword 0 to 3, walk 1 to 4.
+- The first fight: Cave Lurker (40 HP, 4 to 9 damage), 40 XP, 10 gold, trophy "First Blood". A victory
+  leads to `chapter1_end`; a defeat to `first_blood_defeat` (no reward; health stabilises at 45%).
+- The full per-path table (stats, items, trophies, flags) is the `GOLDEN` map in `Chapter1OpeningBaselineTest`.
+
+## Legacy nodes that must survive
+
+All 15 Chapter 1 node IDs are snapshotted. `black_door_opened`, `sword_drawn` and `walked_the_road` are
+pinned further (text hash, artwork, exits) because the redesign reuses them unchanged. The only edges
+between Chapter 1 and other chapters are the six "Begin the tale again" nodes into `fallen_knight`, and
+Chapter 1's exits `first_blood_defeat` to `word_at_stonebeard` / `the_tended_dark` and `chapter1_end` to `the_deeper_dark`.
+
+## Save compatibility
+
+Fixtures write the raw preference keys an existing install already has, with non-default stats, duplicate
+items, trophies and later-chapter flags, so they do not depend on a new game's starting values. A save on
+any of the 15 scenes loads exactly and can be played forward. None contain any redesign flag. Unknown
+flags round-trip safely. A ratchet test proves no current choice requires, forbids or sets any of the 14
+planned redesign flags; each later batch that introduces one must update it in the same commit.
+
+## Replay and other behaviour pinned as-is
+
+| Behaviour today | Expected to change in |
+|---|---|
+| Replay keeps stats, level, XP, gold, items, trophies and all flags; only adds "The Watch Goes On" | unchanged (by design) |
+| Route flags stack across tellings (`opened_black_door` and `walked_away` can both be set) | C1-2 (opening flag reset) |
+| A stale `helped_dwarf` makes the buckler offer appear after "Move on" on a replay | C1-1 (Stonebeard flag reset, dead buckler choices removed) |
+| Replay grants the Stonebeard items and buckler a second time | separate ticket, not part of Chapter 1 |
+| New Game (`SaveStore.restart`) is a full reset | unchanged |
+
+## Updating the baseline
+
+A later batch that changes any of the above on purpose must edit the matching test in the same commit
+and say so in its report. An unexplained failure in these tests means something changed that nobody meant to change.
