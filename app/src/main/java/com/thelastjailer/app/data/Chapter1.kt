@@ -107,7 +107,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
 
             Behind him, the first rider hauls his mount up short. He has a bound left hand, red cord wound tight across the knuckles, and he does not draw. He only stares at a door standing in a place where no door should be, and at the man about to go through it.
 
-            Kaelen sees him understand what he is seeing. The rider sees him see it.
+            Kaelen watches recognition settle across the rider's face. The rider knows he's been seen.
 
             Then the iron begins to swing.
         """.trimIndent(),
