@@ -49,11 +49,27 @@ data class Consequences(
     val clearFlags: Set<String> = emptySet()
 )
 
+/**
+ * What the player sees when a [Choice]'s requirements aren't met. [HIDE] (the default, and how every
+ * choice behaved before this existed) removes the choice entirely, which is right whenever the mere
+ * existence of the option would spoil something. [SHOW_LOCKED] lists it, disabled, with the reason.
+ */
+enum class LockedDisplay { HIDE, SHOW_LOCKED }
+
 data class Choice(
     val label: String,
     val nextNodeId: String,
     val requirements: ChoiceRequirement? = null,
-    val consequences: Consequences = Consequences()
+    val consequences: Consequences = Consequences(),
+    /** Only meaningful when [requirements] is set. Defaults to hidden so no existing choice changes. */
+    val lockedDisplay: LockedDisplay = LockedDisplay.HIDE,
+    /**
+     * Author-written explanation shown while a [LockedDisplay.SHOW_LOCKED] choice is locked behind a
+     * *flag* ([ChoiceRequirement.requiredFlags] / [ChoiceRequirement.forbiddenFlags]). Flag gates are
+     * never explained automatically, because the flag name or the existence of the condition could
+     * spoil the story; stat gates are explained automatically and don't need this.
+     */
+    val lockedHint: String? = null
 )
 
 data class StoryNode(
