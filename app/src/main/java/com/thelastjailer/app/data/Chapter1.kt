@@ -16,6 +16,17 @@ import com.thelastjailer.app.StoryNode
 val STONEBEARD_FAMILY: Set<String> = setOf("helped_dwarf", "confessed_to_dwarf", "took_buckler")
 
 /**
+ * Family O: the flags that record how this telling's opening went. Each `fallen_knight` choice clears
+ * them all, then sets its own route's flags, so a replay never carries two routes at once. It fires
+ * when a choice is taken, never when a scene is entered or loaded. Later batches add each new opening
+ * flag here as they introduce it (Routes B and C bring `fought_the_riders`, `evaded_the_riders`, and so on).
+ */
+val OPENING_FAMILY: Set<String> = setOf(
+    "opened_black_door", "drew_sword", "walked_away",
+    "hunted_on_the_road", "hunters_saw_door", "met_red_cord_rider"
+)
+
+/**
  * Chapter I — The Fallen Knight.
  *
  * Arc: an inciting choice at the black door (three genuinely different opening beats), a quiet
@@ -55,10 +66,11 @@ val chapter1Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "OPEN THE DOOR",
-                nextNodeId = "black_door_opened",
+                nextNodeId = "ch1_door_witness",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 2),
-                    setFlags = setOf("opened_black_door")
+                    clearFlags = OPENING_FAMILY,
+                    setFlags = setOf("opened_black_door", "hunted_on_the_road")
                 )
             ),
             Choice(
@@ -66,6 +78,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
                 nextNodeId = "sword_drawn",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
+                    clearFlags = OPENING_FAMILY,
                     setFlags = setOf("drew_sword")
                 )
             ),
@@ -74,8 +87,35 @@ val chapter1Nodes: List<StoryNode> = listOf(
                 nextNodeId = "walked_the_road",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
+                    clearFlags = OPENING_FAMILY,
                     setFlags = setOf("walked_away")
                 )
+            )
+        )
+    ),
+    StoryNode(
+        id = "ch1_door_witness",
+        chapterId = "chapter_1",
+        title = "A Witness at the Door",
+        illustrationId = "black_door_beneath_the_tree",
+        narrativeText = """
+            Out of the rain behind him comes the drumming of hooves, and a horn calling the riders on.
+
+            He reaches the iron a heartbeat before the horses reach the tree.
+
+            The knocking stops the instant his hand finds it.
+
+            Behind him, the first rider hauls his mount up short. He has a bound left hand, red cord wound tight across the knuckles, and he does not draw. He only stares at a door standing in a place where no door should be, and at the man about to go through it.
+
+            Kaelen sees him understand what he is seeing. The rider sees him see it.
+
+            Then the iron begins to swing.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Go through.",
+                nextNodeId = "black_door_opened",
+                consequences = Consequences(setFlags = setOf("hunters_saw_door", "met_red_cord_rider"))
             )
         )
     ),

@@ -71,10 +71,12 @@ class Chapter1OpeningBaselineTest {
     fun `the Forge sneak option exists only for a player who drew the sword`() {
         // Pins the one place the opening gates a later choice: `drew_sword` unlocks "Move without a sound".
         fun forgeLabels(first: String) =
-            Chapter1Paths.follow(GameState(), first, "", "Keep").let { s ->
+            Chapter1Paths.pick(GameState(), first).let { s0 ->
+                if (s0.sceneId == "ch1_door_witness") Chapter1Paths.pick(s0, "") else s0
+            }.let { s1 -> Chapter1Paths.follow(s1, "", "Keep").let { s ->
                 val atForge = Chapter1Paths.pick(s, "Follow the tunnel")
                 StoryRepository.visibleChoices(StoryRepository.node(atForge.sceneId), atForge).map { it.label }
-            }
+            } }
         assertTrue(forgeLabels("DRAW YOUR SWORD").any { it.startsWith("Move without a sound") })
         assertTrue(forgeLabels("OPEN THE DOOR").none { it.startsWith("Move without a sound") })
         assertTrue(forgeLabels("WALK AWAY").none { it.startsWith("Move without a sound") })
@@ -110,21 +112,21 @@ class Chapter1OpeningBaselineTest {
 
     private companion object {
         val GOLDEN: Map<String, String> = mapOf(
-        "door.keep.call.help.buckler" to "C5 H0 HP100 G25 XP0 L1 | inv=dwarven_token,healing_draught,sturdy_buckler,tarnished_guard_token | tro=Friend of Stonebeard | flags=announced_himself,helped_dwarf,kept_the_token,opened_black_door,took_buckler",
-        "door.keep.call.help.heed" to "C5 H0 HP100 G25 XP0 L1 | inv=dwarven_token,healing_draught,tarnished_guard_token | tro=Friend of Stonebeard | flags=announced_himself,helped_dwarf,kept_the_token,opened_black_door",
-        "door.keep.call.moveon.heed" to "C5 H0 HP100 G25 XP0 L1 | inv=tarnished_guard_token | tro= | flags=announced_himself,kept_the_token,opened_black_door",
-        "door.keep.wait.help.buckler" to "C4 H1 HP100 G25 XP0 L1 | inv=dwarven_token,healing_draught,sturdy_buckler,tarnished_guard_token | tro=Friend of Stonebeard | flags=helped_dwarf,kept_the_token,listened_first,opened_black_door,took_buckler",
-        "door.keep.wait.help.heed" to "C4 H1 HP100 G25 XP0 L1 | inv=dwarven_token,healing_draught,tarnished_guard_token | tro=Friend of Stonebeard | flags=helped_dwarf,kept_the_token,listened_first,opened_black_door",
-        "door.keep.wait.confess.heed" to "C4 H2 HP100 G25 XP0 L1 | inv=tarnished_guard_token | tro= | flags=confessed_to_dwarf,kept_the_token,listened_first,opened_black_door",
-        "door.keep.wait.moveon.heed" to "C4 H1 HP100 G25 XP0 L1 | inv=tarnished_guard_token | tro= | flags=kept_the_token,listened_first,opened_black_door",
-        "door.bury.call.help.buckler" to "C4 H1 HP100 G25 XP0 L1 | inv=dwarven_token,healing_draught,sturdy_buckler | tro=Friend of Stonebeard | flags=announced_himself,buried_the_past,helped_dwarf,opened_black_door,took_buckler",
-        "door.bury.call.help.heed" to "C4 H1 HP100 G25 XP0 L1 | inv=dwarven_token,healing_draught | tro=Friend of Stonebeard | flags=announced_himself,buried_the_past,helped_dwarf,opened_black_door",
-        "door.bury.call.confess.heed" to "C4 H2 HP100 G25 XP0 L1 | inv= | tro= | flags=announced_himself,buried_the_past,confessed_to_dwarf,opened_black_door",
-        "door.bury.call.moveon.heed" to "C4 H1 HP100 G25 XP0 L1 | inv= | tro= | flags=announced_himself,buried_the_past,opened_black_door",
-        "door.bury.wait.help.buckler" to "C3 H2 HP100 G25 XP0 L1 | inv=dwarven_token,healing_draught,sturdy_buckler | tro=Friend of Stonebeard | flags=buried_the_past,helped_dwarf,listened_first,opened_black_door,took_buckler",
-        "door.bury.wait.help.heed" to "C3 H2 HP100 G25 XP0 L1 | inv=dwarven_token,healing_draught | tro=Friend of Stonebeard | flags=buried_the_past,helped_dwarf,listened_first,opened_black_door",
-        "door.bury.wait.confess.heed" to "C3 H3 HP100 G25 XP0 L1 | inv= | tro= | flags=buried_the_past,confessed_to_dwarf,listened_first,opened_black_door",
-        "door.bury.wait.moveon.heed" to "C3 H2 HP100 G25 XP0 L1 | inv= | tro= | flags=buried_the_past,listened_first,opened_black_door",
+        "door.keep.call.help.buckler" to "C5 H0 HP100 G25 XP0 L1 | inv=dwarven_token,healing_draught,sturdy_buckler,tarnished_guard_token | tro=Friend of Stonebeard | flags=announced_himself,helped_dwarf,hunted_on_the_road,hunters_saw_door,kept_the_token,met_red_cord_rider,opened_black_door,took_buckler",
+        "door.keep.call.help.heed" to "C5 H0 HP100 G25 XP0 L1 | inv=dwarven_token,healing_draught,tarnished_guard_token | tro=Friend of Stonebeard | flags=announced_himself,helped_dwarf,hunted_on_the_road,hunters_saw_door,kept_the_token,met_red_cord_rider,opened_black_door",
+        "door.keep.call.moveon.heed" to "C5 H0 HP100 G25 XP0 L1 | inv=tarnished_guard_token | tro= | flags=announced_himself,hunted_on_the_road,hunters_saw_door,kept_the_token,met_red_cord_rider,opened_black_door",
+        "door.keep.wait.help.buckler" to "C4 H1 HP100 G25 XP0 L1 | inv=dwarven_token,healing_draught,sturdy_buckler,tarnished_guard_token | tro=Friend of Stonebeard | flags=helped_dwarf,hunted_on_the_road,hunters_saw_door,kept_the_token,listened_first,met_red_cord_rider,opened_black_door,took_buckler",
+        "door.keep.wait.help.heed" to "C4 H1 HP100 G25 XP0 L1 | inv=dwarven_token,healing_draught,tarnished_guard_token | tro=Friend of Stonebeard | flags=helped_dwarf,hunted_on_the_road,hunters_saw_door,kept_the_token,listened_first,met_red_cord_rider,opened_black_door",
+        "door.keep.wait.confess.heed" to "C4 H2 HP100 G25 XP0 L1 | inv=tarnished_guard_token | tro= | flags=confessed_to_dwarf,hunted_on_the_road,hunters_saw_door,kept_the_token,listened_first,met_red_cord_rider,opened_black_door",
+        "door.keep.wait.moveon.heed" to "C4 H1 HP100 G25 XP0 L1 | inv=tarnished_guard_token | tro= | flags=hunted_on_the_road,hunters_saw_door,kept_the_token,listened_first,met_red_cord_rider,opened_black_door",
+        "door.bury.call.help.buckler" to "C4 H1 HP100 G25 XP0 L1 | inv=dwarven_token,healing_draught,sturdy_buckler | tro=Friend of Stonebeard | flags=announced_himself,buried_the_past,helped_dwarf,hunted_on_the_road,hunters_saw_door,met_red_cord_rider,opened_black_door,took_buckler",
+        "door.bury.call.help.heed" to "C4 H1 HP100 G25 XP0 L1 | inv=dwarven_token,healing_draught | tro=Friend of Stonebeard | flags=announced_himself,buried_the_past,helped_dwarf,hunted_on_the_road,hunters_saw_door,met_red_cord_rider,opened_black_door",
+        "door.bury.call.confess.heed" to "C4 H2 HP100 G25 XP0 L1 | inv= | tro= | flags=announced_himself,buried_the_past,confessed_to_dwarf,hunted_on_the_road,hunters_saw_door,met_red_cord_rider,opened_black_door",
+        "door.bury.call.moveon.heed" to "C4 H1 HP100 G25 XP0 L1 | inv= | tro= | flags=announced_himself,buried_the_past,hunted_on_the_road,hunters_saw_door,met_red_cord_rider,opened_black_door",
+        "door.bury.wait.help.buckler" to "C3 H2 HP100 G25 XP0 L1 | inv=dwarven_token,healing_draught,sturdy_buckler | tro=Friend of Stonebeard | flags=buried_the_past,helped_dwarf,hunted_on_the_road,hunters_saw_door,listened_first,met_red_cord_rider,opened_black_door,took_buckler",
+        "door.bury.wait.help.heed" to "C3 H2 HP100 G25 XP0 L1 | inv=dwarven_token,healing_draught | tro=Friend of Stonebeard | flags=buried_the_past,helped_dwarf,hunted_on_the_road,hunters_saw_door,listened_first,met_red_cord_rider,opened_black_door",
+        "door.bury.wait.confess.heed" to "C3 H3 HP100 G25 XP0 L1 | inv= | tro= | flags=buried_the_past,confessed_to_dwarf,hunted_on_the_road,hunters_saw_door,listened_first,met_red_cord_rider,opened_black_door",
+        "door.bury.wait.moveon.heed" to "C3 H2 HP100 G25 XP0 L1 | inv= | tro= | flags=buried_the_past,hunted_on_the_road,hunters_saw_door,listened_first,met_red_cord_rider,opened_black_door",
         "sword.keep.call.help.buckler" to "C4 H0 HP100 G25 XP0 L1 | inv=dwarven_token,healing_draught,sturdy_buckler,tarnished_guard_token | tro=Friend of Stonebeard | flags=announced_himself,drew_sword,helped_dwarf,kept_the_token,took_buckler",
         "sword.keep.call.help.heed" to "C4 H0 HP100 G25 XP0 L1 | inv=dwarven_token,healing_draught,tarnished_guard_token | tro=Friend of Stonebeard | flags=announced_himself,drew_sword,helped_dwarf,kept_the_token",
         "sword.keep.call.moveon.heed" to "C4 H0 HP100 G25 XP0 L1 | inv=tarnished_guard_token | tro= | flags=announced_himself,drew_sword,kept_the_token",

@@ -70,11 +70,13 @@ class Chapter1ReplayBaselineTest {
     }
 
     @Test
-    fun `a replayed opening stacks route flags from both tellings - changed by C1-2`() {
-        // Today nothing clears flags, so a player who opened the door in telling one and walks away in
-        // telling two holds both route flags. The redesign's opening-flag reset removes the old one.
+    fun `a replayed opening no longer stacks route flags from both tellings - changed by C1-2`() {
+        // Before C1-2 nothing cleared flags, so opening the door in telling one and walking away in
+        // telling two left both route flags set. Every fallen_knight choice now clears the opening family.
+        // Full coverage: Chapter1OpeningResetTest.
         val second = Chapter1Paths.pick(replay(finished()), "WALK AWAY")
-        assertTrue("opened_black_door" in second.flags && "walked_away" in second.flags)
+        assertTrue("walked_away" in second.flags)
+        assertFalse("opened_black_door" in second.flags)
     }
 
     @Test
@@ -83,7 +85,7 @@ class Chapter1ReplayBaselineTest {
         // helped_dwarf survived and made a (dead) buckler offer visible. The hold now clears the Stonebeard
         // family, so the second telling starts from its own decision. Full coverage: Chapter1StonebeardResetTest.
         var s = replay(finished())
-        s = Chapter1Paths.follow(s, "OPEN THE DOOR", "", "Keep", "", "Call out", "Move on without")
+        s = Chapter1Paths.follow(s, "OPEN THE DOOR", "", "", "Keep", "", "Call out", "Move on without")
         assertEquals("smiths_warning_moved_on", s.sceneId)
         assertFalse("helped_dwarf" in s.flags)
         assertFalse("took_buckler" in s.flags)
@@ -93,7 +95,7 @@ class Chapter1ReplayBaselineTest {
 
     @Test
     fun `replay grants the one-time Stonebeard items a second time - tracked as a separate ticket`() {
-        val s = Chapter1Paths.follow(replay(finished()), "OPEN THE DOOR", "", "Keep", "", "Call out", "Help him", "Take the buckler")
+        val s = Chapter1Paths.follow(replay(finished()), "OPEN THE DOOR", "", "", "Keep", "", "Call out", "Help him", "Take the buckler")
         assertEquals(2, s.inventory.count { it == "dwarven_token" })
         assertEquals(2, s.inventory.count { it == "sturdy_buckler" })
         assertEquals(2, s.inventory.count { it == "healing_draught" })

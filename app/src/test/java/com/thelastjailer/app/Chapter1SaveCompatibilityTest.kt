@@ -18,11 +18,14 @@ import org.junit.Test
  */
 class Chapter1SaveCompatibilityTest {
 
-    /** Flags the redesign plans to introduce (see FlagDescriptions.plannedFlags in the Phase 0 branch). */
+    /**
+     * Flags the redesign has still to introduce (see FlagDescriptions.plannedFlags). C1-2 activated
+     * `hunted_on_the_road`, `hunters_saw_door` and `met_red_cord_rider`, so they left this list in that commit.
+     */
     private val plannedOpeningFlags = setOf(
         "spared_the_rider", "robbed_the_rider", "rider_clue", "found_red_cord", "found_the_old_shaft",
-        "smith_vouched", "took_from_the_bench", "returned_the_draught", "hunted_on_the_road",
-        "hunters_saw_door", "met_red_cord_rider", "fought_the_riders", "evaded_the_riders", "fell_through_the_door"
+        "smith_vouched", "took_from_the_bench", "returned_the_draught",
+        "fought_the_riders", "evaded_the_riders", "fell_through_the_door"
     )
 
     private val stopAt = setOf("first_blood", "chapter1_end", "the_tended_dark", "word_at_stonebeard")
@@ -107,7 +110,7 @@ class Chapter1SaveCompatibilityTest {
             trophies = setOf("First Blood"), flags = setOf("some_later_flag")
         )
         val fresh = GameState()
-        val prefixes = arrayOf("OPEN THE DOOR", "", "Keep the token", "", "Call out", "Help him", "Take the buckler")
+        val prefixes = arrayOf("OPEN THE DOOR", "", "", "Keep the token", "", "Call out", "Help him", "Take the buckler")
         val a = Chapter1Paths.follow(fresh, *prefixes)
         val b = Chapter1Paths.follow(rich, *prefixes)
         assertEquals(a.courage - fresh.courage, b.courage - rich.courage)
