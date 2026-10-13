@@ -51,7 +51,7 @@ class ChoiceAvailabilityTest {
     }
 
     @Test
-    fun `with no opt-ins the new rows are identical to visibleChoices for every real scene and a spread of states`() {
+    fun `available rows always equal visibleChoices and scenes without opt-ins are unchanged for every real scene`() {
         val states = listOf(
             GameState(),
             GameState(courage = 5, honour = 5),
@@ -59,11 +59,16 @@ class ChoiceAvailabilityTest {
             GameState(courage = 0, honour = -2, flags = setOf("confessed_to_dwarf"))
         )
         StoryRepository.chapters.flatMap { StoryRepository.nodesInChapter(it.id) }.forEach { n ->
+            val hasOptIn = n.choices.any { it.lockedDisplay == LockedDisplay.SHOW_LOCKED }
             states.forEach { s ->
                 val old = StoryRepository.visibleChoices(n, s)
                 val new = rows(n, s)
-                assertEquals("scene ${n.id}", old, new.map { it.choice })
-                assertTrue("scene ${n.id}: nothing may be locked while no choice opts in", new.all { it.isAvailable })
+                // Whatever is selectable never changes: locked rows are extra, never a replacement.
+                assertEquals("scene ${n.id}", old, new.filter { it.isAvailable }.map { it.choice })
+                if (!hasOptIn) {
+                    assertEquals("scene ${n.id}", old, new.map { it.choice })
+                    assertTrue("scene ${n.id}: nothing may be locked while no choice opts in", new.all { it.isAvailable })
+                }
             }
         }
     }

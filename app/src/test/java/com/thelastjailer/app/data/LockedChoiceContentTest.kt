@@ -16,8 +16,10 @@ class LockedChoiceContentTest {
     private val nodes = StoryRepository.chapters.flatMap { StoryRepository.nodesInChapter(it.id) }
     private val storyFlags: Set<String> = nodes.flatMap { it.choices }.flatMap { it.consequences.setFlags }.toSet()
 
-    /** (nodeId, label) of every choice approved to show while locked. Empty until the pilot is approved. */
-    private val approvedLockedChoices: Set<Pair<String, String>> = emptySet()
+    /** (nodeId, label) of every choice approved to show while locked. */
+    private val approvedLockedChoices: Set<Pair<String, String>> = setOf(
+        "a_choice_at_the_door" to "\"Stand aside yourself. This isn't yours to bury.\""
+    )
 
     private val optedIn = nodes.flatMap { n -> n.choices.filter { it.lockedDisplay == LockedDisplay.SHOW_LOCKED }.map { n to it } }
 
@@ -57,14 +59,31 @@ class LockedChoiceContentTest {
     }
 
     @Test
-    fun `the two Chapter 3 pilot choices are still hidden pending approval and have the documented gates`() {
+    fun `the Chapter 3 Courage pilot is shown locked and the Honour choice stays hidden`() {
         val door = nodes.single { it.id == "a_choice_at_the_door" }
         val stand = door.choices.single { it.label.startsWith("\"Stand aside yourself") }
         val mercy = door.choices.single { it.label.startsWith("\"There's a man alive") }
-        assertEquals(LockedDisplay.HIDE, stand.lockedDisplay)
+        assertEquals(LockedDisplay.SHOW_LOCKED, stand.lockedDisplay)
         assertEquals(LockedDisplay.HIDE, mercy.lockedDisplay)
         assertEquals(mapOf(com.thelastjailer.app.StatType.COURAGE to 3), stand.requirements!!.minStats)
         assertEquals(mapOf(com.thelastjailer.app.StatType.HONOUR to 3), mercy.requirements!!.minStats)
         assertTrue(stand.requirements!!.requiredFlags.isEmpty() && mercy.requirements!!.requiredFlags.isEmpty())
+        assertTrue("the pilot is stat-only, so it needs no authored hint", stand.lockedHint == null)
+    }
+
+    @Test
+    fun `the pilot shows locked below Courage 3 with the exact reason and unlocks at 3`() {
+        val door = nodes.single { it.id == "a_choice_at_the_door" }
+        val stand = door.choices.single { it.label.startsWith("\"Stand aside yourself") }
+        val mercy = door.choices.single { it.label.startsWith("\"There's a man alive") }
+        val low = com.thelastjailer.app.GameState().let { it.copy(courage = 1, honour = 0) }
+        val rowsLow = StoryRepository.choicesWithAvailability(door, low)
+        val standRow = rowsLow.single { it.choice == stand }
+        assertFalse(standRow.isAvailable)
+        assertEquals(listOf("Requires Courage 3 (you have 1)"), standRow.lockedReasons)
+        assertTrue("hidden Honour choice must not appear", rowsLow.none { it.choice == mercy })
+        assertTrue("the always-open third choice stays available", rowsLow.count { it.isAvailable } == 1)
+        val high = low.copy(courage = 3)
+        assertTrue(StoryRepository.choicesWithAvailability(door, high).single { it.choice == stand }.isAvailable)
     }
 }

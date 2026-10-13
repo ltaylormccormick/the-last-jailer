@@ -3,6 +3,7 @@ package com.thelastjailer.app.data
 import com.thelastjailer.app.Choice
 import com.thelastjailer.app.ChoiceRequirement
 import com.thelastjailer.app.Consequences
+import com.thelastjailer.app.LockedDisplay
 import com.thelastjailer.app.StatType
 import com.thelastjailer.app.StoryNode
 
@@ -385,6 +386,8 @@ val chapter3Nodes: List<StoryNode> = listOf(
                 label = "\"Stand aside yourself. This isn't yours to bury.\"",
                 nextNodeId = "chapter3_end_stood_ground",
                 requirements = ChoiceRequirement(minStats = mapOf(StatType.COURAGE to 3)),
+                // Pilot (approved): shown locked below Courage 3. Reason text is generated from the stat.
+                lockedDisplay = LockedDisplay.SHOW_LOCKED,
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     setFlags = setOf("stood_his_ground")
