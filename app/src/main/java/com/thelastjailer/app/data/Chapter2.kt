@@ -3,6 +3,7 @@ package com.thelastjailer.app.data
 import com.thelastjailer.app.Choice
 import com.thelastjailer.app.ChoiceRequirement
 import com.thelastjailer.app.Consequences
+import com.thelastjailer.app.LockedDisplay
 import com.thelastjailer.app.StatType
 import com.thelastjailer.app.StoryNode
 
@@ -48,6 +49,16 @@ val chapter2Nodes: List<StoryNode> = listOf(
             Choice(
                 label = "Carry word back to Stonebeard Hold first.",
                 nextNodeId = "word_at_stonebeard",
+                requirements = ChoiceRequirement(forbiddenFlags = setOf("took_from_the_bench")),
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    setFlags = setOf("returned_to_hold")
+                )
+            ),
+            Choice(
+                label = "Carry word back to Stonebeard Hold first.",
+                nextNodeId = "word_at_stonebeard_thief",
+                requirements = ChoiceRequirement(requiredFlags = setOf("took_from_the_bench")),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     setFlags = setOf("returned_to_hold")
@@ -73,7 +84,16 @@ val chapter2Nodes: List<StoryNode> = listOf(
             it's the only direction left that's still his to choose.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Press on toward whatever waits at the end of it.", nextNodeId = "the_warded_gate")
+            Choice(
+                label = "Press on toward whatever waits at the end of it.",
+                nextNodeId = "the_warded_gate",
+                requirements = ChoiceRequirement(forbiddenFlags = setOf("searched_the_wagon"))
+            ),
+            Choice(
+                label = "Light the lamp from the gully wagon and press on.",
+                nextNodeId = "the_warded_gate",
+                requirements = ChoiceRequirement(requiredFlags = setOf("searched_the_wagon"))
+            )
         )
     ),
     StoryNode(
@@ -95,8 +115,117 @@ val chapter2Nodes: List<StoryNode> = listOf(
             to give.
         """.trimIndent(),
         choices = listOf(
+            // The smith vouches for anyone who helped him or told him the truth. Same grant for all three
+            // rows; only the vouching differs, so no row is a worse way through.
             Choice(
                 label = "Go back down, better armed for it.",
+                nextNodeId = "the_warded_gate",
+                requirements = ChoiceRequirement(requiredFlags = setOf("helped_dwarf")),
+                consequences = Consequences(
+                    grantItemIds = listOf("stonebeard_lantern"),
+                    setFlags = setOf("smith_vouched")
+                )
+            ),
+            Choice(
+                label = "Go back down, better armed for it.",
+                nextNodeId = "the_warded_gate",
+                requirements = ChoiceRequirement(requiredFlags = setOf("confessed_to_dwarf")),
+                consequences = Consequences(
+                    grantItemIds = listOf("stonebeard_lantern"),
+                    setFlags = setOf("smith_vouched")
+                )
+            ),
+            Choice(
+                label = "Go back down, better armed for it.",
+                nextNodeId = "the_warded_gate",
+                requirements = ChoiceRequirement(forbiddenFlags = setOf("helped_dwarf", "confessed_to_dwarf")),
+                consequences = Consequences(grantItemIds = listOf("stonebeard_lantern"))
+            )
+        )
+    ),
+    StoryNode(
+        id = "word_at_stonebeard_thief",
+        chapterId = "chapter_2",
+        title = "Word at Stonebeard Hold",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            Stonebeard Hold looks smaller by lamplight than it did mid-fight: just a handful of
+            dwarves picking through what the thing in the tunnels wrecked, and they go quiet when
+            Kaelen tells them what he found below. A passage that isn't theirs. Tended by something
+            that clearly doesn't want visitors.
+
+            The old smith listens longest. While Kaelen talks, his eyes go once to the bench, and
+            along the shelf above it, and he counts. He does not say what the count came to.
+
+            "Light's not mine to give you," he says, and goes back to his hammer. It is the only
+            thing he says to Kaelen's face. The hammering, when it starts again, is very even.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Put forty gold on the bench.",
+                nextNodeId = "restitution_paid",
+                requirements = ChoiceRequirement(minStats = mapOf(StatType.GOLD to 40)),
+                lockedDisplay = LockedDisplay.SHOW_LOCKED,
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.GOLD to -40, StatType.HONOUR to 1),
+                    setFlags = setOf("returned_the_draught"),
+                    clearFlags = setOf("owes_the_smith")
+                )
+            ),
+            Choice(
+                label = "Take a shift at the forge, under his eye.",
+                nextNodeId = "restitution_worked",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HEALTH to -10, StatType.HONOUR to 1),
+                    setFlags = setOf("returned_the_draught"),
+                    clearFlags = setOf("owes_the_smith")
+                )
+            ),
+            Choice(
+                label = "Say nothing, and go back down.",
+                nextNodeId = "the_warded_gate"
+            )
+        )
+    ),
+    StoryNode(
+        id = "restitution_paid",
+        chapterId = "chapter_2",
+        title = "Counted Out",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            The coins make very little noise on the wood. The smith looks at them for as long as it
+            takes to count them, which is not long, and sweeps them into his palm without a word.
+
+            Then he takes a lantern from its hook and holds it out. "Rather you carried light back
+            down there than pride," he says. It is the same thing he would have said to anyone. It
+            is a good deal harder to hear.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Take the light and go back down.",
+                nextNodeId = "the_warded_gate",
+                consequences = Consequences(grantItemIds = listOf("stonebeard_lantern"))
+            )
+        )
+    ),
+    StoryNode(
+        id = "restitution_worked",
+        chapterId = "chapter_2",
+        title = "A Shift at the Forge",
+        illustrationId = "silent_forge",
+        narrativeText = """
+            He does not ask what for. He hands Kaelen a pair of tongs and points at the bellows, and
+            for the length of a shift Kaelen works the iron the way the Hold's own do, badly at
+            first, then less badly. His shoulders ache. His palms blister. Nobody speaks.
+
+            When the smith finally straightens, he looks at the finished work, and then at Kaelen,
+            and takes a lantern from its hook. "Rather you carried light back down there than
+            pride," he says. It is the same thing he would have said to anyone. It is a good deal
+            harder to hear.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Take the light and go back down.",
                 nextNodeId = "the_warded_gate",
                 consequences = Consequences(grantItemIds = listOf("stonebeard_lantern"))
             )
@@ -148,6 +277,15 @@ val chapter2Nodes: List<StoryNode> = listOf(
                 label = "\"What are you guarding?\"",
                 nextNodeId = "the_cloaks_truth_asked",
                 consequences = Consequences(setFlags = setOf("asked_about_jailers"))
+            ),
+            Choice(
+                label = "\"The smith at the broken gate sent me. What are you guarding?\"",
+                nextNodeId = "the_cloaks_truth_asked",
+                requirements = ChoiceRequirement(requiredFlags = setOf("smith_vouched")),
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    setFlags = setOf("asked_about_jailers")
+                )
             ),
             Choice(
                 label = "\"I'll help you hold it, whatever it is.\"",
@@ -268,7 +406,34 @@ val chapter2Nodes: List<StoryNode> = listOf(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     setFlags = setOf("guarded_the_warden")
                 )
+            ),
+            Choice(
+                label = "Lay a hand on the stone and listen to it.",
+                nextNodeId = "the_seal_answers",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.COURAGE to 1, StatType.XP to 10),
+                    setFlags = setOf("read_the_seal")
+                )
             )
+        )
+    ),
+    StoryNode(
+        id = "the_seal_answers",
+        chapterId = "chapter_2",
+        title = "What Touch Teaches",
+        illustrationId = "first_seal",
+        narrativeText = """
+            The stone is cold, and then it is not. Beneath his palm Kaelen feels the ward as a
+            pulse: a long slow beat that fails, and fails again, and each time is a little late.
+            It is not a lock. It is a held breath, and whatever is holding it is tired.
+
+            He learns the rhythm of it the way he once learned a sentry's rounds. Where it will
+            give. Where it will answer.
+
+            "Careful," says Halvard behind him, as he did once before. "It answers touch."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Hold your ground.", nextNodeId = "what_presses_against_the_seal")
         )
     ),
     StoryNode(
