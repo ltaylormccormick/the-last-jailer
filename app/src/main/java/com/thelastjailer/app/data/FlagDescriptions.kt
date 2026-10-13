@@ -155,40 +155,35 @@ object FlagDescriptions {
         JournalEntry("demanded_it_be_earned", JournalCategory.PROMISES, "I told the whole it must earn every one of us honestly, or lose all six for good.", "final_offer"),
         JournalEntry("offered_connection_without_merging", JournalCategory.PROMISES, "I promised the whole that six who choose to stay close is not the same as losing.", "final_offer"),
         JournalEntry("simply_stayed_at_the_end", JournalCategory.PROMISES, "I stayed with the whole as long as it took, and let it choose on its own terms.", "final_offer"),
-        // Planned (Chapter 1 rework): not yet set by the story.
-        JournalEntry("spared_the_rider", JournalCategory.DECISIONS, "I spared a rider who hunted me on the ruined road.", "rider"),
+        // Chapters 1-3 rework.
+        JournalEntry("spared_the_rider", JournalCategory.DECISIONS, "I bound the wound of a rider who hunted me on the ruined road.", "rider"),
         JournalEntry("robbed_the_rider", JournalCategory.DECISIONS, "I took what I could from a fallen rider.", "rider"),
         JournalEntry("rider_clue", JournalCategory.DECISIONS, "I took a scraped wax disc from a rider I questioned.", "rider"),
+        JournalEntry("parleyed_with_rider", JournalCategory.DECISIONS, "I called across the roots and a rider answered. He would not say who paid him.", "rider"),
+        JournalEntry("withdrew_from_the_riders", JournalCategory.DECISIONS, "I went back through the door with the horses at my heels.", "rider"),
         JournalEntry("found_red_cord", JournalCategory.DISCOVERIES, "I found a length of red cord in the gully.", null),
         JournalEntry("found_the_old_shaft", JournalCategory.DISCOVERIES, "I found an old shaft cut into the hillside, breathing warm air.", null),
+        JournalEntry("searched_the_wagon", JournalCategory.DECISIONS, "I searched a wrecked wagon in the gully and took only the lamp oil and a few coins.", "wagon"),
+        JournalEntry("stripped_the_wagon", JournalCategory.DECISIONS, "I stripped a wrecked wagon in the gully of everything it had. It had no one left to mind it.", "wagon"),
+        JournalEntry("left_the_wagon_be", JournalCategory.DECISIONS, "I said a word over a wrecked wagon in the gully and left it as I found it.", "wagon"),
         JournalEntry("smith_vouched", JournalCategory.PEOPLE, "The Stonebeard smith vouched for me to Halvard.", null),
-        JournalEntry("took_from_the_bench", JournalCategory.DECISIONS, "I took a draught from the smith's bench without asking.", "bench"),
-        JournalEntry("returned_the_draught", JournalCategory.DECISIONS, "I paid the smith back for the draught I took.", "bench")
+        JournalEntry("took_from_the_bench", JournalCategory.DECISIONS, "I took a draught and a few coins from the smith's bench while his back was turned.", null),
+        JournalEntry("returned_the_draught", JournalCategory.DECISIONS, "I made good to the smith for what I took from his bench.", null),
+        JournalEntry("read_the_seal", JournalCategory.DECISIONS, "I laid my hand on the failing seal and learned its rhythm.", "seal"),
+        JournalEntry("read_voss_orders", JournalCategory.DECISIONS, "I read the Order's orders from the bracken: confirm before you engage.", "camp"),
+        JournalEntry("robbed_the_order", JournalCategory.DECISIONS, "I took coin and a vial from the Order's stores before I met her.", "camp"),
+        JournalEntry("parleyed_with_sentry", JournalCategory.DECISIONS, "I asked an Order sentry for leave to speak, and he gave it.", "camp"),
+        JournalEntry("told_voss_of_the_riders", JournalCategory.PEOPLE, "I told Voss the riders on the road were hired, and wanted me alive.", "voss_riders"),
+        JournalEntry("sold_to_voss", JournalCategory.PEOPLE, "I sold Voss what I knew of the riders. It paid. I did not like how easily.", "voss_riders")
     )
 
-    /** Flags the Chapter 1 rework will introduce; described or hidden here ahead of time. */
-    val plannedFlags: Set<String> = setOf(
-        "spared_the_rider",
-        "robbed_the_rider",
-        "rider_clue",
-        "found_red_cord",
-        "found_the_old_shaft",
-        "smith_vouched",
-        "took_from_the_bench",
-        "returned_the_draught",
-        "hunted_on_the_road",
-        "hunters_saw_door",
-        "met_red_cord_rider",
-        "fought_the_riders",
-        "evaded_the_riders",
-        "fell_through_the_door"
-    )
+    /** Flags authored ahead of the story that sets them. None at present; the Chapters 1-3 rework is live. */
+    val plannedFlags: Set<String> = emptySet()
 
     /** What each alternative-group is about, used for the neutral line shown after a replay. */
     val groupTopics: Map<String, String> = mapOf(
         "ashfall" to "the road to Ashfall",
         "ashfall_fire" to "the fire at Ashfall",
-        "bench" to "the smith's bench",
         "clasp" to "the clasp in the roots",
         "commit22" to "my promise to the prisoner",
         "dark_aid" to "the strength offered from behind the gate",
@@ -210,16 +205,19 @@ object FlagDescriptions {
         "office" to "Halvard's gate",
         "old_debts" to "Ilsevet's reasons",
         "rescue_plan" to "the rescue at Ashfall",
-        "rider" to "a fallen rider",
+        "camp" to "the Order's camp",
+        "rider" to "the rider at the roots",
         "seal" to "the failing seal",
         "shards" to "the frame fragments",
         "siege" to "the column on the road",
         "sixth_vow" to "the prisoner's future",
         "smith" to "the Stonebeard smith",
         "thessaly" to "Thessaly at Fenmoor",
+        "wagon" to "the wagon in the gully",
         "vigil" to "the Wraithspire vigil",
         "vision_shared" to "what I had seen",
         "voss_chains" to "Voss in chains",
+        "voss_riders" to "what I knew of the riders",
         "voss_door" to "Voss at the gate",
         "voss_left" to "what I owed Voss",
         "voss_trust" to "whether to trust Voss",
@@ -269,6 +267,13 @@ object FlagDescriptions {
         "fought_the_riders" to HiddenReason.PLANNED_INTERNAL,
         "hunted_on_the_road" to HiddenReason.PLANNED_INTERNAL,
         "met_red_cord_rider" to HiddenReason.PLANNED_INTERNAL,
+        "approached_by_camp" to HiddenReason.BOOKKEEPING,
+        "owes_the_smith" to HiddenReason.BOOKKEEPING,
+        "received_wax_disc" to HiddenReason.BOOKKEEPING,
+        "knows_riders_hired" to HiddenReason.REDUNDANT,
+        "asked_voss_name" to HiddenReason.TONE_ONLY,
+        "showed_voss_the_disc" to HiddenReason.TONE_ONLY,
+        "quoted_orders_to_voss" to HiddenReason.TONE_ONLY,
         // TONE_ONLY
         "accepted_the_duel_readily" to HiddenReason.TONE_ONLY,
         "accepted_too_late" to HiddenReason.TONE_ONLY,
