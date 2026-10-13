@@ -251,16 +251,11 @@ class ChoiceReachabilityTest {
     private val verdicts: List<ChoiceReachabilityAnalyzer.Verdict> by lazy { realAnalyzer.analyse() }
 
     /**
-     * Choices known to be dead today, as (nodeId, label). They require `helped_dwarf`, which only
-     * the "repair the gate" choice sets, and that choice always routes to a different scene. They
-     * stay listed - not fixed here - so the Chapter 1 rework removes them deliberately. This list
-     * is a ratchet: it fails if an entry becomes alive (remove it) or disappears (remove it), and
-     * it fails if any *new* dead choice appears.
+     * Choices known to be dead, as (nodeId, label). Empty since C1-1 removed the two unreachable
+     * buckler offers. This is still a ratchet: it fails if any *new* dead choice appears, and an entry
+     * added here must be justified in the same commit.
      */
-    private val knownDead: Set<Pair<String, String>> = setOf(
-        "smiths_warning_confessed" to "Take the buckler he offers.",
-        "smiths_warning_moved_on" to "Take the buckler he offers."
-    )
+    private val knownDead: Set<Pair<String, String>> = emptySet()
 
     @Test
     fun `the analysis of the real story completes without hitting its state budget`() {

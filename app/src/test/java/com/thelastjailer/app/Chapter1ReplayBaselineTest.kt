@@ -78,18 +78,17 @@ class Chapter1ReplayBaselineTest {
     }
 
     @Test
-    fun `a replayed Stonebeard decision keeps the previous telling's flags - changed by C1-1`() {
-        // Telling one: helped the dwarf. Telling two: "Move on without a word." The stale helped_dwarf
-        // flag survives and makes the buckler offer visible even though nobody helped this time.
+    fun `a replayed Stonebeard decision no longer inherits the previous telling's flags - changed by C1-1`() {
+        // Telling one: helped the dwarf. Telling two: "Move on without a word." Before C1-1 the stale
+        // helped_dwarf survived and made a (dead) buckler offer visible. The hold now clears the Stonebeard
+        // family, so the second telling starts from its own decision. Full coverage: Chapter1StonebeardResetTest.
         var s = replay(finished())
         s = Chapter1Paths.follow(s, "OPEN THE DOOR", "", "Keep", "", "Call out", "Move on without")
         assertEquals("smiths_warning_moved_on", s.sceneId)
-        assertTrue("helped_dwarf" in s.flags)
+        assertFalse("helped_dwarf" in s.flags)
+        assertFalse("took_buckler" in s.flags)
         val offered = StoryRepository.visibleChoices(StoryRepository.node(s.sceneId), s).map { it.label }
-        assertTrue("the stale flag makes the buckler offer visible: $offered", offered.any { it.startsWith("Take the buckler") })
-        // A first-time player who also moved on does not see it.
-        val firstTime = Chapter1Paths.follow(GameState(), "OPEN THE DOOR", "", "Keep", "", "Call out", "Move on without")
-        assertFalse(StoryRepository.visibleChoices(StoryRepository.node(firstTime.sceneId), firstTime).any { it.label.startsWith("Take the buckler") })
+        assertEquals(listOf("Heed his warning and go on."), offered)
     }
 
     @Test

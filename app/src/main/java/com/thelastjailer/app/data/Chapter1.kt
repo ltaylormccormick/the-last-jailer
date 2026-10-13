@@ -7,6 +7,15 @@ import com.thelastjailer.app.StatType
 import com.thelastjailer.app.StoryNode
 
 /**
+ * Family S: the flags that record how this telling went at Stonebeard Hold. Each `stonebeard_hold`
+ * choice clears them all, then sets its own, so only the current telling's decision survives a replay.
+ * This runs when a choice is taken, never when a scene is entered or loaded, so it cannot fire twice.
+ * `took_buckler` is set one scene later and is read only by the Journal.
+ * Later Chapter 1 batches add their new Stonebeard flags to this list as they introduce them.
+ */
+val STONEBEARD_FAMILY: Set<String> = setOf("helped_dwarf", "confessed_to_dwarf", "took_buckler")
+
+/**
  * Chapter I — The Fallen Knight.
  *
  * Arc: an inciting choice at the black door (three genuinely different opening beats), a quiet
@@ -261,6 +270,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
                 label = "Help him repair the gate.",
                 nextNodeId = "smiths_warning_helped",
                 consequences = Consequences(
+                    clearFlags = STONEBEARD_FAMILY,
                     setFlags = setOf("helped_dwarf"),
                     grantItemIds = listOf("dwarven_token", "healing_draught"),
                     unlockTrophy = "Friend of Stonebeard"
@@ -271,13 +281,15 @@ val chapter1Nodes: List<StoryNode> = listOf(
                 nextNodeId = "smiths_warning_confessed",
                 requirements = ChoiceRequirement(minStats = mapOf(StatType.HONOUR to 1)),
                 consequences = Consequences(
+                    clearFlags = STONEBEARD_FAMILY,
                     setFlags = setOf("confessed_to_dwarf"),
                     statDeltas = mapOf(StatType.HONOUR to 1)
                 )
             ),
             Choice(
                 label = "Move on without a word.",
-                nextNodeId = "smiths_warning_moved_on"
+                nextNodeId = "smiths_warning_moved_on",
+                consequences = Consequences(clearFlags = STONEBEARD_FAMILY)
             )
         )
     ),
@@ -331,15 +343,6 @@ val chapter1Nodes: List<StoryNode> = listOf(
         """.trimIndent(),
         choices = listOf(
             Choice(
-                label = "Take the buckler he offers.",
-                nextNodeId = "first_blood",
-                requirements = ChoiceRequirement(requiredFlags = setOf("helped_dwarf")),
-                consequences = Consequences(
-                    setFlags = setOf("took_buckler"),
-                    grantItemIds = listOf("sturdy_buckler")
-                )
-            ),
-            Choice(
                 label = "Heed his warning and go on.",
                 nextNodeId = "first_blood"
             )
@@ -361,15 +364,6 @@ val chapter1Nodes: List<StoryNode> = listOf(
             The passage beyond the hold is the only way forward.
         """.trimIndent(),
         choices = listOf(
-            Choice(
-                label = "Take the buckler he offers.",
-                nextNodeId = "first_blood",
-                requirements = ChoiceRequirement(requiredFlags = setOf("helped_dwarf")),
-                consequences = Consequences(
-                    setFlags = setOf("took_buckler"),
-                    grantItemIds = listOf("sturdy_buckler")
-                )
-            ),
             Choice(
                 label = "Heed his warning and go on.",
                 nextNodeId = "first_blood"
