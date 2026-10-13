@@ -37,6 +37,11 @@ object ItemCatalog {
             description = "Hard bread and dried meat. Not much, but it will keep a man walking."
         ),
         Item(
+            id = "scraped_wax_disc",
+            name = "Scraped Wax Disc",
+            description = "A disc of grey wax from a hired rider's purse. Whoever sealed it ground the face flat first."
+        ),
+        Item(
             id = "healing_draught",
             name = "Healing Draught",
             description = "A dwarven remedy, bitter and effective."

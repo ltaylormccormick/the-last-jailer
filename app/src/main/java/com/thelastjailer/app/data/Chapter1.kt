@@ -13,7 +13,10 @@ import com.thelastjailer.app.StoryNode
  * `took_buckler` is set one scene later and is read only by the Journal.
  * Later Chapter 1 batches add their new Stonebeard flags to this list as they introduce them.
  */
-val STONEBEARD_FAMILY: Set<String> = setOf("helped_dwarf", "confessed_to_dwarf", "took_buckler")
+val STONEBEARD_FAMILY: Set<String> = setOf(
+    "helped_dwarf", "confessed_to_dwarf", "took_buckler",
+    "took_from_the_bench", "returned_the_draught", "owes_the_smith", "smith_vouched"
+)
 
 /**
  * Family O: the flags that record how this telling's opening went. Each `fallen_knight` choice clears
@@ -24,7 +27,10 @@ val STONEBEARD_FAMILY: Set<String> = setOf("helped_dwarf", "confessed_to_dwarf",
 val OPENING_FAMILY: Set<String> = setOf(
     "opened_black_door", "drew_sword", "walked_away",
     "hunted_on_the_road", "hunters_saw_door", "met_red_cord_rider",
-    "evaded_the_riders", "found_the_old_shaft", "found_red_cord"
+    "evaded_the_riders", "found_the_old_shaft", "found_red_cord",
+    "fought_the_riders", "parleyed_with_rider", "withdrew_from_the_riders", "fell_through_the_door",
+    "spared_the_rider", "robbed_the_rider", "rider_clue", "knows_riders_hired",
+    "searched_the_wagon", "stripped_the_wagon", "left_the_wagon_be"
 )
 
 /**
@@ -56,6 +62,10 @@ val chapter1Nodes: List<StoryNode> = listOf(
 
             His honour did not.
 
+            Behind him a horn sounded, and was answered twice from further back along the road. Riders, strung out along the ridge, no colours and no crest, coming hard. The one in front rode with his left hand bound to the rein in red cord, wound tight across the knuckles.
+
+            He had as long as a prayer.
+
             Ahead, half-hidden beneath the roots of an ancient tree, stood a black iron door.
 
             There was no wall. No building.
@@ -75,16 +85,16 @@ val chapter1Nodes: List<StoryNode> = listOf(
                 )
             ),
             Choice(
-                label = "DRAW YOUR SWORD",
-                nextNodeId = "sword_drawn",
+                label = "TURN AND FACE THEM",
+                nextNodeId = "ch1_stand_and_turn",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     clearFlags = OPENING_FAMILY,
-                    setFlags = setOf("drew_sword")
+                    setFlags = setOf("drew_sword", "hunted_on_the_road", "met_red_cord_rider")
                 )
             ),
             Choice(
-                label = "WALK AWAY",
+                label = "BREAK FOR THE TREES",
                 nextNodeId = "ch1_into_the_trees",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1, StatType.HEALTH to -8),
@@ -100,13 +110,15 @@ val chapter1Nodes: List<StoryNode> = listOf(
         title = "A Witness at the Door",
         illustrationId = "black_door_beneath_the_tree",
         narrativeText = """
-            Out of the rain behind him comes the drumming of hooves, and a horn calling the riders on.
+            The hooves are on the road now, close enough to feel through his boots.
 
             He reaches the iron a heartbeat before the horses reach the tree.
 
             The knocking stops the instant his hand finds it.
 
             Behind him, the first rider hauls his mount up short. He has a bound left hand, red cord wound tight across the knuckles, and he does not draw. He only stares at a door standing in a place where no door should be, and at the man about to go through it.
+
+            Behind the horns, a voice bellows a name across the rain. His. Not as a question.
 
             Kaelen watches recognition settle across the rider's face. The rider knows he's been seen.
 
@@ -126,13 +138,13 @@ val chapter1Nodes: List<StoryNode> = listOf(
         title = "Off the Road",
         illustrationId = "road_away_from_tree",
         narrativeText = """
-            Hooves on the ruined road behind him, many and driven hard, and a horn calling them on.
+            The hooves are on the road behind him, many and driven hard.
 
             Kaelen does not draw, and he does not run for the iron. He looks at the door, at the road, at the black wall of trees beside it, and chooses the trees. A man on foot in the dark can watch horses go by. Horses cannot watch him.
 
             He breaks left, off the road, into brush that tears at his sleeves.
 
-            The ground falls away under him. He goes down a wet bank ribs-first and lies at the bottom with his breath gone, as the hooves thunder past above. A voice shouts that he is close. A rider dismounts. Boots on the bank.
+            The ground falls away under him. He goes down a wet bank ribs-first and lies at the bottom with his breath gone, as the hooves thunder past above. A voice shouts his name into the rain, and then that he is close. A rider dismounts. Boots on the bank.
 
             Then the horn sounds again, and the boots stop, and go back up.
 
@@ -167,7 +179,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
             Kaelen coils it and puts it away without quite deciding to.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Climb out along the gully.", nextNodeId = "ch1_the_old_shaft")
+            Choice(label = "Climb out along the gully.", nextNodeId = "ch1_gully_wagon")
         )
     ),
     StoryNode(
@@ -181,7 +193,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
             Some things are worth being heard for. A handful of coin is not.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Climb out along the gully.", nextNodeId = "ch1_the_old_shaft")
+            Choice(label = "Climb out along the gully.", nextNodeId = "ch1_gully_wagon")
         )
     ),
     StoryNode(
@@ -223,6 +235,264 @@ val chapter1Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(label = "Step into the light.", nextNodeId = "stonebeard_hold")
         )
+    ),
+    // ---------------------------------------------------------------------------------------------
+    // Route B - Turn and Face Them. A rider comes alone across the roots. The fight is optional: the
+    // player can call across the roots instead, or back through the door. Prose for the fight outcomes
+    // follows the agreed Route B text (chapter1-v2-reconciliation.md).
+    // ---------------------------------------------------------------------------------------------
+    StoryNode(
+        id = "ch1_stand_and_turn",
+        chapterId = "chapter_1",
+        title = "Under the Tree",
+        illustrationId = "knight_sword_drawn_door",
+        narrativeText = """
+            Kaelen turns his back on the door and draws, and the rain runs down the steel.
+
+            The riders come out of the dark in a line and rein in at the edge of the roots, and the horses will not cross them. They toss their heads and blow and back away, white-eyed, from ground that looks like any other ground. The horn sounds a second time. Somewhere in the line a voice bellows a name across the rain. His.
+
+            One rider swings down alone and walks forward into the roots. His left hand is bound in red cord. His sword is out, and he holds it like a man who has done this for coin before and expects to be paid for it again.
+
+            "Come easy, knight," he says. "Nobody's paying for you dead."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Fight the one who comes.",
+                nextNodeId = "ch1_rider_fight",
+                consequences = Consequences(setFlags = setOf("fought_the_riders"))
+            ),
+            Choice(
+                label = "Call across the roots: \"Who is paying you?\"",
+                nextNodeId = "ch1_parley_answered",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    setFlags = setOf("parleyed_with_rider", "knows_riders_hired")
+                )
+            ),
+            Choice(
+                label = "Back through the door.",
+                nextNodeId = "ch1_back_to_the_door",
+                consequences = Consequences(setFlags = setOf("withdrew_from_the_riders", "hunters_saw_door"))
+            )
+        )
+    ),
+    StoryNode(
+        id = "ch1_rider_fight",
+        chapterId = "chapter_1",
+        title = "The Rider Comes",
+        illustrationId = "knight_sword_drawn_door",
+        narrativeText = """
+            The rider comes in low and fast, and the rain closes over the first ring of steel.
+        """.trimIndent(),
+        choices = emptyList(),
+        combatEncounterId = "opening_rider_encounter"
+    ),
+    StoryNode(
+        id = "ch1_rider_down",
+        chapterId = "chapter_1",
+        title = "The Rider Who Did Not Get Up",
+        illustrationId = "knight_sword_drawn_door",
+        narrativeText = """
+            The rider goes down hard in the mud and stays there, breathing, one hand clamped to a sword-opened shoulder. Behind him the horn sounds a third time, and the other horses shy at the edge of the roots as though the ground itself had warned them off.
+
+            They do not come closer. Kaelen does not wait to learn why.
+
+            The man's saddlebag has split open. A purse. A stoppered vial. And the rider's eyes on him, waiting to find out which kind of man Kaelen is.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Search his saddlebags.",
+                nextNodeId = "ch1_rider_searched",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to -1, StatType.GOLD to 12),
+                    grantItemIds = listOf("healing_draught"),
+                    setFlags = setOf("robbed_the_rider")
+                )
+            ),
+            Choice(
+                label = "Make him talk.",
+                nextNodeId = "ch1_rider_questioned",
+                requirements = ChoiceRequirement(forbiddenFlags = setOf("received_wax_disc")),
+                consequences = Consequences(
+                    grantItemIds = listOf("scraped_wax_disc"),
+                    setFlags = setOf("rider_clue", "knows_riders_hired", "received_wax_disc")
+                )
+            ),
+            // Replay only: the disc is a durable item, granted once per save lineage.
+            Choice(
+                label = "Press him again for what he knows.",
+                nextNodeId = "ch1_rider_questioned",
+                requirements = ChoiceRequirement(requiredFlags = setOf("received_wax_disc")),
+                consequences = Consequences(setFlags = setOf("rider_clue", "knows_riders_hired"))
+            ),
+            Choice(
+                label = "Bind his wound.",
+                nextNodeId = "ch1_rider_bound",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    setFlags = setOf("spared_the_rider")
+                )
+            )
+        )
+    ),
+    StoryNode(
+        id = "ch1_rider_searched",
+        chapterId = "chapter_1",
+        title = "What the Saddlebag Held",
+        illustrationId = "knight_sword_drawn_door",
+        narrativeText = """
+            He takes the purse and the vial. The rider watches him do it and says nothing, which is worse than any curse.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Wipe the blade.", nextNodeId = "ch1_knock_resumes"))
+    ),
+    StoryNode(
+        id = "ch1_rider_questioned",
+        chapterId = "chapter_1",
+        title = "Half in Advance",
+        illustrationId = "knight_sword_drawn_door",
+        narrativeText = """
+            "Half in advance," the rider says through his teeth. "The rest on delivery. Alive." He tugs the purse from his belt. On the flap is a disc of grey wax, its face ground flat. "Whoever sealed it scraped it first."
+
+            He does not say who. Kaelen does not think he knows.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Wipe the blade.", nextNodeId = "ch1_knock_resumes"))
+    ),
+    StoryNode(
+        id = "ch1_rider_bound",
+        chapterId = "chapter_1",
+        title = "A Binding in the Rain",
+        illustrationId = "knight_sword_drawn_door",
+        narrativeText = """
+            He tears the man's own sleeve for a binding and pulls it tight. "I don't forgive you," the rider says, and means it. "But I'll remember this."
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Wipe the blade.", nextNodeId = "ch1_knock_resumes"))
+    ),
+    StoryNode(
+        id = "ch1_parley_answered",
+        chapterId = "chapter_1",
+        title = "Across the Roots",
+        illustrationId = "knight_sword_drawn_door",
+        narrativeText = """
+            The rider stops at the edge of the roots as though he had walked into glass. For a moment Kaelen thinks he will laugh. He does not.
+
+            "Half in advance," he says at last. "The rest on delivery. Alive." He spits into the wet. "I never asked who. The purse is the same colour whoever it comes from."
+
+            The horn sounds a third time, and the horses scream at the roots. The rider looks once at the door, once at Kaelen, and goes back to his line without turning his back on either.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Sheathe the blade.", nextNodeId = "ch1_knock_resumes"))
+    ),
+    StoryNode(
+        id = "ch1_back_to_the_door",
+        chapterId = "chapter_1",
+        title = "Back Through the Iron",
+        illustrationId = "black_door_beneath_the_tree",
+        narrativeText = """
+            Kaelen backs into the iron with the blade held between himself and the dismounted rider. The man does not follow. He stops at the edge of the roots and watches, his red-bound hand loose at his side, as the door swings wide behind Kaelen as if it had only been waiting to be asked.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Go through.", nextNodeId = "black_door_opened"))
+    ),
+    StoryNode(
+        id = "ch1_driven_to_the_door",
+        chapterId = "chapter_1",
+        title = "Driven to the Door",
+        illustrationId = "black_door_beneath_the_tree",
+        narrativeText = """
+            The rider's second blow takes Kaelen's feet out from under him, and the iron is at his back. He braces for the wall.
+
+            There is no wall. The door does not give under his shoulder. It simply opens, the way it opens for no one, and he goes through it backward with the third horn still in his ears.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Get up.",
+                nextNodeId = "black_door_opened",
+                consequences = Consequences(setFlags = setOf("hunters_saw_door", "fell_through_the_door"))
+            )
+        )
+    ),
+    StoryNode(
+        id = "ch1_knock_resumes",
+        chapterId = "chapter_1",
+        title = "The Knocking Again",
+        illustrationId = "black_door_beneath_the_tree",
+        narrativeText = """
+            The horn does not sound a fourth time. The riders are gone, or waiting. Kaelen sheathes the blade and stands in the rain, listening.
+
+            Behind him, slow and heavy, stone against metal, the knocking begins again.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Turn to the door.", nextNodeId = "sword_drawn"))
+    ),
+    // ---------------------------------------------------------------------------------------------
+    // Route C - the gully wagon. An optional discovery for the evader. Generic by design: nothing says
+    // whose cart it was.
+    // ---------------------------------------------------------------------------------------------
+    StoryNode(
+        id = "ch1_gully_wagon",
+        chapterId = "chapter_1",
+        title = "The Wagon in the Gully",
+        illustrationId = "road_away_from_tree",
+        narrativeText = """
+            Halfway along the gully the bank has swallowed a cart. It lies on its side in the mud with one wheel in the air, the canvas rotted to rags, the yoke snapped. No horse. No driver. No mark burned into the boards. It has been here longer than the hunt has been on the road.
+
+            Under the tailboard, something has stayed dry.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Search it carefully.",
+                nextNodeId = "ch1_wagon_searched",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.GOLD to 8),
+                    setFlags = setOf("searched_the_wagon")
+                )
+            ),
+            Choice(
+                label = "Strip it of everything.",
+                nextNodeId = "ch1_wagon_stripped",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to -1, StatType.GOLD to 14),
+                    setFlags = setOf("stripped_the_wagon")
+                )
+            ),
+            Choice(
+                label = "Say a word over it and go on.",
+                nextNodeId = "ch1_wagon_left",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    setFlags = setOf("left_the_wagon_be")
+                )
+            )
+        )
+    ),
+    StoryNode(
+        id = "ch1_wagon_searched",
+        chapterId = "chapter_1",
+        title = "What Stayed Dry",
+        illustrationId = "road_away_from_tree",
+        narrativeText = """
+            Under the tailboard: a few coins in a twist of cloth, and a flask of lamp oil with its stopper still sound. He takes the oil and the coins and leaves the rest, and the cart keeps its silence.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Go on along the gully.", nextNodeId = "ch1_the_old_shaft"))
+    ),
+    StoryNode(
+        id = "ch1_wagon_stripped",
+        chapterId = "chapter_1",
+        title = "Nothing Left to Mind It",
+        illustrationId = "road_away_from_tree",
+        narrativeText = """
+            He takes everything it has: the coins, the oil, the iron fittings that will fetch something later, the strap off the yoke. It takes a while, and it is not clean work. When he is done the cart looks like it has been robbed twice.
+
+            It had no one left to mind it. That is what he tells himself.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Go on along the gully.", nextNodeId = "ch1_the_old_shaft"))
+    ),
+    StoryNode(
+        id = "ch1_wagon_left",
+        chapterId = "chapter_1",
+        title = "A Word Over the Wreck",
+        illustrationId = "road_away_from_tree",
+        narrativeText = """
+            He stands a moment in the mud with his hand on the tailboard and says what a man says over something that cannot hear it. Then he takes his hand away and leaves the cart as he found it.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Go on along the gully.", nextNodeId = "ch1_the_old_shaft"))
     ),
     StoryNode(
         id = "black_door_opened",
@@ -291,6 +561,8 @@ val chapter1Nodes: List<StoryNode> = listOf(
             scrap of tarnished silver, bent and blackened, but he knows its shape before his
             fingers close around it. A clasp from a King's Guard cloak. Not his own. Someone
             else's, once.
+
+            Beside it, under a rotted wool sleeve, lies the rest of whoever wore it.
 
             He could carry it. He could leave it where three years of rain and rot have already
             tried to bury it.
@@ -441,6 +713,37 @@ val chapter1Nodes: List<StoryNode> = listOf(
                 label = "Move on without a word.",
                 nextNodeId = "smiths_warning_moved_on",
                 consequences = Consequences(clearFlags = STONEBEARD_FAMILY)
+            ),
+            Choice(
+                label = "Take a draught and the coin from the bench while his back is turned.",
+                nextNodeId = "smiths_warning_robbed",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to -1, StatType.GOLD to 15),
+                    clearFlags = STONEBEARD_FAMILY,
+                    setFlags = setOf("took_from_the_bench", "owes_the_smith"),
+                    grantItemIds = listOf("healing_draught")
+                )
+            )
+        )
+    ),
+    StoryNode(
+        id = "smiths_warning_robbed",
+        chapterId = "chapter_1",
+        title = "A Warning in the Dark",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            The smith turns back to the gate frame, and the bench is behind him, and Kaelen's hand is on the draught before he has decided to put it there. A stoppered vial, still warm from the forge. Beside it sits a tin with a few coins in it, left out for whatever dwarves need coin for, down here. He takes those too. He tells himself it is for the road.
+
+            The smith does not turn. Kaelen could not say whether that is because he did not hear, or because he did.
+
+            "Something's been moving in the lower passage," he says to the wall. "Pale. Too many arms for anything honest. It's taken two of my kin already." He does not look round. "Mind yourself."
+
+            The passage beyond the hold is the only way forward.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Heed his warning and go on.",
+                nextNodeId = "first_blood"
             )
         )
     ),
@@ -551,8 +854,8 @@ val chapter1Nodes: List<StoryNode> = listOf(
             his coin purse used to hang.
 
             Ten gold pieces lighter and considerably less sure of his own sword arm, he takes
-            stock of what's left. Behind him: a black door that opened for no one and everyone,
-            roots that remembered a war he wasn't part of, a dwarf who fed him nothing but truth.
+            stock of what's left. Behind him: a hunt he got ahead of, a door that knocked, roots that
+            remembered a war he wasn't part of, a smith who watched him and said little.
             Ahead, past where the dwarven chisel marks give out and something older and far
             smoother takes over, the tunnel keeps going regardless of whether he won anything
             down here or not.
@@ -573,6 +876,16 @@ val chapter1Nodes: List<StoryNode> = listOf(
             Choice(
                 label = "Carry word back to Stonebeard Hold first.",
                 nextNodeId = "word_at_stonebeard",
+                requirements = ChoiceRequirement(forbiddenFlags = setOf("took_from_the_bench")),
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1, StatType.GOLD to -10),
+                    setFlags = setOf("returned_to_hold", "survived_first_blood_defeat")
+                )
+            ),
+            Choice(
+                label = "Carry word back to Stonebeard Hold first.",
+                nextNodeId = "word_at_stonebeard_thief",
+                requirements = ChoiceRequirement(requiredFlags = setOf("took_from_the_bench")),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1, StatType.GOLD to -10),
                     setFlags = setOf("returned_to_hold", "survived_first_blood_defeat")
@@ -589,8 +902,8 @@ val chapter1Nodes: List<StoryNode> = listOf(
             The creature falls still. Kaelen's breath comes ragged in the dark beneath Stonebeard
             Hold.
 
-            Behind him: a black door that opened for no one and everyone, roots that remembered a
-            war he wasn't part of, a dwarf who fed him nothing but truth. Ahead: whatever waits
+            Behind him: a hunt he got ahead of, a door that knocked, roots that remembered a
+            war he wasn't part of, a smith who watched him and said little. Ahead: whatever waits
             past this threshold, indifferent to the cloak he no longer wears or the name he
             can't unspeak.
 

@@ -14,6 +14,14 @@ object EnemyCatalog {
             description = "Pale, many-limbed, and hungrier than anything that size should be."
         ),
         Enemy(
+            id = "hired_rider",
+            name = "Hired Rider",
+            maxHealth = 32,
+            minAttack = 3,
+            maxAttack = 7,
+            description = "A rider with a left hand bound in red cord, paid in halves to bring a man in alive."
+        ),
+        Enemy(
             id = "seal_wraith",
             name = "Seal-Bound Wraith",
             maxHealth = 65,
@@ -226,6 +234,17 @@ private val firstBloodEncounter = CombatEncounter(
     xpReward = 40,
     goldReward = 10,
     unlockTrophy = "First Blood"
+)
+
+// Optional (Route B only): the player may call across the roots or back through the door instead.
+// Rewards are deliberately below First Blood's; the loot is a choice made afterwards, not a drop.
+private val openingRiderEncounter = CombatEncounter(
+    id = "opening_rider_encounter",
+    enemyId = "hired_rider",
+    victoryNodeId = "ch1_rider_down",
+    defeatNodeId = "ch1_driven_to_the_door",
+    xpReward = 15,
+    goldReward = 0
 )
 
 private val sealBreakerEncounter = CombatEncounter(
@@ -484,6 +503,7 @@ object CombatRepository {
     private val encounters: Map<String, CombatEncounter> =
         listOf(
             firstBloodEncounter,
+            openingRiderEncounter,
             sealBreakerEncounter,
             siegeEncounter,
             cinderEnvoyEncounter,
