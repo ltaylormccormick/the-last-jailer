@@ -95,7 +95,7 @@ class Chapter1StonebeardResetTest {
     @Test
     fun `a fresh game never holds more than one buckler on any path to the first fight`() {
         val paths = Chapter1Paths.enumerate(GameState(), setOf("first_blood"))
-        assertEquals(53, paths.size)
+        assertEquals(85, paths.size)
         paths.forEach { assertTrue(it.labels.toString(), it.end.inventory.count { i -> i == "sturdy_buckler" } <= 1) }
     }
 
