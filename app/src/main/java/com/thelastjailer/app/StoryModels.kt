@@ -41,7 +41,12 @@ data class Consequences(
     val statDeltas: Map<StatType, Int> = emptyMap(),
     val setFlags: Set<String> = emptySet(),
     val grantItemIds: List<String> = emptyList(),
-    val unlockTrophy: String? = null
+    val unlockTrophy: String? = null,
+    /**
+     * Flags removed *before* [setFlags] is applied, so a choice can reset a family of flags and
+     * re-assert one of them. Only the listed flags are touched; defaults to none.
+     */
+    val clearFlags: Set<String> = emptySet()
 )
 
 data class Choice(
