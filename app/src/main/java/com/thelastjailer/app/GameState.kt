@@ -58,7 +58,7 @@ fun GameState.applyChoice(choice: Choice, applyRegen: Boolean = true): GameState
     if (applyRegen) next = next.withStatDelta(StatType.HEALTH, next.passiveRegenAmount())
     return next.copy(
         sceneId = choice.nextNodeId,
-        flags = next.flags + consequences.setFlags,
+        flags = (next.flags - consequences.clearFlags) + consequences.setFlags,
         inventory = next.inventory + consequences.grantItemIds,
         trophies = consequences.unlockTrophy?.let { next.trophies + it } ?: next.trophies
     )

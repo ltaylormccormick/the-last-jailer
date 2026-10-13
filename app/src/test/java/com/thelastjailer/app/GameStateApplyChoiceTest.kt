@@ -224,4 +224,66 @@ class GameStateApplyChoiceTest {
         assertEquals(setOf("y"), result.trophies)
         assertTrue(result.sceneId == "next")
     }
+    @Test
+    fun `clearFlags defaults to empty so existing consequences remove nothing`() {
+        assertTrue(Consequences().clearFlags.isEmpty())
+        val state = GameState(flags = setOf("a", "b"))
+
+        val result = state.applyChoice(Choice("Go", "next", consequences = Consequences(setFlags = setOf("c"))))
+
+        assertEquals(setOf("a", "b", "c"), result.flags)
+    }
+
+    @Test
+    fun `clearFlags removes only the listed flags`() {
+        val state = GameState(flags = setOf("helped_dwarf", "confessed_to_dwarf", "opened_black_door"))
+        val choice = Choice(
+            "Reset",
+            "next",
+            consequences = Consequences(clearFlags = setOf("helped_dwarf", "confessed_to_dwarf"))
+        )
+
+        val result = state.applyChoice(choice)
+
+        assertEquals(setOf("opened_black_door"), result.flags)
+    }
+
+    @Test
+    fun `clearing a flag that is not set is a no-op`() {
+        val state = GameState(flags = setOf("a"))
+        val choice = Choice("Reset", "next", consequences = Consequences(clearFlags = setOf("never_set")))
+
+        assertEquals(setOf("a"), state.applyChoice(choice).flags)
+    }
+
+    @Test
+    fun `clear happens before set so a flag in both lists ends up set`() {
+        val state = GameState(flags = setOf("took_from_the_bench", "helped_dwarf"))
+        val choice = Choice(
+            "Take it again",
+            "next",
+            consequences = Consequences(
+                clearFlags = setOf("took_from_the_bench", "helped_dwarf"),
+                setFlags = setOf("took_from_the_bench")
+            )
+        )
+
+        val result = state.applyChoice(choice)
+
+        assertEquals(setOf("took_from_the_bench"), result.flags)
+    }
+
+    @Test
+    fun `clearFlags leaves stats, inventory and trophies untouched`() {
+        val state = GameState(courage = 4, honour = 2, gold = 30, inventory = listOf("sturdy_buckler"), trophies = setOf("t"), flags = setOf("x"))
+        val choice = Choice("Reset", "next", consequences = Consequences(clearFlags = setOf("x")))
+
+        val result = state.applyChoice(choice)
+
+        assertEquals(4, result.courage)
+        assertEquals(2, result.honour)
+        assertEquals(30, result.gold)
+        assertEquals(listOf("sturdy_buckler"), result.inventory)
+        assertEquals(setOf("t"), result.trophies)
+    }
 }

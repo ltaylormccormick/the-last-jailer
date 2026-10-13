@@ -53,9 +53,11 @@ import com.thelastjailer.app.CombatEncounter
 import com.thelastjailer.app.CombatOutcome
 import com.thelastjailer.app.GameState
 import com.thelastjailer.app.StoryNode
+import com.thelastjailer.app.data.ChoiceAvailability
 import com.thelastjailer.app.data.CombatRepository
 import com.thelastjailer.app.data.EntitlementRepository
 import com.thelastjailer.app.data.StoryRepository
+import com.thelastjailer.app.data.choicesWithAvailability
 
 @Composable
 fun StoryScreen(
@@ -75,7 +77,7 @@ fun StoryScreen(
     modifier: Modifier = Modifier
 ) {
     val node = StoryRepository.node(state.sceneId)
-    val choices = StoryRepository.visibleChoices(node, state)
+    val choices = StoryRepository.choicesWithAvailability(node, state)
     var chapterUnlocked by remember(node.chapterId) {
         mutableStateOf(entitlements.isChapterUnlocked(node.chapterId))
     }
@@ -284,7 +286,7 @@ private fun NarrativeContent(node: StoryNode, modifier: Modifier = Modifier) {
 @Composable
 private fun ActionArea(
     encounter: CombatEncounter?,
-    choices: List<Choice>,
+    choices: List<ChoiceAvailability>,
     onEngage: () -> Unit,
     onChoiceSelected: (Choice) -> Unit
 ) {
@@ -311,24 +313,44 @@ private fun ActionArea(
  * heads-up that this path goes straight into a fight.
  */
 @Composable
-private fun ChoiceList(choices: List<Choice>, onChoiceSelected: (Choice) -> Unit) {
-    choices.forEach { choice ->
-        val signaled = leadsToSignaledCombat(choice.nextNodeId)
+private fun ChoiceList(choices: List<ChoiceAvailability>, onChoiceSelected: (Choice) -> Unit) {
+    choices.forEach { row ->
+        val choice = row.choice
+        val signaled = row.isAvailable && leadsToSignaledCombat(choice.nextNodeId)
         Box(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
             Button(
-                onClick = { onChoiceSelected(choice) },
+                // A locked row is disabled, and the guard keeps it unselectable even if enabled were bypassed.
+                onClick = { if (row.isAvailable) onChoiceSelected(choice) },
+                enabled = row.isAvailable,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(5.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF171B21),
-                    contentColor = JailerColors.TextPrimary
+                    contentColor = JailerColors.TextPrimary,
+                    disabledContainerColor = Color(0xFF12151A),
+                    disabledContentColor = JailerColors.TextPrimary.copy(alpha = .55f)
                 ),
-                border = BorderStroke(1.dp, JailerColors.GoldSoft.copy(alpha = .55f))
+                border = BorderStroke(
+                    1.dp,
+                    if (row.isAvailable) JailerColors.GoldSoft.copy(alpha = .55f) else JailerColors.GoldSoft.copy(alpha = .25f)
+                )
             ) {
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("›", color = JailerColors.Gold, fontSize = 18.sp)
+                    Text(if (row.isAvailable) "›" else "\u2715", color = JailerColors.Gold.copy(alpha = if (row.isAvailable) 1f else .5f), fontSize = 18.sp)
                     Spacer(Modifier.width(10.dp))
-                    Text(choice.label, fontWeight = FontWeight.SemiBold)
+                    Column {
+                        Text(choice.label, fontWeight = FontWeight.SemiBold)
+                        if (!row.isAvailable) {
+                            row.lockedReasons.forEach { reason ->
+                                Text(
+                                    "Locked: $reason",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = JailerColors.Gold.copy(alpha = .8f),
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
             if (signaled) {
