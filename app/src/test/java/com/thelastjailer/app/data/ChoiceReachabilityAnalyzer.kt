@@ -14,8 +14,9 @@ import com.thelastjailer.app.applyChoice
  * that can gate a choice:
  *  - flags: `setFlags` and `clearFlags` are applied through [applyChoice], `requiredFlags` and
  *    `forbiddenFlags` are both honoured;
- *  - stats: only Courage and Honour are ever gated (see [reportsUnsupportedGates]) and the only
- *    thing that changes them is a choice's `statDeltas`, so they are tracked exactly;
+ *  - stats: only Courage, Honour and Gold are ever gated (see [reportsUnsupportedGates]) and the only
+ *    thing that changes them is a choice's `statDeltas` (gold is clamped at zero, which is monotone),
+ *    so they are tracked exactly;
  *  - combat: a combat node's outgoing edges are its victory and defeat nodes (defeat falls back to
  *    victory when unset), neither of which touches flags, Courage or Honour (see
  *    [com.thelastjailer.app.resolveCombat]). The node's own `choices` are not used.
@@ -51,7 +52,7 @@ class ChoiceReachabilityAnalyzer(
     /** A gate on a stat other than Courage/Honour: not modelled, so the affected choices are inconclusive. */
     private val unsupportedStats: Set<StatType> = nodes.flatMap { it.choices }
         .flatMap { it.requirements?.minStats?.keys ?: emptySet() }
-        .filter { it != StatType.COURAGE && it != StatType.HONOUR }
+        .filter { it != StatType.COURAGE && it != StatType.HONOUR && it != StatType.GOLD }
         .toSet()
 
     fun reportsUnsupportedGates(): Set<StatType> = unsupportedStats
@@ -70,8 +71,11 @@ class ChoiceReachabilityAnalyzer(
     private val readsHonour: Map<String, Boolean> =
         nodes.associate { n -> n.id to n.choices.any { it.requirements?.minStats?.containsKey(StatType.HONOUR) == true } }
 
+    private val readsGold: Map<String, Boolean> =
+        nodes.associate { n -> n.id to n.choices.any { it.requirements?.minStats?.containsKey(StatType.GOLD) == true } }
+
     /** For each node: everything readable from it onward (itself included). Used to drop state nothing ahead can see. */
-    private class Ahead(val flags: Set<String>, val courage: Boolean, val honour: Boolean)
+    private class Ahead(val flags: Set<String>, val courage: Boolean, val honour: Boolean, val gold: Boolean)
 
     private val ahead: Map<String, Ahead> by lazy {
         val result = HashMap<String, Ahead>()
@@ -81,15 +85,17 @@ class ChoiceReachabilityAnalyzer(
             val flags = HashSet<String>()
             var c = false
             var h = false
+            var g = false
             while (stack.isNotEmpty()) {
                 val id = stack.removeLast()
                 if (!seen.add(id)) continue
                 flags += flagsRead[id].orEmpty()
                 c = c || readsCourage[id] == true
                 h = h || readsHonour[id] == true
+                g = g || readsGold[id] == true
                 byId[id]?.let { node -> edges(node).forEach { (_, to) -> if (to in byId) stack.add(to) } }
             }
-            result[n.id] = Ahead(flags, c, h)
+            result[n.id] = Ahead(flags, c, h, g)
         }
         result
     }
@@ -108,16 +114,20 @@ class ChoiceReachabilityAnalyzer(
      * relevant flags, can do everything the other can. Keeping only the Pareto-best pairs per
      * (node, flags) is therefore exact, and keeps the search small.
      */
-    private fun statsOf(state: GameState): Pair<Int, Int> {
+    private fun statsOf(state: GameState): Triple<Int, Int, Int> {
         val a = ahead[state.sceneId]
-        return (if (a?.courage == true) state.courage else 0) to (if (a?.honour == true) state.honour else 0)
+        return Triple(
+            if (a?.courage == true) state.courage else 0,
+            if (a?.honour == true) state.honour else 0,
+            if (a?.gold == true) state.gold else 0
+        )
     }
 
     /** Runs the search once and returns one verdict per gated choice. */
     fun analyse(): List<Verdict> {
         val satisfied = HashSet<Pair<String, Int>>() // (nodeId, choice index) seen satisfiable
         val visitedNodes = HashSet<String>()
-        val frontier = HashMap<FlagKey, MutableList<Pair<Int, Int>>>()
+        val frontier = HashMap<FlagKey, MutableList<Triple<Int, Int, Int>>>()
         var accepted = 0
         val queue = ArrayDeque<GameState>()
         var overflow = false
@@ -125,10 +135,10 @@ class ChoiceReachabilityAnalyzer(
         fun enqueue(state: GameState) {
             if (overflow) return
             val points = frontier.getOrPut(flagKeyOf(state)) { ArrayList(2) }
-            val (c, h) = statsOf(state)
-            if (points.any { it.first >= c && it.second >= h }) return // dominated: nothing new to learn
-            points.removeAll { it.first <= c && it.second <= h }
-            points += c to h
+            val p = statsOf(state)
+            if (points.any { it.first >= p.first && it.second >= p.second && it.third >= p.third }) return // dominated
+            points.removeAll { it.first <= p.first && it.second <= p.second && it.third <= p.third }
+            points += p
             if (++accepted > maxStates) { overflow = true; return }
             queue.add(state)
         }

@@ -18,7 +18,11 @@ class LockedChoiceContentTest {
 
     /** (nodeId, label) of every choice approved to show while locked. */
     private val approvedLockedChoices: Set<Pair<String, String>> = setOf(
-        "a_choice_at_the_door" to "\"Stand aside yourself. This isn't yours to bury.\""
+        "a_choice_at_the_door" to "\"Stand aside yourself. This isn't yours to bury.\"",
+        // Restitution for the bench theft: shown locked below 40 gold so the player can see what it costs.
+        // Always paired with a free alternative (work it off) on the same node.
+        "word_at_stonebeard_thief" to "Put forty gold on the bench.",
+        "ch3_halvards_ledger" to "Give Halvard forty gold to carry back."
     )
 
     private val optedIn = nodes.flatMap { n -> n.choices.filter { it.lockedDisplay == LockedDisplay.SHOW_LOCKED }.map { n to it } }

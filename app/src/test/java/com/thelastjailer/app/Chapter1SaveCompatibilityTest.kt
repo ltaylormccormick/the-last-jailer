@@ -19,14 +19,18 @@ import org.junit.Test
 class Chapter1SaveCompatibilityTest {
 
     /**
-     * Flags the redesign has still to introduce (see FlagDescriptions.plannedFlags). C1-2 activated
-     * `hunted_on_the_road`, `hunters_saw_door` and `met_red_cord_rider`; C1-3 activated `found_red_cord`,
-     * `found_the_old_shaft` and `evaded_the_riders`. Each left this list in its own commit.
+     * Every flag the Chapters 1-3 batch introduced. A save made before the update can carry none of them,
+     * and the story must treat that exactly like a player who simply never reached those choices.
+     * (`hunted_on_the_road`, `hunters_saw_door`, `met_red_cord_rider`, `found_red_cord`, `found_the_old_shaft`
+     * and `evaded_the_riders` arrived with C1-2 and C1-3 and are already in saves made since.)
      */
     private val plannedOpeningFlags = setOf(
-        "spared_the_rider", "robbed_the_rider", "rider_clue",
-        "smith_vouched", "took_from_the_bench", "returned_the_draught",
-        "fought_the_riders", "fell_through_the_door"
+        "spared_the_rider", "robbed_the_rider", "rider_clue", "knows_riders_hired", "received_wax_disc",
+        "parleyed_with_rider", "withdrew_from_the_riders", "fought_the_riders", "fell_through_the_door",
+        "searched_the_wagon", "stripped_the_wagon", "left_the_wagon_be",
+        "smith_vouched", "took_from_the_bench", "returned_the_draught", "owes_the_smith",
+        "read_the_seal", "approached_by_camp", "read_voss_orders", "robbed_the_order", "parleyed_with_sentry",
+        "asked_voss_name", "told_voss_of_the_riders", "sold_to_voss", "showed_voss_the_disc", "quoted_orders_to_voss"
     )
 
     private val stopAt = setOf("first_blood", "chapter1_end", "the_tended_dark", "word_at_stonebeard")
@@ -98,7 +102,7 @@ class Chapter1SaveCompatibilityTest {
         // needs Honour 1). It must never see fewer: every path a new game has is still playable.
         val fresh = Chapter1Paths.enumerate(GameState(), setOf("first_blood")).map { Chapter1Paths.routeKey(it.labels) }.toSet()
         assertTrue(ends.map { Chapter1Paths.routeKey(it.labels) }.toSet().containsAll(fresh))
-        assertEquals(85, fresh.size)
+        assertEquals(364, fresh.size)
     }
 
     @Test
@@ -139,18 +143,22 @@ class Chapter1SaveCompatibilityTest {
     }
 
     @Test
-    fun `no current choice requires, forbids or sets any planned opening flag - so old saves lack nothing the story needs`() {
-        // This is a ratchet. The redesign batches add these flags on purpose; each batch that does so must
-        // update the two sets below in the same commit. Until then it proves a pre-update save is
-        // indistinguishable, to the story, from one that has simply never made those choices.
-        val choices = StoryRepository.chapters.flatMap { StoryRepository.nodesInChapter(it.id) }.flatMap { it.choices }
-        val referencing = choices.filter {
-            val r = it.requirements
-            r != null && (r.requiredFlags + r.forbiddenFlags).intersect(plannedOpeningFlags).isNotEmpty()
+    fun `a state without any batch flag always has a way on from every Chapter 1 to 3 scene that gates on one`() {
+        // New rows are gated on new flags, which a pre-update save cannot carry. That is only safe if every
+        // such scene still offers something to a player who has none of them, with no gold and no stats.
+        val bare = GameState(gold = 0, courage = 0, honour = 0)
+        val nodes = listOf("chapter_1", "chapter_2", "chapter_3").flatMap { StoryRepository.nodesInChapter(it) }
+        val gated = nodes.filter { n ->
+            n.combatEncounterId == null && n.choices.any {
+                val r = it.requirements
+                r != null && (r.requiredFlags + r.forbiddenFlags).intersect(plannedOpeningFlags).isNotEmpty()
+            }
         }
-        val setting = choices.filter { it.consequences.setFlags.intersect(plannedOpeningFlags).isNotEmpty() }
-        assertTrue("choices gated by planned flags: ${referencing.map { it.label }}", referencing.isEmpty())
-        assertTrue("choices that set planned flags: ${setting.map { it.label }}", setting.isEmpty())
+        assertTrue("expected some gated scenes", gated.isNotEmpty())
+        gated.forEach { n ->
+            val shown = StoryRepository.visibleChoices(n, bare.copy(sceneId = n.id))
+            assertTrue("${n.id}: a bare state has no way on", shown.any { it.requirements?.minStats.isNullOrEmpty() })
+        }
     }
 
     @Test

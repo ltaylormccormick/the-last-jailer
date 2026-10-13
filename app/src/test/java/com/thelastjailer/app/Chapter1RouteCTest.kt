@@ -14,16 +14,18 @@ class Chapter1RouteCTest {
     private fun choose(s: GameState, prefix: String) = Chapter1Paths.pick(s, prefix)
     private fun node(id: String) = StoryRepository.node(id)
 
-    private fun intoTheTrees() = choose(GameState(), "WALK AWAY")
+    private fun intoTheTrees() = choose(GameState(), "BREAK FOR THE TREES")
     private fun searched() = choose(intoTheTrees(), "Search the gully")
     private fun left() = choose(intoTheTrees(), "Leave it")
-    private fun atShaft(s: GameState) = choose(s, "Climb out")
+    private fun atWagon(s: GameState) = choose(s, "Climb out")
+    /** Passes the optional wagon with its quietest option (a word, worth one Honour), so the gully's own effects stay visible. */
+    private fun atShaft(s: GameState) = choose(choose(atWagon(s), "Say a word"), "Go on along")
     private fun atRoots(s: GameState) = choose(choose(atShaft(s), "Go back up"), "Follow the broken ground")
 
     // ---- Shape ----
 
     @Test
-    fun `WALK AWAY leads into the trees and costs only a fall`() {
+    fun `BREAK FOR THE TREES leads into the trees and costs only a fall`() {
         val s = intoTheTrees()
         assertEquals("ch1_into_the_trees", s.sceneId)
         assertEquals(setOf("walked_away", "hunted_on_the_road"), s.flags)
@@ -83,7 +85,7 @@ class Chapter1RouteCTest {
         listOf(searched(), left()).forEach { g ->
             val end = atRoots(g)
             assertEquals(GameState().courage, end.courage)
-            assertEquals(GameState().honour + 1, end.honour)
+            assertEquals("the walk is worth one Honour and the word over the wagon one more", GameState().honour + 2, end.honour)
             assertEquals(emptyList<String>(), end.inventory)
             assertEquals(0, end.xp)
             assertEquals(emptySet<String>(), end.trophies)
@@ -102,7 +104,7 @@ class Chapter1RouteCTest {
     @Test
     fun `losses cannot go below zero on a replay with little gold or health`() {
         val poor = GameState(chapterId = "chapter_1", sceneId = "fallen_knight", gold = 4, health = 3)
-        val trees = choose(poor, "WALK AWAY")
+        val trees = choose(poor, "BREAK FOR THE TREES")
         assertTrue(trees.health >= 0)
         assertEquals(0, choose(trees, "Leave it").gold)
         assertTrue(choose(trees, "Search the gully").health >= 0)
@@ -112,16 +114,22 @@ class Chapter1RouteCTest {
 
     @Test
     fun `the new scenes show the red cord and keep the hunters private`() {
-        val ids = listOf("ch1_into_the_trees", "ch1_gully_searched", "ch1_gully_left", "ch1_the_old_shaft", "ch1_watched_from_above")
+        val ids = listOf(
+            "ch1_into_the_trees", "ch1_gully_searched", "ch1_gully_left", "ch1_the_old_shaft", "ch1_watched_from_above",
+            "ch1_gully_wagon", "ch1_wagon_searched", "ch1_wagon_stripped", "ch1_wagon_left"
+        )
         val text = ids.joinToString("\n") { node(it).narrativeText }
         assertTrue(node("ch1_gully_searched").narrativeText.contains("red cord"))
-        listOf("Ilsevet", "Order", "prisoner", "Marshal", "Selvane", "Thessaly", "paid", "contract", "employer", "hired", "bounty", "your name", "his name", "Door of")
+        listOf("Ilsevet", "Order", "prisoner", "Marshal", "Selvane", "Thessaly", "paid", "contract", "employer", "hired", "bounty", "Door of")
             .forEach { assertFalse("Route C reveals '$it'", text.contains(it, ignoreCase = true)) }
     }
 
     @Test
     fun `every new scene is in chapter 1 and has at least one way on`() {
-        listOf("ch1_into_the_trees", "ch1_gully_searched", "ch1_gully_left", "ch1_the_old_shaft", "ch1_watched_from_above").forEach {
+        listOf(
+            "ch1_into_the_trees", "ch1_gully_searched", "ch1_gully_left", "ch1_the_old_shaft", "ch1_watched_from_above",
+            "ch1_gully_wagon", "ch1_wagon_searched", "ch1_wagon_stripped", "ch1_wagon_left"
+        ).forEach {
             assertEquals(it, "chapter_1", node(it).chapterId)
             assertTrue(it, node(it).choices.isNotEmpty())
         }
@@ -131,7 +139,7 @@ class Chapter1RouteCTest {
 
     private fun forgeAfter(start: GameState, vararg route: String): GameState {
         var s = Chapter1Paths.follow(start, *route)
-        while (s.sceneId != "beneath_the_roots") s = Chapter1Paths.pick(s, "")
+        while (s.sceneId != "beneath_the_roots") s = Chapter1Paths.pick(s, if (s.sceneId == "ch1_stand_and_turn") "Back through" else "")
         return Chapter1Paths.follow(s, "Keep", "Follow the tunnel")
     }
 
@@ -139,16 +147,16 @@ class Chapter1RouteCTest {
 
     @Test
     fun `the Forge offers the shaft only to a player who found it`() {
-        val c = forgeAfter(GameState(), "WALK AWAY")
+        val c = forgeAfter(GameState(), "BREAK FOR THE TREES")
         assertEquals("the_silent_forge", c.sceneId)
         assertEquals(listOf("Call out into the dark.", "Wait, and listen.", "Find the old shaft and watch from above."), forgeLabels(c))
         assertFalse(forgeLabels(forgeAfter(GameState(), "OPEN THE DOOR")).any { it.startsWith("Find the old shaft") })
-        assertFalse(forgeLabels(forgeAfter(GameState(), "DRAW YOUR SWORD")).any { it.startsWith("Find the old shaft") })
+        assertFalse(forgeLabels(forgeAfter(GameState(), "TURN AND FACE THEM")).any { it.startsWith("Find the old shaft") })
     }
 
     @Test
     fun `the shaft route is an unobserved moment worth the same Courage as the other sneak, and rejoins the hold`() {
-        val forge = forgeAfter(GameState(), "WALK AWAY")
+        val forge = forgeAfter(GameState(), "BREAK FOR THE TREES")
         val above = choose(forge, "Find the old shaft")
         assertEquals("ch1_watched_from_above", above.sceneId)
         assertEquals(forge.courage + 1, above.courage)
@@ -161,8 +169,8 @@ class Chapter1RouteCTest {
 
     @Test
     fun `every Route C telling still reaches the first fight`() {
-        val ends = Chapter1Paths.enumerate(GameState(), setOf("first_blood")).filter { it.labels.first().startsWith("WALK") }
-        assertEquals(48, ends.size)
+        val ends = Chapter1Paths.enumerate(GameState(), setOf("first_blood")).filter { it.labels.first().startsWith("BREAK") }
+        assertEquals(176, ends.size)
         ends.forEach { assertEquals("first_blood", it.end.sceneId) }
     }
 
@@ -173,7 +181,7 @@ class Chapter1RouteCTest {
         val routeC = atRoots(searched())
         assertTrue(listOf("found_red_cord", "found_the_old_shaft", "evaded_the_riders").all { it in routeC.flags })
         val again = routeC.copy(sceneId = "fallen_knight")
-        listOf("OPEN THE DOOR", "DRAW YOUR SWORD").forEach { first ->
+        listOf("OPEN THE DOOR", "TURN AND FACE THEM").forEach { first ->
             val s = choose(again, first)
             assertTrue(first, OPENING_FAMILY.intersect(s.flags).none { it in setOf("found_red_cord", "found_the_old_shaft", "evaded_the_riders", "walked_away") })
             assertFalse(first, forgeLabels(forgeAfter(again, first)).any { it.startsWith("Find the old shaft") })
@@ -183,7 +191,7 @@ class Chapter1RouteCTest {
     @Test
     fun `a replay of Route C after Route C starts clean, so the cord is found only if searched again`() {
         val first = atRoots(searched())
-        val second = choose(first.copy(sceneId = "fallen_knight"), "WALK AWAY")
+        val second = choose(first.copy(sceneId = "fallen_knight"), "BREAK FOR THE TREES")
         assertFalse("found_red_cord" in second.flags)
         assertFalse("found_red_cord" in choose(second, "Leave it").flags)
         assertTrue("found_red_cord" in choose(second, "Search the gully").flags)

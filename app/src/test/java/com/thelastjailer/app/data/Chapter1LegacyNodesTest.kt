@@ -72,7 +72,7 @@ class Chapter1LegacyNodesTest {
             "the_watch_continues_dark_aid_deferred", "the_watch_continues_unaided_captured",
             "the_watch_continues_unaided_mercy", "the_watch_continues_unaided_deferred"
         ).map { it to "fallen_knight" }
-        val expected = (replay + listOf("first_blood_defeat" to "word_at_stonebeard", "first_blood_defeat" to "the_tended_dark", "chapter1_end" to "the_deeper_dark")).toSet()
+        val expected = (replay + listOf("first_blood_defeat" to "word_at_stonebeard", "first_blood_defeat" to "word_at_stonebeard_thief", "first_blood_defeat" to "the_tended_dark", "chapter1_end" to "the_deeper_dark")).toSet()
         assertEquals(expected, edges)
     }
 }

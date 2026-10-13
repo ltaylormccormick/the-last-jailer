@@ -8,6 +8,76 @@ import com.thelastjailer.app.StatType
 import com.thelastjailer.app.StoryNode
 
 /**
+ * Family C3: the flags that record how this telling's approach to the surface went. Cleared by every
+ * choice at `the_answer` (the first scene of the chapter), so a replay never inherits a stale row.
+ */
+val CHAPTER3_FAMILY: Set<String> = setOf(
+    "approached_by_camp", "read_voss_orders", "robbed_the_order", "parleyed_with_sentry",
+    "asked_voss_name", "told_voss_of_the_riders", "sold_to_voss", "showed_voss_the_disc", "quoted_orders_to_voss"
+)
+
+/**
+ * What Kaelen may say to Voss before she states her business. Every row is optional and loops back to
+ * `ch3_voss_waits`; the last row always works, so nothing here can block the chapter. Each row rests on
+ * something Kaelen has actually earned; none of them reveals who hired the riders.
+ */
+private fun vossRows(camp: Boolean): List<Choice> = listOfNotNull(
+    Choice(
+        label = "\"You were expecting me. By name.\"",
+        nextNodeId = "ch3_voss_names",
+        requirements = ChoiceRequirement(forbiddenFlags = setOf("asked_voss_name")),
+        consequences = Consequences(setFlags = setOf("asked_voss_name"))
+    ),
+    Choice(
+        label = "\"The riders on the road were hired. Paid in halves, to bring me in alive.\"",
+        nextNodeId = "ch3_voss_shared",
+        requirements = ChoiceRequirement(
+            requiredFlags = setOf("knows_riders_hired"),
+            forbiddenFlags = setOf("told_voss_of_the_riders", "sold_to_voss")
+        ),
+        consequences = Consequences(
+            statDeltas = mapOf(StatType.HONOUR to 1),
+            setFlags = setOf("told_voss_of_the_riders")
+        )
+    ),
+    Choice(
+        label = "\"What I know about those riders has a price.\"",
+        nextNodeId = "ch3_voss_sold",
+        requirements = ChoiceRequirement(
+            requiredFlags = setOf("knows_riders_hired"),
+            forbiddenFlags = setOf("told_voss_of_the_riders", "sold_to_voss"),
+            minStats = mapOf(StatType.COURAGE to 3)
+        ),
+        consequences = Consequences(
+            statDeltas = mapOf(StatType.GOLD to 10),
+            setFlags = setOf("sold_to_voss")
+        )
+    ),
+    Choice(
+        label = "Show her the scraped wax disc.",
+        nextNodeId = "ch3_voss_disc",
+        requirements = ChoiceRequirement(
+            requiredFlags = setOf("rider_clue"),
+            forbiddenFlags = setOf("showed_voss_the_disc")
+        ),
+        consequences = Consequences(setFlags = setOf("showed_voss_the_disc"))
+    ),
+    if (!camp) null else Choice(
+        label = "\"Your orders say to confirm before you engage. Consider it confirmed.\"",
+        nextNodeId = "ch3_voss_orders",
+        requirements = ChoiceRequirement(
+            requiredFlags = setOf("read_voss_orders"),
+            forbiddenFlags = setOf("quoted_orders_to_voss")
+        ),
+        consequences = Consequences(
+            statDeltas = mapOf(StatType.COURAGE to 1),
+            setFlags = setOf("quoted_orders_to_voss")
+        )
+    ),
+    Choice(label = "\"What do you want with it?\"", nextNodeId = "a_choice_at_the_door")
+)
+
+/**
  * Chapter III — What the Door Remembers.
  *
  * Resolves Chapter II's cliffhanger (does Kaelen take the office, and does he take it fully,
@@ -38,8 +108,8 @@ val chapter3Nodes: List<StoryNode> = listOf(
             Halvard waits the way old men wait for weather: patient, certain it will come whether
             or not he's ready for it.
 
-            Kaelen thinks of the cloak he doesn't wear anymore. Of ten steps taken and
-            reconsidered on a ruined road. Of a door that knocked for him specifically, out of
+            Kaelen thinks of the cloak he doesn't wear anymore. Of a ruined road and a
+            name shouted across the rain. Of a door that knocked for him specifically, out of
             everyone who might have walked that way before him and kept walking.
 
             "Say it plainly," Halvard says. "I'm too old for a man who needs three sentences to
@@ -51,6 +121,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
                 nextNodeId = "the_binding_rite_full",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
+                    clearFlags = CHAPTER3_FAMILY,
                     setFlags = setOf("accepted_fully")
                 )
             ),
@@ -59,13 +130,15 @@ val chapter3Nodes: List<StoryNode> = listOf(
                 nextNodeId = "the_binding_rite_reluctant",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
+                    clearFlags = CHAPTER3_FAMILY,
                     setFlags = setOf("accepted_reluctantly")
                 )
             ),
             Choice(
                 label = "\"I need time. This isn't something I can just say yes to.\"",
                 nextNodeId = "the_walk_away",
-                consequences = Consequences(setFlags = setOf("refused_once"))
+                consequences = Consequences(clearFlags = CHAPTER3_FAMILY,
+                    setFlags = setOf("refused_once"))
             )
         )
     ),
@@ -164,7 +237,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         narrativeText = """
             Stonebeard Hold is quiet by the time he reaches it, the dwarves who survived First
             Blood already back at work rebuilding what the fight cost them, and none of them ask
-            why the man who helped hold their gate looks like he's carrying something heavier
+            why the man who walked into their lower passage looks like he's carrying something heavier
             than a sword. He finds a corner to sit in and lets himself, for the first time since
             the black door, simply not decide anything for a while.
 
@@ -320,7 +393,21 @@ val chapter3Nodes: List<StoryNode> = listOf(
             hear.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Climb back up to the black door.", nextNodeId = "the_surface_again")
+            Choice(
+                label = "Climb back up to the black door.",
+                nextNodeId = "the_surface_again",
+                requirements = ChoiceRequirement(forbiddenFlags = setOf("owes_the_smith"))
+            ),
+            Choice(
+                label = "Climb back up to the black door.",
+                nextNodeId = "ch3_halvards_ledger",
+                requirements = ChoiceRequirement(requiredFlags = setOf("owes_the_smith"))
+            ),
+            Choice(
+                label = "Come up by the broken ground instead.",
+                nextNodeId = "ch3_order_camp",
+                consequences = Consequences(setFlags = setOf("approached_by_camp"))
+            )
         )
     ),
     StoryNode(
@@ -343,8 +430,221 @@ val chapter3Nodes: List<StoryNode> = listOf(
             was the easy part. Not wondering what he refused is proving harder.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Climb back up to the black door.", nextNodeId = "the_surface_again")
+            Choice(
+                label = "Climb back up to the black door.",
+                nextNodeId = "the_surface_again",
+                requirements = ChoiceRequirement(forbiddenFlags = setOf("owes_the_smith"))
+            ),
+            Choice(
+                label = "Climb back up to the black door.",
+                nextNodeId = "ch3_halvards_ledger",
+                requirements = ChoiceRequirement(requiredFlags = setOf("owes_the_smith"))
+            ),
+            Choice(
+                label = "Come up by the broken ground instead.",
+                nextNodeId = "ch3_order_camp",
+                consequences = Consequences(setFlags = setOf("approached_by_camp"))
+            )
         )
+    ),
+    StoryNode(
+        id = "ch3_halvards_ledger",
+        chapterId = "chapter_3",
+        title = "A Count, Not a Complaint",
+        illustrationId = "warded_gate",
+        narrativeText = """
+            Halvard stops him at the foot of the stair with a hand like a knot of root. "The smith sent word by the last man down," he says. "Not a complaint. Only a count."
+
+            He does not say a count of what. He does not need to. Kaelen has been counting a shelf since the Hold.
+
+            "He will not ask," Halvard says. "That is what makes it heavy."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Give Halvard forty gold to carry back.",
+                nextNodeId = "the_surface_again",
+                requirements = ChoiceRequirement(minStats = mapOf(StatType.GOLD to 40)),
+                lockedDisplay = LockedDisplay.SHOW_LOCKED,
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.GOLD to -40, StatType.HONOUR to 1),
+                    setFlags = setOf("returned_the_draught"),
+                    clearFlags = setOf("owes_the_smith")
+                )
+            ),
+            Choice(
+                label = "Spend the night hauling stone for the gate, and ask him to tell the smith.",
+                nextNodeId = "the_surface_again",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HEALTH to -10, StatType.HONOUR to 1),
+                    setFlags = setOf("returned_the_draught"),
+                    clearFlags = setOf("owes_the_smith")
+                )
+            ),
+            Choice(
+                label = "Say nothing, and climb.",
+                nextNodeId = "the_surface_again"
+            )
+        )
+    ),
+    StoryNode(
+        id = "ch3_order_camp",
+        chapterId = "chapter_3",
+        title = "Above the Road",
+        illustrationId = "road_away_from_tree",
+        narrativeText = """
+            There is a second way up from the deep road: a place where the hillside has fallen in over an old tunnel mouth, and a man can climb out through the roots without ever passing the door. Kaelen takes it, and comes out on his belly in wet bracken above the road, with the first grey of morning coming up behind the trees.
+
+            Below him, the Order has made camp in the road. Four horses. Four bedrolls. A banked fire under an oilcloth, and a stores tent pegged against the weather. At the door itself a woman in dark colours is standing very still with her hand flat on the iron.
+
+            Nobody has seen him.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Study the camp from cover.",
+                nextNodeId = "ch3_camp_studied",
+                consequences = Consequences(setFlags = setOf("read_voss_orders"))
+            ),
+            Choice(
+                label = "Slip along the supply line.",
+                nextNodeId = "ch3_camp_robbed",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to -1, StatType.GOLD to 10),
+                    grantItemIds = listOf("healing_draught"),
+                    setFlags = setOf("robbed_the_order")
+                )
+            ),
+            Choice(
+                label = "Walk down and ask the sentry for leave to speak.",
+                nextNodeId = "ch3_camp_parley",
+                requirements = ChoiceRequirement(minStats = mapOf(StatType.HONOUR to 1)),
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    setFlags = setOf("parleyed_with_sentry")
+                )
+            ),
+            Choice(
+                label = "Walk down to the door.",
+                nextNodeId = "ch3_surface_approached"
+            )
+        )
+    ),
+    StoryNode(
+        id = "ch3_camp_studied",
+        chapterId = "chapter_3",
+        title = "What the Oilcloth Covered",
+        illustrationId = "road_away_from_tree",
+        narrativeText = """
+            Under a stone, against the wind, one sheet is weighted to the lid of a ration crate. A door. A place. A day. And beneath it in the same square hand: confirm whether it has found a keeper before you engage. Do not engage until confirmed.
+
+            It is not the Order's strength that stays with him. It is how little of this is certain. They have come to find out.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Walk down to the door.", nextNodeId = "ch3_surface_approached"))
+    ),
+    StoryNode(
+        id = "ch3_camp_robbed",
+        chapterId = "chapter_3",
+        title = "The Supply Line",
+        illustrationId = "road_away_from_tree",
+        narrativeText = """
+            The sentry watches the road and not the bracken, and the stores tent has a loose flap. A sack of coin set aside for fodder. A stoppered vial in a case of them. Kaelen takes the coin and one vial, and does not take the rest, and is back under the roots before the fire has settled.
+
+            Whoever counts these stores in the morning will count them twice.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Walk down to the door.", nextNodeId = "ch3_surface_approached"))
+    ),
+    StoryNode(
+        id = "ch3_camp_parley",
+        chapterId = "chapter_3",
+        title = "Leave to Speak",
+        illustrationId = "road_away_from_tree",
+        narrativeText = """
+            The sentry hears him out with a hand on his hilt and his eyes on the treeline. Kaelen keeps his own hands open and in sight, and says only that he has come to speak to whoever commands here.
+
+            For reasons he does not give, the man steps aside. "She's at the door," he says. "She'll want to see you."
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Walk down to the door.", nextNodeId = "ch3_surface_approached"))
+    ),
+    StoryNode(
+        id = "ch3_surface_approached",
+        chapterId = "chapter_3",
+        title = "The Surface, Again",
+        illustrationId = "a_choice_at_the_door",
+        narrativeText = """
+            He comes down out of the bracken onto the road, and four horses lift their heads together. Four riders in colours he doesn't recognize watch him come. The woman at the door does not turn until he is close enough to touch.
+
+            "There you are," she says, as if she had been expecting him specifically. "Inquisitor Voss. Ashen Order. We had word a door that shouldn't exist had opened out here, and that it had found itself a keeper."
+        """.trimIndent(),
+        choices = vossRows(camp = true)
+    ),
+    StoryNode(
+        id = "ch3_voss_waits",
+        chapterId = "chapter_3",
+        title = "Voss, Waiting",
+        illustrationId = "a_choice_at_the_door",
+        narrativeText = """
+            Voss waits, in no hurry, with the rain running off her hood. The four behind her wait too.
+        """.trimIndent(),
+        choices = vossRows(camp = true)
+    ),
+    StoryNode(
+        id = "ch3_voss_names",
+        chapterId = "chapter_3",
+        title = "A Name on the Road",
+        illustrationId = "a_choice_at_the_door",
+        narrativeText = """
+            "You were expecting me. By name."
+
+            Voss's mouth does something that is not quite a smile. "Names carry, jailer. Yours was being shouted loud enough on that road to reach anyone who was listening." She does not say where she heard it. The way she does not say it is practised.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Turn back to her.", nextNodeId = "ch3_voss_waits"))
+    ),
+    StoryNode(
+        id = "ch3_voss_shared",
+        chapterId = "chapter_3",
+        title = "Hired, and Wanted Whole",
+        illustrationId = "a_choice_at_the_door",
+        narrativeText = """
+            "The riders on the road were hired. Paid in halves, to bring me in alive."
+
+            Voss is quiet for a moment. "Not ours," she says. "Ours wear a colour, and we do not buy a man in halves. Someone wanted you whole, jailer, and wanted it enough to pay for it." She looks at the door, and then at him. "I would want to know who, if I were you. I would want it before they found a reason to stop paying."
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Turn back to her.", nextNodeId = "ch3_voss_waits"))
+    ),
+    StoryNode(
+        id = "ch3_voss_sold",
+        chapterId = "chapter_3",
+        title = "A Price for the Riders",
+        illustrationId = "a_choice_at_the_door",
+        narrativeText = """
+            "What I know about those riders has a price."
+
+            She laughs once, short and without much heat, and counts ten coins into his palm from a purse at her belt. He tells her what he knows: hired, paid in halves, wanted alive. "I had guessed all of it," she says. "You would have given it for nothing, if I had waited." It is not an insult. It is worse. It is a note made in a ledger.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Turn back to her.", nextNodeId = "ch3_voss_waits"))
+    ),
+    StoryNode(
+        id = "ch3_voss_disc",
+        chapterId = "chapter_3",
+        title = "The Scraped Wax",
+        illustrationId = "a_choice_at_the_door",
+        narrativeText = """
+            He holds out the grey wax disc. Voss turns it over in the rain, a thumbnail along the flattened face. "Someone took a file to this before it ever left their hand," she says. "Not an accident. A seal scraped like this is a seal that was never meant to be traced."
+
+            She gives it back. "I cannot tell you whose. I can tell you they were careful."
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Turn back to her.", nextNodeId = "ch3_voss_waits"))
+    ),
+    StoryNode(
+        id = "ch3_voss_orders",
+        chapterId = "chapter_3",
+        title = "Orders, Quoted",
+        illustrationId = "a_choice_at_the_door",
+        narrativeText = """
+            "Your orders say to confirm before you engage," Kaelen says. "Consider it confirmed."
+
+            For the first time, Voss's attention comes fully off the door. "Someone," she says softly, "has been reading over my shoulder." It is not quite a threat. She files it away with the rest of him.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Turn back to her.", nextNodeId = "ch3_voss_waits"))
     ),
     StoryNode(
         id = "the_surface_again",
@@ -361,9 +661,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
             specifically. "Inquisitor Voss. Ashen Order. We had word a door that shouldn't exist
             had opened out here, and that it had found itself a keeper."
         """.trimIndent(),
-        choices = listOf(
-            Choice(label = "\"What do you want with it?\"", nextNodeId = "a_choice_at_the_door")
-        )
+        choices = vossRows(camp = false)
     ),
     StoryNode(
         id = "a_choice_at_the_door",
