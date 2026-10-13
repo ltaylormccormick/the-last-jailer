@@ -74,7 +74,7 @@ class Chapter1ReplayBaselineTest {
         // Before C1-2 nothing cleared flags, so opening the door in telling one and walking away in
         // telling two left both route flags set. Every fallen_knight choice now clears the opening family.
         // Full coverage: Chapter1OpeningResetTest.
-        val second = Chapter1Paths.pick(replay(finished()), "WALK AWAY")
+        val second = Chapter1Paths.pick(replay(finished()), "BREAK FOR THE TREES")
         assertTrue("walked_away" in second.flags)
         assertFalse("opened_black_door" in second.flags)
     }

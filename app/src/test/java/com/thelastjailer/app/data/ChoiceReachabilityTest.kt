@@ -218,7 +218,7 @@ class ChoiceReachabilityTest {
     @Test
     fun `a gate on an unmodelled stat is inconclusive rather than passed`() {
         val v = analyse(
-            node("start", go("end", "gated", ChoiceRequirement(minStats = mapOf(StatType.GOLD to 1000)))),
+            node("start", go("end", "gated", ChoiceRequirement(minStats = mapOf(StatType.XP to 1000)))),
             node("end")
         )
         assertEquals(Status.INCONCLUSIVE, statusOf(v, "start", "gated"))
@@ -255,7 +255,11 @@ class ChoiceReachabilityTest {
      * buckler offers. This is still a ratchet: it fails if any *new* dead choice appears, and an entry
      * added here must be justified in the same commit.
      */
-    private val knownDead: Set<Pair<String, String>> = emptySet()
+    private val knownDead: Set<Pair<String, String>> = setOf(
+        // Replay-only by design: offered once the durable Scraped Wax Disc has already been received on an
+        // earlier telling, so it can never be satisfied on a first playthrough. See the C-class replay rules.
+        "ch1_rider_down" to "Press him again for what he knows."
+    )
 
     @Test
     fun `the analysis of the real story completes without hitting its state budget`() {
@@ -295,7 +299,7 @@ class ChoiceReachabilityTest {
     }
 
     @Test
-    fun `the real story only gates on Courage and Honour`() {
+    fun `the real story only gates on Courage, Honour and Gold`() {
         val analyzer = ChoiceReachabilityAnalyzer(nodes)
         assertEquals(emptySet<StatType>(), analyzer.reportsUnsupportedGates())
     }

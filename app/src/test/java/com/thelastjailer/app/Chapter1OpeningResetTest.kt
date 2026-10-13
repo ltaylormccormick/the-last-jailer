@@ -26,11 +26,14 @@ class Chapter1OpeningResetTest {
     private fun choose(s: GameState, prefix: String) = Chapter1Paths.pick(s, prefix)
 
     @Test
-    fun `the opening family is the three route flags plus the Route A and Route C flags`() {
+    fun `the opening family is the route flags plus every decision flag the opening scenes set`() {
         assertEquals(
             setOf(
                 "opened_black_door", "drew_sword", "walked_away", "hunted_on_the_road", "hunters_saw_door",
-                "met_red_cord_rider", "evaded_the_riders", "found_the_old_shaft", "found_red_cord"
+                "met_red_cord_rider", "evaded_the_riders", "found_the_old_shaft", "found_red_cord",
+                "fought_the_riders", "parleyed_with_rider", "withdrew_from_the_riders", "fell_through_the_door",
+                "spared_the_rider", "robbed_the_rider", "rider_clue", "knows_riders_hired",
+                "searched_the_wagon", "stripped_the_wagon", "left_the_wagon_be"
             ),
             OPENING_FAMILY
         )
@@ -40,8 +43,8 @@ class Chapter1OpeningResetTest {
     fun `each opening choice clears the whole family and keeps only its own route flags`() {
         val expected = mapOf(
             "OPEN THE DOOR" to setOf("opened_black_door", "hunted_on_the_road"),
-            "DRAW YOUR SWORD" to setOf("drew_sword"),
-            "WALK AWAY" to setOf("walked_away", "hunted_on_the_road")
+            "TURN AND FACE THEM" to setOf("drew_sword", "hunted_on_the_road", "met_red_cord_rider"),
+            "BREAK FOR THE TREES" to setOf("walked_away", "hunted_on_the_road")
         )
         expected.forEach { (prefix, own) ->
             assertEquals(prefix, unrelated + own, choose(atOpeningWithEveryOpeningFlag(), prefix).flags)
@@ -51,7 +54,7 @@ class Chapter1OpeningResetTest {
     @Test
     fun `the reset moves no stats, gold, items or trophies beyond each choice's own existing reward`() {
         val before = atOpeningWithEveryOpeningFlag()
-        val bonus = mapOf("OPEN THE DOOR" to (2 to 0), "DRAW YOUR SWORD" to (1 to 0), "WALK AWAY" to (0 to 1))
+        val bonus = mapOf("OPEN THE DOOR" to (2 to 0), "TURN AND FACE THEM" to (1 to 0), "BREAK FOR THE TREES" to (0 to 1))
         bonus.forEach { (prefix, d) ->
             val after = choose(before, prefix)
             assertEquals(prefix, before.courage + d.first, after.courage)
@@ -110,13 +113,13 @@ class Chapter1OpeningResetTest {
     }
 
     @Test
-    fun `the witness scene is used only by the door route, and Route B is unchanged`() {
+    fun `the witness scene is used only by the door route, and Route B now starts at the stand`() {
         val refs = StoryRepository.nodesInChapter("chapter_1").flatMap { n -> n.choices.map { n.id to it } }
             .filter { it.second.nextNodeId == "ch1_door_witness" }
         assertEquals(listOf("fallen_knight"), refs.map { it.first })
-        assertEquals("sword_drawn", StoryRepository.node("fallen_knight").choices.first { it.label == "DRAW YOUR SWORD" }.nextNodeId)
-        val sword = choose(GameState(), "DRAW YOUR SWORD")
-        assertEquals(setOf("drew_sword"), sword.flags)
+        assertEquals("ch1_stand_and_turn", StoryRepository.node("fallen_knight").choices.first { it.label == "TURN AND FACE THEM" }.nextNodeId)
+        val sword = choose(GameState(), "TURN AND FACE THEM")
+        assertEquals(setOf("drew_sword", "hunted_on_the_road", "met_red_cord_rider"), sword.flags)
         assertEquals(GameState().health, sword.health)
     }
 
@@ -127,10 +130,10 @@ class Chapter1OpeningResetTest {
         var s = choose(choose(choose(GameState(), "OPEN THE DOOR"), "Go through"), "Descend")
         assertTrue("hunters_saw_door" in s.flags)
         // Second telling, via the sword.
-        s = choose(s.copy(sceneId = "fallen_knight"), "DRAW YOUR SWORD")
-        assertEquals(setOf("drew_sword"), s.flags)
+        s = choose(s.copy(sceneId = "fallen_knight"), "TURN AND FACE THEM")
+        assertEquals(setOf("drew_sword", "hunted_on_the_road", "met_red_cord_rider"), s.flags)
         // Third telling, via the walk.
-        s = choose(s.copy(sceneId = "fallen_knight"), "WALK AWAY")
+        s = choose(s.copy(sceneId = "fallen_knight"), "BREAK FOR THE TREES")
         assertEquals(setOf("walked_away", "hunted_on_the_road"), s.flags)
         // And back to the door.
         s = choose(s.copy(sceneId = "fallen_knight"), "OPEN THE DOOR")
@@ -143,7 +146,7 @@ class Chapter1OpeningResetTest {
         var s = Chapter1Paths.follow(stale, "OPEN THE DOOR", "", "", "Keep", "Follow the tunnel")
         val labels = StoryRepository.visibleChoices(StoryRepository.node(s.sceneId), s).map { it.label }
         assertFalse("stale sword flag leaked: $labels", labels.any { it.startsWith("Move without a sound") })
-        s = Chapter1Paths.follow(stale, "DRAW YOUR SWORD", "", "Keep", "Follow the tunnel")
+        s = Chapter1Paths.follow(stale, "TURN AND FACE THEM", "Back through", "", "", "Keep", "Follow the tunnel")
         assertTrue(StoryRepository.visibleChoices(StoryRepository.node(s.sceneId), s).any { it.label.startsWith("Move without a sound") })
     }
 

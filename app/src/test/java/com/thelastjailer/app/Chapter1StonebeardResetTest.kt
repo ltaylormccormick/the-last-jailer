@@ -15,7 +15,7 @@ import org.junit.Test
 class Chapter1StonebeardResetTest {
 
     private val hold = "stonebeard_hold"
-    private val afterNodes = listOf("smiths_warning_helped", "smiths_warning_confessed", "smiths_warning_moved_on")
+    private val afterNodes = listOf("smiths_warning_helped", "smiths_warning_confessed", "smiths_warning_moved_on", "smiths_warning_robbed")
 
     /** A state arriving at the hold carrying every Family S flag plus plenty of unrelated state. */
     private fun atHoldWithStaleFlags() = GameState(
@@ -30,16 +30,27 @@ class Chapter1StonebeardResetTest {
     private fun choose(s: GameState, prefix: String): GameState = Chapter1Paths.pick(s, prefix)
 
     @Test
-    fun `the family is exactly the three existing Stonebeard flags`() {
-        assertEquals(setOf("helped_dwarf", "confessed_to_dwarf", "took_buckler"), STONEBEARD_FAMILY)
+    fun `the family is the three original Stonebeard flags plus the bench, atonement and vouching flags`() {
+        assertEquals(
+            setOf(
+                "helped_dwarf", "confessed_to_dwarf", "took_buckler",
+                "took_from_the_bench", "returned_the_draught", "owes_the_smith", "smith_vouched"
+            ),
+            STONEBEARD_FAMILY
+        )
     }
 
     @Test
-    fun `each of the three hold choices clears the whole family and keeps its own flag`() {
-        val expected = mapOf("Help him" to "helped_dwarf", "Tell him honestly" to "confessed_to_dwarf", "Move on" to null)
+    fun `each of the four hold choices clears the whole family and keeps only its own flags`() {
+        val expected = mapOf(
+            "Help him" to setOf("helped_dwarf"),
+            "Tell him honestly" to setOf("confessed_to_dwarf"),
+            "Move on" to emptySet(),
+            "Take a draught and" to setOf("took_from_the_bench", "owes_the_smith")
+        )
         expected.forEach { (prefix, own) ->
             val after = choose(atHoldWithStaleFlags(), prefix)
-            assertEquals(prefix, unrelated + listOfNotNull(own), after.flags)
+            assertEquals(prefix, unrelated + own, after.flags)
         }
     }
 
@@ -58,13 +69,13 @@ class Chapter1StonebeardResetTest {
     }
 
     @Test
-    fun `only the three hold choices anywhere in the story clear flags`() {
+    fun `only the four hold choices anywhere in the story clear flags`() {
         val clearers = StoryRepository.chapters
             .flatMap { StoryRepository.nodesInChapter(it.id) }
             .flatMap { n -> n.choices.filter { it.consequences.clearFlags.isNotEmpty() }.map { n.id to it.label } }
             .filter { (id, _) -> id.startsWith("stonebeard") || id.startsWith("smiths_warning") }
         assertEquals(setOf(hold), clearers.map { it.first }.toSet())
-        assertEquals(3, clearers.size)
+        assertEquals(4, clearers.size)
         StoryRepository.node(hold).choices.forEach { assertEquals(STONEBEARD_FAMILY, it.consequences.clearFlags) }
     }
 
@@ -95,7 +106,7 @@ class Chapter1StonebeardResetTest {
     @Test
     fun `a fresh game never holds more than one buckler on any path to the first fight`() {
         val paths = Chapter1Paths.enumerate(GameState(), setOf("first_blood"))
-        assertEquals(85, paths.size)
+        assertEquals(364, paths.size)
         paths.forEach { assertTrue(it.labels.toString(), it.end.inventory.count { i -> i == "sturdy_buckler" } <= 1) }
     }
 

@@ -2,7 +2,9 @@ package com.thelastjailer.app.data
 
 import com.thelastjailer.app.Choice
 import com.thelastjailer.app.GameState
+import com.thelastjailer.app.CombatOutcome
 import com.thelastjailer.app.applyChoice
+import com.thelastjailer.app.resolveCombat
 
 /**
  * Test helper: walks every selectable path through the story from a starting state until it reaches
@@ -25,7 +27,15 @@ internal object Chapter1Paths {
                 return
             }
             val node = StoryRepository.node(state.sceneId)
-            check(node.combatEncounterId == null) { "walker reached combat node ${node.id} before a stop node" }
+            if (node.combatEncounterId != null) {
+                // An optional fight inside the opening: follow both outcomes (no damage taken), so every
+                // route that can lead to it is still enumerated. Mandatory fights are stop nodes.
+                val enc = CombatRepository.encounter(node.combatEncounterId!!)
+                check(enc.defeatNodeId != null) { "combat node ${node.id} has no defeat node" }
+                walk(state.resolveCombat(enc, CombatOutcome(victory = true, damageTaken = 0)), labels + "[win ${node.id}]", nodes + node.id)
+                walk(state.resolveCombat(enc, CombatOutcome(victory = false, damageTaken = 0)), labels + "[lose ${node.id}]", nodes + node.id)
+                return
+            }
             val choices = StoryRepository.visibleChoices(node, state)
             check(choices.isNotEmpty()) { "dead end at ${node.id} with flags ${state.flags}" }
             check(nodes.size < 60) { "cycle suspected at ${node.id}" }
@@ -51,10 +61,14 @@ internal object Chapter1Paths {
     // Short codes for the labels that distinguish one opening path from another. Labels that are the
     // only choice at their node ("Descend into the dark.", "Follow the tunnel...") are omitted.
     private val codes = listOf(
-        "OPEN THE DOOR" to "door", "DRAW YOUR SWORD" to "sword", "WALK AWAY" to "walk",
+        "OPEN THE DOOR" to "door", "TURN AND FACE THEM" to "sword", "BREAK FOR THE TREES" to "walk",
         "Search the gully" to "search", "Leave it" to "leave",
         "Keep the token" to "keep", "Leave the past" to "bury",
         "Call out" to "call", "Wait, and listen" to "wait", "Move without a sound" to "creep", "Find the old shaft" to "shaft",
+        "Fight the one" to "fight", "Call across" to "parley", "Back through" to "retreat",
+        "Search his" to "loot", "Make him talk" to "talk", "Bind his" to "bind",
+        "Search it" to "wsearch", "Strip it" to "wstrip", "Say a word" to "wleave",
+        "Take a draught and" to "steal",
         "Help him" to "help", "Tell him honestly" to "confess", "Move on without" to "moveon",
         "Take the buckler" to "buckler", "Heed his warning" to "heed"
     )
