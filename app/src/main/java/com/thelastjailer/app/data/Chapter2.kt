@@ -409,8 +409,8 @@ val chapter2Nodes: List<StoryNode> = listOf(
             "Your Guard never kept what's behind that stone. They kept the way to it: the
             road, the door, the doubt of anyone who came looking. Silver cloaks standing between
             the idle and the dark, so that wardens like me could keep our heads down and our
-            wards lit. Somewhere along the line they forgot what they were standing in front of.
-            They stood there anyway, out of habit. That was the whole of their duty here. To be
+            wards lit. Somewhere along the line, I reckon, they forgot what they were standing in
+            front of. They stood there anyway, out of habit. That was the whole of their duty here. To be
             the thing you had to get past."
 
             He closes Kaelen's fingers over the clasp with one dry hand. "Don't mistake this for

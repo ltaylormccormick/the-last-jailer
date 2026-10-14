@@ -82,6 +82,7 @@ class BatchATokenAndVouchTest {
         val t = node("the_clasp_answered").narrativeText.replace(Regex("\\s+"), " ")
         assertTrue(t.contains("Guard"))
         assertTrue(t.contains("the way to it") || t.contains("kept the way"))
+        assertTrue("the Guard's decline is Halvard's own reading, not stated as fact", t.contains("Somewhere along the line, I reckon, they forgot"))
         assertTrue("answer must withhold trust", t.contains("Don't mistake this for welcome"))
         listOf("Ilsevet", "Order", "prisoner", "Marshal", "Selvane", "Thessaly", "hunter", "rider", "paid", "Door of", "belonged", "wore it", "your friend", "I trust")
             .forEach { assertFalse("answer scene reveals '$it'", t.contains(it, ignoreCase = true)) }
