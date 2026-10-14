@@ -47,6 +47,14 @@ class StoryContentIntegrityTest {
         .groupBy({ it.first }, { it.second })
         .mapValues { it.value.toSet() }
 
+    /**
+     * Scenes that new play no longer reaches but that stay in the story, unchanged, so a save parked
+     * on one of them still plays on. Everything they lead to must stay reachable, and nothing else
+     * may become an orphan. what_the_road_offers -> the_ground_remembers -> the_return (Batch B,
+     * merged into the_walk_away).
+     */
+    private val retiredButParkable: Map<String, Set<String>> = mapOf("chapter_3" to setOf("what_the_road_offers"))
+
     /** Every node reachable by walking forward from any of [startIds], however many chapters that crosses. */
     private fun reachableFrom(startIds: Collection<String>): Set<String> {
         val visited = mutableSetOf<String>()
@@ -153,7 +161,7 @@ class StoryContentIntegrityTest {
     @Test
     fun `every node in a chapter is reachable from that chapter's own entry points`() {
         val unreachableByChapter = StoryRepository.chapters.mapNotNull { chapter ->
-            val seeds = (externalEntryPointsByChapter[chapter.id].orEmpty() + chapter.startNodeId)
+            val seeds = (externalEntryPointsByChapter[chapter.id].orEmpty() + retiredButParkable[chapter.id].orEmpty() + chapter.startNodeId)
                 .filter { it in allNodeIds } // a dangling startNodeId is covered by the test above
             val reachable = reachableFrom(seeds)
             val ownNodeIds = allNodes.filter { it.chapterId == chapter.id }.map { it.id }
