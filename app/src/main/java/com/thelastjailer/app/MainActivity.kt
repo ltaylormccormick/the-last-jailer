@@ -47,6 +47,7 @@ import com.thelastjailer.app.ui.OptionsScreen
 import com.thelastjailer.app.ui.SaveScreen
 import com.thelastjailer.app.ui.StoryScreen
 import com.thelastjailer.app.ui.bottomNavScreens
+import com.thelastjailer.app.ui.isNavigationEnabled
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
@@ -93,7 +94,7 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                 bottomNavScreens.forEach { s ->
                     NavigationBarItem(
                         selected = screen == s,
-                        enabled = !(combatActive && s == AppScreen.INVENTORY),
+                        enabled = isNavigationEnabled(s, combatActive),
                         onClick = { openShop = false; screen = s },
                         icon = {
                             when (s) {
@@ -126,17 +127,13 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                     onRequestUnlock = onRequestUnlock,
                     onRestorePurchase = { billing.restorePastPurchases(showFeedback = true) },
                     onChoiceSelected = { choice ->
-                        // Keep one exact pre-choice snapshot so "go back one step" restores stats,
-                        // flags and items as well as the previous scene.
-                        store.savePreviousState(state.activeSlot, state)
-                        state = state.applyChoice(choice)
-                        store.save(state.activeSlot, state)
+                        // Keeps one exact pre-choice snapshot so "go back one step" restores stats,
+                        // flags and items as well as the previous scene (see StateCommits.kt).
+                        state = store.commitChoice(state, choice)
                     },
                     onCombatResolved = { encounter, outcome ->
-                        state = state.resolveCombat(encounter, outcome)
                         // Combat is deliberately irreversible through the one-step story back action.
-                        store.clearPreviousState(state.activeSlot)
-                        store.save(state.activeSlot, state)
+                        state = store.commitCombatResult(state, encounter, outcome)
                     },
                     onOpenJournal = { screen = AppScreen.JOURNAL },
                     onOpenInventory = { openShop = false; screen = AppScreen.INVENTORY },
@@ -150,10 +147,8 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                     state = state,
                     openShop = openShop,
                     onPurchase = { itemId, price ->
-                        state = state.purchaseItem(itemId, price)
-                        // Avoid a later story undo also refunding/duplicating a shop transaction.
-                        store.clearPreviousState(state.activeSlot)
-                        store.save(state.activeSlot, state)
+                        // Clears the story undo so it cannot refund/duplicate a shop transaction.
+                        state = store.commitPurchase(state, itemId, price)
                     }
                 )
                 AppScreen.MAP -> MapScreen(entitlements)

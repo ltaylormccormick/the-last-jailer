@@ -53,6 +53,9 @@ object StoryRepository {
         nodesById.getValue(chapter1.startNodeId)
     }
 
+    /** Like [node] but returns null for an unknown [id] instead of failing or falling back. */
+    fun nodeOrNull(id: String): StoryNode? = nodesById[id]
+
     fun chapter(id: String): Chapter? = chapters.find { it.id == id }
 
     /** All nodes belonging to a chapter, in authoring order — used for the scene thumbnail strip. */

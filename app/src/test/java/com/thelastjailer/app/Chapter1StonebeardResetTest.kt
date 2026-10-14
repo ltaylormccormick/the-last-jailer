@@ -163,9 +163,9 @@ class Chapter1StonebeardResetTest {
     }
 
     @Test
-    fun `replay item duplication is untouched by C1-1 - still the separate ticket`() {
+    fun `replay no longer stacks a second buckler - token duplication is still the separate ticket`() {
         val s = choose(choose(replayedAtHold(), "Help him"), "Take the buckler")
-        assertEquals(2, s.inventory.count { it == "sturdy_buckler" })
+        assertEquals(1, s.inventory.count { it == "sturdy_buckler" })
         assertEquals(2, s.inventory.count { it == "dwarven_token" })
     }
 

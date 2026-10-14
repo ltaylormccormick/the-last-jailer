@@ -63,7 +63,7 @@ planned redesign flags; each later batch that introduces one must update it in t
 | Replay keeps stats, level, XP, gold, items, trophies and all flags; only adds "The Watch Goes On" | unchanged (by design) |
 | ~~Route flags stack across tellings (`opened_black_door` and `walked_away` can both be set)~~ | **Changed in C1-2**: every `fallen_knight` choice clears the opening family (see below) |
 | ~~A stale `helped_dwarf` makes the buckler offer appear after "Move on" on a replay~~ | **Changed in C1-1**: the hold clears the Stonebeard family and the dead buckler offers are removed (see below) |
-| Replay grants the Stonebeard items and buckler a second time | separate ticket, not part of Chapter 1 |
+| Replay grants the Stonebeard token and draught a second time | separate ticket, not part of Chapter 1. **The buckler is no longer re-granted** (Batch 1: unique combat equipment is carried once) |
 | New Game (`SaveStore.restart`) is a full reset | unchanged |
 
 ## Updating the baseline
@@ -80,7 +80,7 @@ and say so in its report. An unexplained failure in these tests means something 
   `confessed_to_dwarf`, `took_buckler`) and then sets its own flag. It fires when a choice is taken, never on
   entering or loading a scene, and no later scene clears anything. Existing saves are not modified on load.
 - `Chapter1ReplayBaselineTest` now asserts the new replay behaviour; `Chapter1StonebeardResetTest` covers the rest.
-- Still as before: replay re-grants the Stonebeard items and buckler (separate ticket); the opening route flags still stack (C1-2).
+- Still as before: replay re-grants the Stonebeard token and draught (separate ticket; the buckler is protected since Batch 1); the opening route flags still stack (C1-2).
 
 ## C1-2 changes (intentional)
 

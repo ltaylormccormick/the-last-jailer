@@ -94,10 +94,11 @@ class Chapter1ReplayBaselineTest {
     }
 
     @Test
-    fun `replay grants the one-time Stonebeard items a second time - tracked as a separate ticket`() {
+    fun `replay no longer stacks a second buckler - token and draught duplication remain a separate ticket`() {
         val s = Chapter1Paths.follow(replay(finished()), "OPEN THE DOOR", "", "", "Keep", "", "Call out", "Help him", "Take the buckler")
         assertEquals(2, s.inventory.count { it == "dwarven_token" })
-        assertEquals(2, s.inventory.count { it == "sturdy_buckler" })
+        // Unique combat equipment is protected (Batch 1); keepsakes and consumables still repeat.
+        assertEquals(1, s.inventory.count { it == "sturdy_buckler" })
         assertEquals(2, s.inventory.count { it == "healing_draught" })
     }
 
