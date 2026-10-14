@@ -415,9 +415,9 @@ val chapter1Nodes: List<StoryNode> = listOf(
         title = "The Knocking Again",
         illustrationId = "black_door_beneath_the_tree",
         narrativeText = """
-            The horn does not sound a fourth time. The riders are gone, or waiting. Kaelen sheathes the blade and stands in the rain, listening.
+            The horn does not sound a fourth time. The riders are gone, or waiting. The blade is back in its sheath, and Kaelen stands in the rain, listening.
 
-            Behind him, slow and heavy, stone against metal, the knocking begins again.
+            Behind him, slow and heavy, stone against metal, the knocking begins again. His hand goes back to the hilt before he has decided anything.
         """.trimIndent(),
         choices = listOf(Choice(label = "Turn to the door.", nextNodeId = "sword_drawn"))
     ),

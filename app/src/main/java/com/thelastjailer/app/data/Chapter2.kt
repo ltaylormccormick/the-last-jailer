@@ -107,8 +107,8 @@ val chapter2Nodes: List<StoryNode> = listOf(
             Kaelen tells them what he found below. A passage that isn't theirs. Tended by something
             that clearly doesn't want visitors.
 
-            An old smith listens longest and says the least, then presses a coil of rope and a
-            second lantern into Kaelen's hands without being asked to. "Rather you carried light
+            An old smith listens longest and says the least, then presses a second
+            lantern into Kaelen's hands without being asked to. "Rather you carried light
             back down there than pride," is the only explanation he offers, and doesn't offer any
             more when Kaelen waits for one. Nobody volunteers to come with him. Nobody tells him
             not to go, either. Down here, that's about as close to a blessing as the Hold has left
