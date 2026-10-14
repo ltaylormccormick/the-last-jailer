@@ -166,7 +166,7 @@ object FlagDescriptions {
         JournalEntry("searched_the_wagon", JournalCategory.DECISIONS, "I searched a wrecked wagon in the gully and took only the lamp oil and a few coins.", "wagon"),
         JournalEntry("stripped_the_wagon", JournalCategory.DECISIONS, "I stripped a wrecked wagon in the gully of everything it had. It had no one left to mind it.", "wagon"),
         JournalEntry("left_the_wagon_be", JournalCategory.DECISIONS, "I said a word over a wrecked wagon in the gully and left it as I found it.", "wagon"),
-        JournalEntry("smith_vouched", JournalCategory.PEOPLE, "The Stonebeard smith vouched for me to Halvard.", null),
+        JournalEntry("smith_vouched", JournalCategory.PEOPLE, "The Stonebeard smith sent me back down with his lantern and his good opinion.", null),
         JournalEntry("took_from_the_bench", JournalCategory.DECISIONS, "I took a draught and a few coins from the smith's bench while his back was turned.", null),
         JournalEntry("returned_the_draught", JournalCategory.DECISIONS, "I made good to the smith for what I took from his bench.", null),
         JournalEntry("read_the_seal", JournalCategory.DECISIONS, "I laid my hand on the failing seal and learned its rhythm.", "seal"),
