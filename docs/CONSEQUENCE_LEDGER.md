@@ -2,7 +2,7 @@
 
 Entries here are decisions or inconsistencies to resolve in the consequence-ledger review that precedes the Chapter 4+ redesign. Nothing below is changed by Batch A.
 
-## Replay: the tarnished token (pre-existing)
+## Replay: the tarnished token (pre-existing; flags fixed in the token replay follow-up, see below)
 
 - `kept_the_token` and `revealed_token` are not in any replay reset family, so they survive a new telling.
 - The physical `tarnished_guard_token` also survives in the inventory.
@@ -114,10 +114,26 @@ Proposal for review, not implemented: keep the ledger as design documentation ra
 
 ### Still unresolved after Batch C
 
-- Replay-token inconsistency: recommendation above, awaiting a decision.
-- Stonebeard economy: options A-D above, awaiting a decision; no number has moved.
+- Replay-token inconsistency: flags fixed (option 1, see the decisions below); the carried-over item is a known limitation.
+- Stonebeard economy: decided, option A, no numbers changed; the long-term consequences of theft and silence are deferred (see below).
 - No Chapter 1-3 flag is read by Chapters 4-30.
 - Voss's later trust in Chapter 4+ does not yet reflect the theft or the parley.
 - A thief who takes the camp route still skips Halvard's ledger scene.
 - `smith_vouched` and the lantern remain cosmetic beyond Chapter 2.
 - The redraw in `sword_drawn` after a sheathed fight is now explained by a line in `ch1_knock_resumes`; the protected scene itself still opens "Kaelen draws his sword."
+
+## Decisions after the Batch C review
+
+### Stonebeard economy: Option A, no numerical changes
+
+All prices and rewards stay as shipped (theft +15 gold and a draught, restitution 40 gold or a -10 HP shift, silence free). No further Honour penalty, higher restitution or smaller theft will be added to the opening economy. That theft pays in the short term is part of what makes it a real temptation, and a draught's 40-gold shop price is not its true value to every player, nor is 10 HP only worth its gold equivalent. The real gap is that dishonesty and silence do not yet cost anything later: whether a thief who stayed quiet and walked away richer is remembered by Stonebeard is a design question for the later-chapter redesign (see the carry-forward table above), not a reason to rebalance Chapters 1-3. `BatchCContinuityEconomyTest` keeps pinning today's numbers.
+
+### Token replay: Option 1, mutually exclusive flags (implemented in the token replay follow-up)
+
+At `beneath_the_roots`, "Keep the token." now also clears `buried_the_past`, and "Leave the past buried." also clears `kept_the_token`, using the existing `clearFlags`. Nothing else changed: no inventory removal, no `removeItemIds`, no save-format change, no trophy change.
+
+- On any later telling, the Journal reports only the current decision, and Halvard's "Show him the tarnished token from the roots" row appears only when the current telling kept the token.
+- **Old saves are not rewritten.** Loading never runs choice logic, so a save that already holds both flags keeps them (the Journal still shows its single neutral clasp line) until the player makes the choice again.
+- **Known replay limitation:** a `tarnished_guard_token` carried over from an earlier telling stays in the inventory even if this telling buries the clasp. The story state (flags) is right; the inventory can still show a token the current telling buried. Story choices never read items, so this has no effect on branching. `Consequences` has no way to remove an item, and adding one (`removeItemIds`) was deliberately not approved.
+- `revealed_token` and the "Blood and Silver" trophy are untouched: they remain once-per-lineage.
+- Possible duplicate: choosing "Keep the token." again while already carrying one grants the item again, as it always did. Not changed.

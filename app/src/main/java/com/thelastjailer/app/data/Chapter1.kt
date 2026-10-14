@@ -573,6 +573,8 @@ val chapter1Nodes: List<StoryNode> = listOf(
                 nextNodeId = "dwarven_path_kept",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
+                    // Mutually exclusive with burying it: a later telling must not hold both decisions.
+                    clearFlags = setOf("buried_the_past"),
                     setFlags = setOf("kept_the_token"),
                     grantItemIds = listOf("tarnished_guard_token")
                 )
@@ -582,6 +584,9 @@ val chapter1Nodes: List<StoryNode> = listOf(
                 nextNodeId = "dwarven_path_buried",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
+                    // Mutually exclusive with keeping it. A clasp carried over from an earlier telling
+                    // stays in the inventory (known replay limitation; see docs/CONSEQUENCE_LEDGER.md).
+                    clearFlags = setOf("kept_the_token"),
                     setFlags = setOf("buried_the_past")
                 )
             )

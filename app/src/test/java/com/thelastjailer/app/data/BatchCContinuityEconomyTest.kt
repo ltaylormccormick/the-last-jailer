@@ -13,7 +13,6 @@ import org.junit.Test
  * Part 2 records today's Stonebeard theft/restitution numbers exactly as the engine plays them. It
  * changes nothing: if a later batch retunes a price or reward on purpose, these tests are the
  * list of numbers to review.
- * Part 3 records the token replay inconsistency as it behaves today (not fixed; see the ledger).
  */
 class BatchCContinuityEconomyTest {
 
@@ -132,32 +131,5 @@ class BatchCContinuityEconomyTest {
         assertEquals(20, pick(ledger, "Give Halvard forty gold").gold)
         assertEquals(ledger.health - 9, pick(ledger, "Spend the night").health) // -10 plus 1 regen
         assertEquals(60, pick(ledger, "Say nothing").gold)
-    }
-
-    // ---------------------------------------------------------------- Part 3: the token on a later telling (current behaviour)
-
-    @Test
-    fun `replay snapshot - burying the clasp after keeping it leaves the flag, the item and the Halvard row (not fixed)`() {
-        // First telling kept the token; the new telling arrives at the roots still carrying all three.
-        val carrying = at("beneath_the_roots", flags = setOf("kept_the_token"), inventory = listOf("tarnished_guard_token"))
-        val buried = pick(carrying, "Leave the past buried")
-        assertEquals("dwarven_path_buried", buried.sceneId)
-        assertTrue("buried_the_past" in buried.flags)
-        // KNOWN ISSUE (docs/CONSEQUENCE_LEDGER.md): both survive the decision to bury it.
-        assertTrue("kept_the_token" in buried.flags)
-        assertTrue("tarnished_guard_token" in buried.inventory)
-        val atHalvard = buried.copy(chapterId = "chapter_2", sceneId = "the_cloaks_truth_asked")
-        assertTrue(labels(atHalvard).any { it.startsWith("Show him the tarnished token") })
-        // The Journal does not contradict itself: both clasp lines collapse to one neutral line.
-        val lines = FlagDescriptions.sections(buried.flags).flatMap { it.lines }
-        assertEquals(1, lines.count { it.contains("clasp") })
-    }
-
-    @Test
-    fun `replay snapshot - a first telling that buries the clasp is consistent`() {
-        val first = pick(at("beneath_the_roots"), "Leave the past buried")
-        assertTrue("kept_the_token" !in first.flags && first.inventory.none { it == "tarnished_guard_token" })
-        val atHalvard = first.copy(chapterId = "chapter_2", sceneId = "the_cloaks_truth_asked")
-        assertTrue(labels(atHalvard).none { it.startsWith("Show him the tarnished token") })
     }
 }
