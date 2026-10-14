@@ -565,7 +565,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         title = "The Supply Line",
         illustrationId = "road_away_from_tree",
         narrativeText = """
-            The sentry watches the road and not the bracken, and the stores tent has a loose flap. A sack of coin set aside for fodder. A stoppered vial in a case of them. Kaelen takes the coin and one vial, and does not take the rest, and is back under the roots before the fire has settled.
+            The sentry watches the road and not the bracken, and the stores tent has a loose flap. A purse of coin set aside for fodder. A stoppered vial in a case of them. Kaelen takes the coin and one vial, and does not take the rest, and is back under the roots before the fire has settled.
 
             Whoever counts these stores in the morning will count them twice.
         """.trimIndent(),
