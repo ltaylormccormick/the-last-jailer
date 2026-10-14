@@ -280,7 +280,7 @@ val chapter2Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "\"The smith at the broken gate sent me. What are you guarding?\"",
-                nextNodeId = "the_cloaks_truth_asked",
+                nextNodeId = "the_smiths_word",
                 requirements = ChoiceRequirement(requiredFlags = setOf("smith_vouched")),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
@@ -321,7 +321,7 @@ val chapter2Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "Show him the tarnished token from the roots.",
-                nextNodeId = "the_first_seal",
+                nextNodeId = "the_clasp_answered",
                 requirements = ChoiceRequirement(requiredFlags = setOf("kept_the_token")),
                 consequences = Consequences(
                     setFlags = setOf("revealed_token"),
@@ -360,7 +360,7 @@ val chapter2Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "Show him the tarnished token from the roots.",
-                nextNodeId = "the_first_seal",
+                nextNodeId = "the_clasp_answered",
                 requirements = ChoiceRequirement(requiredFlags = setOf("kept_the_token")),
                 consequences = Consequences(
                     setFlags = setOf("revealed_token"),
@@ -371,6 +371,54 @@ val chapter2Nodes: List<StoryNode> = listOf(
                 label = "Say nothing of the road behind you.",
                 nextNodeId = "the_first_seal"
             )
+        )
+    ),
+    StoryNode(
+        id = "the_smiths_word",
+        chapterId = "chapter_2",
+        title = "The Smith's Word",
+        illustrationId = "warden_chamber",
+        narrativeText = """
+            Halvard's eyes go to the lantern in Kaelen's hand, and stay there.
+
+            "Stonebeard's smith sent you," he says slowly. "With his own light." It is not quite a
+            question. "He doesn't lend that to strangers."
+
+            He straightens a little, the way a man does when he has been handed something to weigh.
+            "Don't be pleased with yourself. It means one man at the Hold thought you worth a
+            lamp. It doesn't mean I will. But you asked what I'm guarding, and a man who comes
+            with that smith's light has earned the answer."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Hear him out.", nextNodeId = "the_cloaks_truth_asked")
+        )
+    ),
+    StoryNode(
+        id = "the_clasp_answered",
+        chapterId = "chapter_2",
+        title = "What the Silver Kept",
+        illustrationId = "cloaks_truth",
+        narrativeText = """
+            Halvard does not take it. He looks at the clasp where it lies in Kaelen's palm, for
+            rather longer than a scrap of blackened silver deserves, and his old face goes very
+            quiet.
+
+            "A Guard's clasp," he says. "Nobody has carried one of those down here in a long
+            time." He does not ask whose it was. He does not seem to want to know.
+
+            "Your Guard never kept what's behind that stone. They kept the way to it: the
+            road, the door, the doubt of anyone who came looking. Silver cloaks standing between
+            the idle and the dark, so that wardens like me could keep our heads down and our
+            wards lit. Somewhere along the line, I reckon, they forgot what they were standing in
+            front of. They stood there anyway, out of habit. That was the whole of their duty here. To be
+            the thing you had to get past."
+
+            He closes Kaelen's fingers over the clasp with one dry hand. "Don't mistake this for
+            welcome. It tells me what you've walked past. It doesn't tell me what you'll do when
+            it matters. Put it away."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Put it away.", nextNodeId = "the_first_seal")
         )
     ),
     StoryNode(

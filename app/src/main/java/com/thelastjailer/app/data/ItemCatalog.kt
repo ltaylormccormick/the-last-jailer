@@ -213,7 +213,7 @@ object ItemCatalog {
         Item(
             id = "reforged_guard_clasp",
             name = "Reforged Guard's Clasp",
-            description = "Not found in the dark, not stripped from some stranger's cloak — struck new, in his own shape, because he finally asked someone to make it. The tarnished one he carries was never his. This one is."
+            description = "Not found in the dark, not stripped from some stranger's cloak. Struck new, in his own shape, because he finally asked someone to make it. This one is his."
         )
     ).associateBy { it.id }
 
