@@ -424,7 +424,7 @@ class Chapters1to3BatchTest {
             }
             var shown = StoryRepository.visibleChoices(n, s)
             // The Voss rows combine freely (a subset lattice); the walk takes at most one per telling, then the way on.
-            if (n.id in setOf("ch3_voss_waits", "the_surface_again") && vossFlags.any { it in s.flags })
+            if (n.id in setOf("ch3_voss_waits", "the_surface_again", "ch3_surface_approached", "ch3_surface_robbed", "ch3_surface_parleyed") && vossFlags.any { it in s.flags })
                 shown = shown.filter { it.nextNodeId == "a_choice_at_the_door" }
             check(shown.isNotEmpty()) { "dead end at ${n.id}: ${s.flags}" }
             check(shown.any { c -> c.requirements?.minStats?.containsKey(StatType.GOLD) != true }) { "${n.id}: only gold-gated ways on" }
