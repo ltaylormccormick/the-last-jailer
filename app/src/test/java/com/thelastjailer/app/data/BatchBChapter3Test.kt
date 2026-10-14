@@ -100,14 +100,14 @@ class BatchBChapter3Test {
         assertEquals("ch3_surface_parleyed", arrival("parley").sceneId)
         assertEquals("ch3_surface_approached", arrival("studied").sceneId)
         assertEquals("ch3_surface_approached", arrival("direct").sceneId)
-        assertTrue(text("ch3_surface_robbed").contains("fodder money") && text("ch3_surface_robbed").contains("coincidence"))
+        assertTrue(text("ch3_surface_robbed").contains("A purse of coin has gone missing from a tent my people were meant to be watching") && text("ch3_surface_robbed").contains("coincidence"))
         assertTrue(text("ch3_surface_parleyed").contains("asked leave"))
         listOf("ch3_surface_approached", "the_surface_again").forEach {
             val t = text(it)
-            assertFalse(it, t.contains("fodder") || t.contains("asked leave") || t.contains("coincidence"))
+            assertFalse(it, t.contains("purse of coin") || t.contains("asked leave") || t.contains("coincidence"))
         }
         // The theft line never shows on the parley arrival, or the reverse.
-        assertFalse(text("ch3_surface_parleyed").contains("fodder"))
+        assertFalse(text("ch3_surface_parleyed").contains("purse of coin"))
         assertFalse(text("ch3_surface_robbed").contains("asked leave"))
     }
 
@@ -170,5 +170,22 @@ class BatchBChapter3Test {
             assertEquals(id, "a_choice_at_the_door", onward.sceneId)
             assertTrue(labels(onward).any { it.startsWith("\"Give me time") })
         }
+    }
+
+    @Test
+    fun `the camp and every Voss arrival agree on riders, horses and Voss's mount`() {
+        // Voss plus four riders: five people, five horses, five bedrolls. Voss rides (chapter3_end_stalled).
+        assertTrue(text("ch3_order_camp").contains("Five horses. Five bedrolls."))
+        listOf("ch3_surface_approached", "ch3_surface_robbed", "ch3_surface_parleyed").forEach {
+            assertTrue(it, text(it).contains("five horses lift their heads together"))
+            assertFalse(it, text(it).contains("four horses"))
+        }
+        assertTrue(text("ch3_surface_approached").contains("Four riders"))
+        assertTrue(text("the_surface_again").contains("Four riders wait beside it") && text("the_surface_again").contains("a fifth figure"))
+        assertTrue(text("a_choice_at_the_door").contains("The four behind her"))
+        assertTrue(text("chapter3_end_stalled").contains("swings back up onto her horse"))
+        val everyCampLine = listOf("ch3_order_camp", "ch3_camp_studied", "ch3_camp_robbed", "ch3_camp_parley", "ch3_surface_approached",
+            "ch3_surface_robbed", "ch3_surface_parleyed", "the_surface_again").joinToString(" ") { text(it) }
+        assertFalse("no stray 'Four horses' or 'Four bedrolls'", Regex("four (horses|bedrolls)", RegexOption.IGNORE_CASE).containsMatchIn(everyCampLine))
     }
 }

@@ -513,7 +513,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         narrativeText = """
             There is a second way up from the deep road: a place where the hillside has fallen in over an old tunnel mouth, and a man can climb out through the roots without ever passing the door. Kaelen takes it, and comes out on his belly in wet bracken above the road, with the first grey of morning coming up behind the trees.
 
-            Below him, the Order has made camp in the road. Four horses. Four bedrolls. A banked fire under an oilcloth, and a stores tent pegged against the weather. At the door itself a woman in dark colours is standing very still with her hand flat on the iron.
+            Below him, the Order has made camp in the road. Five horses. Five bedrolls. A banked fire under an oilcloth, and a stores tent pegged against the weather. At the door itself a woman in dark colours is standing very still with her hand flat on the iron.
 
             Nobody has seen him.
         """.trimIndent(),
@@ -589,11 +589,11 @@ val chapter3Nodes: List<StoryNode> = listOf(
         title = "The Surface, Again",
         illustrationId = "a_choice_at_the_door",
         narrativeText = """
-            He comes down out of the bracken onto the road, and four horses lift their heads together. At the stores tent a rider has stopped with the flap in his hand, counting something twice. The woman at the door does not turn until Kaelen is close enough to touch.
+            He comes down out of the bracken onto the road, and five horses lift their heads together. At the stores tent a rider has stopped with the flap in his hand, counting something twice. The woman at the door does not turn until Kaelen is close enough to touch.
 
             "There you are," she says, as if she had been expecting him specifically. "Inquisitor Voss. Ashen Order. We had word a door that shouldn't exist had opened out here, and that it had found itself a keeper."
 
-            She does not offer her hand. Her eyes go once to his face, once to his hands, and back. "A strange morning," she says pleasantly. "A sack of fodder money has walked out of a tent nobody walked into. I'm sure that's a coincidence." Behind her, no one moves, and no one takes a hand from a hilt.
+            She does not offer her hand. Her eyes go once to his face, once to his hands, and back. "A strange morning," she says pleasantly. "A purse of coin has gone missing from a tent my people were meant to be watching. I'm sure that's a coincidence." Behind her, no one moves, and no one takes a hand from a hilt.
         """.trimIndent(),
         choices = vossRows(camp = false)
     ),
@@ -603,7 +603,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         title = "The Surface, Again",
         illustrationId = "a_choice_at_the_door",
         narrativeText = """
-            He comes down out of the bracken onto the road with his hands open, and four horses lift their heads together. The sentry has already crossed to the door ahead of him and says something short and low. The woman at the door does not turn until Kaelen is close enough to touch.
+            He comes down out of the bracken onto the road with his hands open, and five horses lift their heads together. The sentry has already crossed to the door ahead of him and says something short and low. The woman at the door does not turn until Kaelen is close enough to touch.
 
             "There you are," she says, as if she had been expecting him specifically. "Inquisitor Voss. Ashen Order. We had word a door that shouldn't exist had opened out here, and that it had found itself a keeper."
 
@@ -617,7 +617,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         title = "The Surface, Again",
         illustrationId = "a_choice_at_the_door",
         narrativeText = """
-            He comes down out of the bracken onto the road, and four horses lift their heads together. Four riders in colours he doesn't recognize watch him come. The woman at the door does not turn until he is close enough to touch.
+            He comes down out of the bracken onto the road, and five horses lift their heads together. Four riders in colours he doesn't recognize watch him come. The woman at the door does not turn until he is close enough to touch.
 
             "There you are," she says, as if she had been expecting him specifically. "Inquisitor Voss. Ashen Order. We had word a door that shouldn't exist had opened out here, and that it had found itself a keeper."
         """.trimIndent(),
