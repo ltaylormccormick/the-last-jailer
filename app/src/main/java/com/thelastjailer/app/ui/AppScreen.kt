@@ -22,3 +22,11 @@ val bottomNavScreens = listOf(
     AppScreen.SAVE,
     AppScreen.OPTIONS
 )
+
+/**
+ * Whether the bottom-bar entry for [target] can be tapped. During a fight only Inventory is
+ * disabled (it hosts the shop); every other screen, including Save and its "go back one step"
+ * action, remains reachable. This documents existing behaviour so changes to it are deliberate.
+ */
+fun isNavigationEnabled(target: AppScreen, combatActive: Boolean): Boolean =
+    !(combatActive && target == AppScreen.INVENTORY)

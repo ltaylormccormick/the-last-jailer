@@ -1,5 +1,8 @@
 package com.thelastjailer.app
 
+import com.thelastjailer.app.data.ItemCatalog
+import com.thelastjailer.app.data.StoryRepository
+
 /**
  * Passive heal applied on an ordinary story-scene transition (see [applyChoice] and
  * [GameState.passiveRegenAmount]). Healthy runs still recover slowly so healing items retain value;
@@ -59,9 +62,34 @@ fun GameState.applyChoice(choice: Choice, applyRegen: Boolean = true): GameState
     return next.copy(
         sceneId = choice.nextNodeId,
         flags = (next.flags - consequences.clearFlags) + consequences.setFlags,
-        inventory = next.inventory + consequences.grantItemIds,
+        inventory = next.inventory.withGrantedItems(consequences.grantItemIds),
         trophies = consequences.unlockTrophy?.let { next.trophies + it } ?: next.trophies
-    )
+    ).withSceneChapter()
+}
+
+/**
+ * Keeps [GameState.chapterId] in step with the scene the player is actually standing in. It used
+ * to be set once ("chapter_1") and never updated, so every save claimed Chapter I. The scene's own
+ * node is the source of truth; an id that no longer resolves (for example a node removed by an
+ * update) leaves the stored chapter untouched rather than guessing.
+ */
+internal fun GameState.withSceneChapter(): GameState {
+    val chapter = StoryRepository.nodeOrNull(sceneId)?.chapterId ?: return this
+    return if (chapter == chapterId) this else copy(chapterId = chapter)
+}
+
+/**
+ * Adds [grants] to the inventory, but never a second copy of unique equipment (an item with a
+ * combat effect). Equipment bonuses are summed over everything carried, so a repeated grant - a
+ * replayed chapter, or a second route to the same reward - used to stack a duplicate buckler or
+ * sword. Consumables and keepsakes are untouched.
+ */
+internal fun List<String>.withGrantedItems(grants: List<String>): List<String> {
+    var result = this
+    grants.forEach { id ->
+        if (!(ItemCatalog.isUniqueEquipment(id) && id in result)) result = result + id
+    }
+    return result
 }
 
 /** See [SCENE_TRANSITION_REGEN]/[WOUNDED_TRANSITION_REGEN]/[CRITICAL_TRANSITION_REGEN]. */
@@ -114,7 +142,7 @@ fun GameState.resolveCombat(encounter: CombatEncounter, outcome: CombatOutcome):
         survived.copy(
             health = maxOf(survived.health, percentOfMax(maxHealth, DEFEAT_RECOVERY_PERCENT)),
             sceneId = encounter.defeatNodeId ?: encounter.victoryNodeId
-        )
+        ).withSceneChapter()
     }
 }
 
@@ -125,6 +153,8 @@ fun GameState.resolveCombat(encounter: CombatEncounter, outcome: CombatOutcome):
  */
 fun GameState.purchaseItem(itemId: String, price: Int): GameState {
     if (gold < price) return this
+    // Unique equipment is carried once; a second purchase would only waste gold.
+    if (ItemCatalog.isUniqueEquipment(itemId) && itemId in inventory) return this
     return copy(gold = gold - price, inventory = inventory + itemId)
 }
 
@@ -253,7 +283,7 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
             inventory = readInventory(prefix),
             trophies = prefs.getStringSet("$prefix.trophies", emptySet()) ?: emptySet(),
             flags = prefs.getStringSet("$prefix.flags", emptySet()) ?: emptySet()
-        )
+        ).withSceneChapter() // self-heals saves written when chapterId never moved past chapter_1
     }
 
     /**

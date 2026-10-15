@@ -219,5 +219,12 @@ object ItemCatalog {
 
     fun get(id: String): Item? = items[id]
 
+    /**
+     * True for equipment that must be carried at most once: any item with a combat effect. Combat
+     * bonuses are summed over the whole inventory, so a duplicate would silently stack. Draughts
+     * and story keepsakes have no combat effect and may repeat.
+     */
+    fun isUniqueEquipment(id: String): Boolean = items[id]?.combatEffect != null
+
     fun resolve(ids: List<String>): List<Item> = ids.mapNotNull { items[it] }
 }
