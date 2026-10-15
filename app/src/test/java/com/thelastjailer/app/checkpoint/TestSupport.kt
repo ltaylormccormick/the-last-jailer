@@ -12,8 +12,8 @@ object Cp {
 
     val rules: CheckpointRules = CheckpointRules.forStory()
 
-    fun file(slot: Int) = "jailer_ckpt_$slot"
-    fun stageFile(slot: Int) = "jailer_ckpt_stage_$slot"
+    fun file(slot: Int) = CheckpointFiles.live(slot)
+    fun stageFile(slot: Int) = CheckpointFiles.staging(slot)
 
     fun chapterId(n: Int): String = StoryRepository.chapters.first { it.number == n }.id
     fun startScene(n: Int): String = StoryRepository.chapters.first { it.number == n }.startNodeId
@@ -47,10 +47,18 @@ object Cp {
     fun records(upTo: Int, lineage: String = L1): List<CheckpointRecord> = (1..upTo).map { record(it, lineage) }
 
     fun store(device: SimulatedDevice, rules: CheckpointRules = Cp.rules): CheckpointStore =
-        CheckpointStore({ slot -> device.prefs(file(slot)) }, rules)
+        CheckpointStore(DeviceStorage(device, ::file) { slot -> device.prefs(file(slot)) }, rules)
 
     fun stageStore(device: SimulatedDevice): CheckpointStore =
-        CheckpointStore({ slot -> device.prefs(stageFile(slot)) }, rules)
+        CheckpointStore(DeviceStorage(device, ::stageFile) { slot -> device.prefs(stageFile(slot)) }, rules)
+
+    /**
+     * A store whose preferences for a slot come from [prefsFor] (a wrapper, a faulty view...) while the
+     * file identity is still the device's live file for that slot, exactly like a decorated
+     * `SharedPreferences` over the real file in production.
+     */
+    fun storeOver(device: SimulatedDevice, prefsFor: (Int) -> SharedPreferences): CheckpointStore =
+        CheckpointStore(DeviceStorage(device, ::file, prefsFor), rules)
 
     /** Same content, one field changed, CRC recomputed (so only the content differs, not the integrity). */
     fun rebuilt(
@@ -148,4 +156,15 @@ fun gatedPrefs(base: SharedPreferences, pauseOnCommit: Int, gate: CommitGate): S
             }
         }
     }
+}
+
+/** Test storage: file identity is (the device's memory scope, the file name), prefs come from [prefsFor]. */
+class DeviceStorage(
+    private val device: SimulatedDevice,
+    private val nameFor: (Int) -> String,
+    private val prefsFor: (Int) -> SharedPreferences
+) : CheckpointStorage {
+    override val memoryScope: Any get() = device.memoryScope
+    override fun fileName(slot: Int): String = nameFor(slot)
+    override fun prefs(slot: Int): SharedPreferences = prefsFor(slot)
 }

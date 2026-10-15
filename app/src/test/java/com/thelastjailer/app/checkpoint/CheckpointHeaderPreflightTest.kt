@@ -105,7 +105,7 @@ class CheckpointHeaderPreflightTest {
     @Test
     fun `an unreadable file is refused without escaping an exception`() {
         val broken = unreadablePrefs(device.prefs(file))
-        val unreadableStore = CheckpointStore({ broken }, Cp.rules)
+        val unreadableStore = Cp.storeOver(device) { broken }
         val disk = device.disk(file)
         incrementalOperations.forEach { (name, op) ->
             val result = op(unreadableStore)

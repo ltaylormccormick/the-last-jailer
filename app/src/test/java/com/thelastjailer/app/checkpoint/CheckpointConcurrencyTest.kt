@@ -27,7 +27,7 @@ class CheckpointConcurrencyTest {
 
     /** A store over slot 1 that goes through [gated] and over every other slot straight to the device. */
     private fun storeThrough(gated: android.content.SharedPreferences): CheckpointStore =
-        CheckpointStore({ slot -> if (slot == 1) gated else device.prefs(Cp.file(slot)) }, Cp.rules)
+        Cp.storeOver(device) { slot -> if (slot == 1) gated else device.prefs(Cp.file(slot)) }
 
     private class Worker(body: () -> Unit) {
         val error = AtomicReference<Throwable?>(null)
@@ -143,6 +143,70 @@ class CheckpointConcurrencyTest {
         w.joinOrFail()
     }
 
+    // ---- every operation takes the lock, as the one in progress and as the one waiting ----------------
+
+    private val operations: List<Pair<String, (CheckpointStore) -> Any?>> = listOf(
+        "replaceAll" to { s -> s.replaceAll(1, Cp.L1, Cp.records(3)) },
+        "upsert" to { s -> s.upsert(1, Cp.L1, fresh(6, "u")) },
+        "replaceFrom" to { s -> s.replaceFrom(1, Cp.L1, fresh(3, "rf")) },
+        "removeFrom" to { s -> s.removeFrom(1, Cp.L1, 3) },
+        "pruneAbove" to { s -> s.pruneAbove(1, Cp.L1, 2) },
+        "clear" to { s -> s.clear(1) }
+    )
+
+    private val readers: List<Pair<String, (CheckpointStore) -> Any?>> = listOf(
+        "readAll" to { s -> s.readAll(1, Cp.L1) },
+        "storedLineage" to { s -> s.storedLineage(1) },
+        "verify" to { s -> s.verify(1, Cp.L1, old) }
+    )
+
+    /**
+     * Holds [first] inside its commit, starts [second] on another store object over a different wrapper of
+     * the same file, and checks that [second] cannot make progress until [first] is released.
+     */
+    private fun assertSecondWaits(firstName: String, first: (CheckpointStore) -> Any?, secondName: String, second: (CheckpointStore) -> Any?, secondCommits: Boolean) {
+        val gate = CommitGate()
+        val gatedWrapper = gatedPrefs(device.prefs(file), pauseOnCommit = 1, gate = gate)
+        val otherWrapper = object : android.content.SharedPreferences by device.prefs(file) {}
+        val a = Cp.storeOver(device) { slot -> if (slot == 1) gatedWrapper else device.prefs(Cp.file(slot)) }
+        val b = Cp.storeOver(device) { slot -> if (slot == 1) otherWrapper else device.prefs(Cp.file(slot)) }
+
+        val workerA = Worker { first(a) }.start()
+        assertTrue("$firstName never reached its commit", gate.entered.await(10, TimeUnit.SECONDS))
+        val commitsWhilePaused = device.commitCount(file)
+        val workerB = Worker { second(b) }.start()
+        assertFalse("$secondName must wait while $firstName is mid-commit", workerB.finished(250))
+        assertEquals("$secondName committed while $firstName was mid-commit", commitsWhilePaused, device.commitCount(file))
+
+        gate.release.countDown()
+        workerA.joinOrFail(); workerB.joinOrFail()
+        if (secondCommits) assertTrue("$secondName should have committed after the release", device.commitCount(file) > commitsWhilePaused)
+    }
+
+    @Test
+    fun `every write operation holds the lock while it is mid-commit`() {
+        operations.forEach { (name, op) ->
+            setUp()
+            assertSecondWaits(name, op, "upsert", { s -> s.upsert(1, Cp.L1, fresh(2, "second")) }, secondCommits = true)
+        }
+    }
+
+    @Test
+    fun `every write operation waits for a writer that is mid-commit`() {
+        operations.forEach { (name, op) ->
+            setUp()
+            assertSecondWaits("upsert", { s -> s.upsert(1, Cp.L1, fresh(4, "first")) }, name, op, secondCommits = true)
+        }
+    }
+
+    @Test
+    fun `every read waits for a writer that is mid-commit`() {
+        readers.forEach { (name, op) ->
+            setUp()
+            assertSecondWaits("upsert", { s -> s.upsert(1, Cp.L1, fresh(4, "first")) }, name, op, secondCommits = false)
+        }
+    }
+
     // ---- stress ----------------------------------------------------------------------------------
 
     @Test
@@ -210,13 +274,13 @@ class CheckpointConcurrencyTest {
         }
         val workers = (1..6).map { t ->
             Worker {
-                val s = CheckpointStore({ slot -> if (slot == 1) flaky else device.prefs(Cp.file(slot)) }, Cp.rules)
+                val s = Cp.storeOver(device) { slot -> if (slot == 1) flaky else device.prefs(Cp.file(slot)) }
                 repeat(8) { round -> s.upsert(1, Cp.L1, fresh(5 + (t + round) % 10, "t$t-r$round")) }
             }.start()
         }
         workers.forEach { it.joinOrFail() }
         val shared = Cp.store(device)
-        val inProcess = CheckpointStore({ flaky }, Cp.rules).readAll(1, Cp.L1)
+        val inProcess = Cp.storeOver(device) { flaky }.readAll(1, Cp.L1)
         assertTrue("in-process view must be valid: ${inProcess.rejected}", inProcess.rejected.isEmpty())
         assertEquals(inProcess.records, shared.readAll(1, Cp.L1).records)
         device.restart()

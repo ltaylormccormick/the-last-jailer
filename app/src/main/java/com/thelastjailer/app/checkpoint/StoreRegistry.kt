@@ -1,44 +1,36 @@
 package com.thelastjailer.app.checkpoint
 
-import android.content.SharedPreferences
-import java.util.Collections
 import java.util.WeakHashMap
+
+/** What every store over one physical checkpoint file shares. */
+internal class SharedFile {
+    /** Serialises every operation on the file, reads included. */
+    val lock = Any()
+
+    /** True after a failed write that could not be rolled back: the in-memory map cannot be trusted. */
+    @Volatile
+    var untrusted = false
+}
 
 /**
  * Process-wide state that belongs to a *physical preferences file*, not to whichever [CheckpointStore]
- * object happens to be holding it.
+ * (or wrapper) is holding it.
  *
- * Both facts below are about the in-memory map of one `SharedPreferences` instance. Android hands every
- * caller in a process the **same** instance for a given file name, so two `CheckpointStore` objects
- * built over the same file share one in-memory map. That is exactly why they must share these facts:
+ *  * **Untrusted.** A failed `commit()` that could not be rolled back leaves values in the file's shared
+ *    in-memory map that never reached disk. Every store over that file must stop trusting it.
+ *  * **Lock.** Snapshot -> commit -> compensating re-commit is a read-modify-write on that map. Two
+ *    writers interleaving can commit each other's half-applied values or restore over each other's
+ *    work, so all access to one file is serialised by one lock.
  *
- *  * **Untrusted.** A failed `commit()` that could not be rolled back leaves values in that shared map
- *    which never reached disk. Every store over the map must stop trusting it, not only the one that saw
- *    the failure.
- *  * **Lock.** Snapshot -> commit -> compensating re-commit is a read-modify-write on that shared map.
- *    Two writers interleaving can commit each other's half-applied values or restore over each other's
- *    work, so all access to one map is serialised by one lock.
- *
- * Keys are the `SharedPreferences` *instances* (compared by identity, held weakly). That is the right
- * unit because it is precisely what a process restart discards: a restarted process gets new instances,
- * so the untrusted flag disappears with the poisoned map and nothing has to be reset by hand. Different
- * slots use different files, so they never share a lock or a flag.
- *
- * This object holds no preferences data and does no I/O.
+ * Keyed by ([CheckpointStorage.memoryScope], file name) - not by the `SharedPreferences` object - so a
+ * wrapper or a new object per call cannot dodge either protection. A new process (new scope) starts
+ * with everything trusted, which is exactly right: its maps were just reloaded from disk. The scope is
+ * held weakly. Holds no preferences data and does no I/O.
  */
 internal object StoreRegistry {
-    private val locks = WeakHashMap<SharedPreferences, Any>()
-    private val untrusted: MutableSet<SharedPreferences> =
-        Collections.newSetFromMap(WeakHashMap<SharedPreferences, Boolean>())
+    private val scopes = WeakHashMap<Any, HashMap<String, SharedFile>>()
 
-    /** The one lock that guards [prefs], created on first use and shared by every store over it. */
-    fun lockFor(prefs: SharedPreferences): Any = synchronized(locks) {
-        locks.getOrPut(prefs) { Any() }
+    fun forFile(scope: Any, fileName: String): SharedFile = synchronized(scopes) {
+        scopes.getOrPut(scope) { HashMap() }.getOrPut(fileName) { SharedFile() }
     }
-
-    fun markUntrusted(prefs: SharedPreferences) {
-        synchronized(untrusted) { untrusted.add(prefs) }
-    }
-
-    fun isUntrusted(prefs: SharedPreferences): Boolean = synchronized(untrusted) { prefs in untrusted }
 }

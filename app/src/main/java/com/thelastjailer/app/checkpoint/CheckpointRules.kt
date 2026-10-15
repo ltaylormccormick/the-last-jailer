@@ -30,7 +30,7 @@ data class Rejection(val reason: RejectReason, val detail: String = "")
  * no longer exists, for example after a content update). [maxChapter] is the number of chapters.
  */
 class CheckpointRules(
-    private val maxChapter: Int,
+    val maxChapter: Int,
     private val chapterOfScene: (String) -> String?
 ) {
     /** The first problem with [record], or null when it is acceptable for [expectedLineage]. */

@@ -46,6 +46,14 @@ class SimulatedDevice {
     /** One lock for the whole pretend phone, so tests can drive it from several threads. */
     private val lock = Any()
 
+    /**
+     * Identifies this phone's in-memory world, like the application `Context` does in production. A
+     * [restart] gives the next "process" a new scope, which is what makes it start with nothing flagged.
+     */
+    @Volatile
+    var memoryScope: Any = Any()
+        private set
+
     private class ArmedFault(val file: String?, var remaining: Int, val fault: CommitFault, val persistent: Boolean)
 
     /** The (cached) in-memory view of [name]. */
@@ -55,6 +63,7 @@ class SimulatedDevice {
     fun restart() = synchronized(lock) {
         live.clear()
         armed.clear()
+        memoryScope = Any()
     }
 
     /** A copy of what is on disk for [name] (empty if the file does not exist). */

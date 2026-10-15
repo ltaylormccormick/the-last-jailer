@@ -41,12 +41,21 @@
 //   every record >= K and writes K, so a crash leaves the old file or the new one, never a mixture.
 // * Incremental writes (upsert, replaceFrom, removeFrom, pruneAbove) run only on an empty file or an
 //   intact header for this slot and lineage. Unsupported-version, wrong-slot, headerless and unreadable
-//   files are refused untouched. replaceAll and clear are the explicit whole-file operations; a caller
-//   must decide deliberately before using them over a file the incremental ones refuse (never over an
-//   UNSUPPORTED_VERSION file written by a newer app without a considered reason).
-// * StateUnknown protection and the write lock live in StoreRegistry, keyed by the SharedPreferences
-//   instance, so every CheckpointStore over the same file in a process shares them and a restart clears
-//   them. Operations on one slot, reads included, are serialised.
+//   files are refused untouched.
+// * replaceAll and clear are the explicit whole-file operations. They can still replace a headerless,
+//   wrong-slot or damaged file (that is their job), but they REFUSE to destroy a newer-format file
+//   (UNSUPPORTED_VERSION, e.g. after an app downgrade) unless the caller passes discardNewerFormat = true.
+//   Nothing in the normal flow should ever pass it.
+// * StateUnknown protection and the write lock live in StoreRegistry, keyed by (CheckpointStorage.memoryScope,
+//   file name) - never by the identity of a SharedPreferences object - so wrappers, decorators or a new
+//   object per call over the same file cannot dodge either protection. In production the scope is the
+//   application Context and the preferences come from getSharedPreferences; a new process has a new scope
+//   and starts trusted. Operations on one slot, reads included, are serialised.
+// * Keys that look like chapter groups but can never be valid (c5., c123., c00., c31.) are swept by
+//   replaceFrom, removeFrom and pruneAbove in the same commit. Keys that are not group-shaped at all
+//   (C07., x.c07., h.extra) are not ours and are never touched.
+// * 2B-2 must build exactly ONE app-level CheckpointStore from PrefsCheckpointStorage (scope = application
+//   context, files from CheckpointFiles) and must pin that with a test.
 //
 // ---- Requirements for the arrival ledger (2B-2). Written down now, NOT implemented ----------------
 //

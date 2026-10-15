@@ -198,7 +198,7 @@ class CheckpointReplaceFromTest {
     fun `an exception thrown by commit is a failure, not an escape`() {
         val old = Cp.records(4)
         store.replaceAll(1, Cp.L1, old)
-        val flaky = CheckpointStore({ commitThrowsOnce(device.prefs(file)) }, Cp.rules)
+        val flaky = Cp.storeOver(device) { commitThrowsOnce(device.prefs(file)) }
         val result = flaky.replaceFrom(1, Cp.L1, fresh(2))
         assertTrue("got $result", result is StoreWriteResult.RolledBack || result is StoreWriteResult.StateUnknown)
         assertEquals(old, afterRestart().records)
