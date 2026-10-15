@@ -112,7 +112,7 @@ class CheckpointFailedWriteTest {
     @Test
     fun `an exception thrown by commit is treated as a failure and rolled back`() {
         val throwing = commitThrowsOnce(device.prefs(file))
-        val flaky = CheckpointStore({ throwing }, Cp.rules)
+        val flaky = Cp.storeOver(device) { throwing }
 
         val result = flaky.replaceAll(1, Cp.L1, replacement)
 
@@ -193,7 +193,7 @@ class CheckpointFailedWriteTest {
         val failsFirst = commitThrowsOnce(device.prefs(file))
         // First commit throws; make the re-commit throw too by wrapping a second time.
         val alwaysThrows = commitThrowsOnce(failsFirst)
-        val flaky = CheckpointStore({ alwaysThrows }, Cp.rules)
+        val flaky = Cp.storeOver(device) { alwaysThrows }
         val result = flaky.replaceAll(1, Cp.L1, replacement)
         // The outer wrapper throws once; the inner throws once more on the re-commit.
         assertTrue("got $result", result is StoreWriteResult.StateUnknown)

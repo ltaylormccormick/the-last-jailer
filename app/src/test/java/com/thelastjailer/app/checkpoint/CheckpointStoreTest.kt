@@ -258,7 +258,7 @@ class CheckpointStoreTest {
     @Test
     fun `a file that cannot be read yields an unreadable result and never throws`() {
         store.replaceAll(1, Cp.L1, Cp.records(5))
-        val broken = CheckpointStore({ unreadablePrefs(device.prefs(Cp.file(it))) }, Cp.rules)
+        val broken = Cp.storeOver(device) { unreadablePrefs(device.prefs(Cp.file(it))) }
         val read = broken.readAll(1, Cp.L1)
         assertEquals(FileState.UNREADABLE, read.fileState)
         assertTrue(read.records.isEmpty())

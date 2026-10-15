@@ -39,6 +39,19 @@ internal object CheckpointCodec {
         return keys.filter { it.startsWith(prefix) }
     }
 
+    private val looseGroupPattern = Regex("^c(\\d+)\\.")
+
+    /**
+     * Keys that *look like* a chapter group but can never belong to a valid record: the number is not
+     * written with exactly two digits (`c5.`, `c123.`), or it is a chapter outside 1..[maxChapter]
+     * (`c00.`, `c31.`). They are leftovers or damage. Keys that do not look like a group at all
+     * (`C07.`, `x.c07.`, `h.extra`) are *not* ours and are never reported here, so they are never touched.
+     */
+    fun malformedGroupKeys(keys: Collection<String>, maxChapter: Int): List<String> = keys.filter { key ->
+        val digits = looseGroupPattern.find(key)?.groupValues?.get(1) ?: return@filter false
+        digits.length != 2 || digits.toInt() !in 1..maxChapter
+    }
+
     fun write(editor: SharedPreferences.Editor, record: CheckpointRecord) {
         val n = record.chapterNumber
         editor

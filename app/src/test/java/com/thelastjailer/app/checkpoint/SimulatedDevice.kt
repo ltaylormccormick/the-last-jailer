@@ -43,26 +43,38 @@ class SimulatedDevice {
     private val commitCounts = HashMap<String, Int>()
     private val armed = ArrayList<ArmedFault>()
 
+    /** One lock for the whole pretend phone, so tests can drive it from several threads. */
+    private val lock = Any()
+
+    /**
+     * Identifies this phone's in-memory world, like the application `Context` does in production. A
+     * [restart] gives the next "process" a new scope, which is what makes it start with nothing flagged.
+     */
+    @Volatile
+    var memoryScope: Any = Any()
+        private set
+
     private class ArmedFault(val file: String?, var remaining: Int, val fault: CommitFault, val persistent: Boolean)
 
     /** The (cached) in-memory view of [name]. */
-    fun prefs(name: String): SharedPreferences = live.getOrPut(name) { DevicePrefs(name) }
+    fun prefs(name: String): SharedPreferences = synchronized(lock) { live.getOrPut(name) { DevicePrefs(name) } }
 
     /** Simulates the process dying and starting again: memory is discarded, disk stays. */
-    fun restart() {
+    fun restart() = synchronized(lock) {
         live.clear()
         armed.clear()
+        memoryScope = Any()
     }
 
     /** A copy of what is on disk for [name] (empty if the file does not exist). */
-    fun disk(name: String): Map<String, Any?> = copyOf(disks[name] ?: emptyMap())
+    fun disk(name: String): Map<String, Any?> = synchronized(lock) { copyOf(disks[name] ?: emptyMap()) }
 
     /** A copy of what the live process currently sees for [name]. */
-    fun memory(name: String): Map<String, Any?> = copyOf((prefs(name) as DevicePrefs).memory)
+    fun memory(name: String): Map<String, Any?> = synchronized(lock) { copyOf((prefs(name) as DevicePrefs).memory) }
 
-    fun fileNames(): Set<String> = disks.keys.toSet()
+    fun fileNames(): Set<String> = synchronized(lock) { disks.keys.toSet() }
 
-    fun allDisks(): Map<String, Map<String, Any?>> = disks.mapValues { copyOf(it.value) }
+    fun allDisks(): Map<String, Map<String, Any?>> = synchronized(lock) { disks.mapValues { copyOf(it.value) } }
 
     /** Puts a value straight onto disk (to build fixtures or inject corruption), then forgets memory. */
     fun writeDisk(name: String, values: Map<String, Any?>) {
@@ -97,7 +109,7 @@ class SimulatedDevice {
 
     fun clearFaults() = armed.clear()
 
-    fun commitCount(file: String): Int = commitCounts[file] ?: 0
+    fun commitCount(file: String): Int = synchronized(lock) { commitCounts[file] ?: 0 }
 
     private fun faultFor(file: String): CommitFault? {
         // Every armed countdown that matches this file advances on every commit to it.
@@ -122,40 +134,52 @@ class SimulatedDevice {
     private inner class DevicePrefs(private val name: String) : SharedPreferences {
         val memory: LinkedHashMap<String, Any?> = copyOf(disks[name] ?: emptyMap())
 
-        override fun getAll(): MutableMap<String, *> = copyOf(memory)
+        override fun getAll(): MutableMap<String, *> = synchronized(lock) { copyOf(memory) }
 
         override fun getString(key: String?, defValue: String?): String? {
-            val v = memory[key] ?: return defValue
-            return v as String
+            synchronized(lock) {
+                val v = memory[key] ?: return defValue
+                return v as String
+            }
         }
 
         @Suppress("UNCHECKED_CAST")
         override fun getStringSet(key: String?, defValues: MutableSet<String>?): MutableSet<String>? {
-            val v = memory[key] ?: return defValues
-            return LinkedHashSet(v as Set<String>)
+            synchronized(lock) {
+                val v = memory[key] ?: return defValues
+                return LinkedHashSet(v as Set<String>)
+            }
         }
 
         override fun getInt(key: String?, defValue: Int): Int {
-            val v = memory[key] ?: return defValue
-            return v as Int
+            synchronized(lock) {
+                val v = memory[key] ?: return defValue
+                return v as Int
+            }
         }
 
         override fun getLong(key: String?, defValue: Long): Long {
-            val v = memory[key] ?: return defValue
-            return v as Long
+            synchronized(lock) {
+                val v = memory[key] ?: return defValue
+                return v as Long
+            }
         }
 
         override fun getFloat(key: String?, defValue: Float): Float {
-            val v = memory[key] ?: return defValue
-            return v as Float
+            synchronized(lock) {
+                val v = memory[key] ?: return defValue
+                return v as Float
+            }
         }
 
         override fun getBoolean(key: String?, defValue: Boolean): Boolean {
-            val v = memory[key] ?: return defValue
-            return v as Boolean
+            synchronized(lock) {
+                val v = memory[key] ?: return defValue
+                return v as Boolean
+            }
         }
 
-        override fun contains(key: String?): Boolean = memory.containsKey(key)
+        override fun contains(key: String?): Boolean = synchronized(lock) { memory.containsKey(key) }
 
         override fun edit(): SharedPreferences.Editor = DeviceEditor()
 
@@ -193,14 +217,14 @@ class SimulatedDevice {
                 ops.forEach { (k, v) -> if (v === Remove) target.remove(k) else target[k] = v }
             }
 
-            private fun write(): Boolean {
+            private fun write(): Boolean = synchronized(lock) {
                 commitCounts[name] = (commitCounts[name] ?: 0) + 1
                 when (faultFor(name)) {
                     CommitFault.CRASH_BEFORE_WRITE -> throw SimulatedCrash("crash before write of $name")
-                    CommitFault.FALSE_UNCHANGED -> return false
+                    CommitFault.FALSE_UNCHANGED -> false
                     CommitFault.FALSE_MEMORY_MUTATED -> {
                         applyTo(memory)
-                        return false
+                        false
                     }
                     CommitFault.CRASH_AFTER_WRITE -> {
                         applyTo(memory)
@@ -210,7 +234,7 @@ class SimulatedDevice {
                     null -> {
                         applyTo(memory)
                         disks[name] = copyOf(memory)
-                        return true
+                        true
                     }
                 }
             }

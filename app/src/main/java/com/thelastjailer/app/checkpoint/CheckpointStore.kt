@@ -49,16 +49,28 @@ data class CheckpointReadResult(
 
 /**
  * Per-slot checkpoint storage. Each slot has its **own** `SharedPreferences` file, obtained from
- * [prefsForSlot]; nothing here can read or write another slot's file, the ordinary save file, or the
+ * [storage]; nothing here can read or write another slot's file, the ordinary save file, or the
  * entitlement file. Every write is one `commit()` and checks its result.
  *
  * Failed-write contract (the reason this class is careful): when `SharedPreferences.commit()` returns
  * false, Android has *already applied the edit to its in-memory map* even though the disk write failed.
  * The store therefore never assumes a failure left the old values readable. After a failed commit it
  * writes the previous contents back and only reports [StoreWriteResult.RolledBack] if that second
- * commit succeeds; otherwise it reports [StoreWriteResult.StateUnknown] and stops trusting the slot.
+ * commit succeeds; otherwise it reports [StoreWriteResult.StateUnknown] and stops trusting the file.
  *
- * ### Notes for later batches (not implemented here; 2A is dormant and unwired)
+ * Process-wide guarantees (see [StoreRegistry] and [CheckpointStorage]): the "untrusted" flag and the
+ * write lock belong to the physical file, identified by (memory scope, file name), so they hold across
+ * every `CheckpointStore` and every wrapper over the same file in this process. All operations on one
+ * slot, reads included, are serialised; different slots never block each other.
+ *
+ * Incremental writes ([upsert], [replaceFrom], [removeFrom], [pruneAbove]) only proceed on an empty file
+ * (initialisation) or on a file whose header is intact, current-version, for this slot and for the
+ * caller's lineage. Anything else is refused untouched; only the explicit whole-file operations
+ * ([replaceAll], [clear]) can replace such a file, and choosing to do so is the caller's policy decision.
+ * Even those refuse to destroy a file written in a **newer** format unless the caller passes
+ * `discardNewerFormat = true` explicitly.
+ *
+ * ### Notes for later batches (not implemented here; this package is dormant and unwired)
  * * **Copying a slot (2C).** Copy the source's complete valid history: [readAll], then
  *   [CheckpointSets.selectCopyable], then [CheckpointSets.rebind] to a fresh [Lineage], stage with
  *   [CheckpointStaging], and only after the single live-save commit point promote via [replaceAll].
@@ -69,75 +81,120 @@ data class CheckpointReadResult(
  *   the app, or entering new chapters, does not discard it. Bundles are double-buffered so a slot is
  *   never left without a recovery copy.
  * * **Achievements (2B/2D).** Trophies are separate from story flags and survive rewinds, Back, and undo:
- *   restoring takes `trophies = live ∪ checkpoint`, and a swap-style undo keeps the union of both
+ *   restoring takes `trophies = live union checkpoint`, and a swap-style undo keeps the union of both
  *   timelines. Replaying an achievement never duplicates it (sets).
  * * **Start Again.** Gets the same recovery protection as overwriting a slot, under a freshly minted
  *   lineage.
  * * **Arrival detection (2B).** A record is written only on a committed transition into a different
- *   chapter; never on load, Back, rewind or copy.
+ *   chapter; never on load, Back, rewind or copy. See `CheckpointDesign.kt` for the arrival-ledger
+ *   requirements that make a record trustworthy.
  */
 class CheckpointStore(
-    private val prefsForSlot: (Int) -> SharedPreferences,
+    private val storage: CheckpointStorage,
     private val rules: CheckpointRules = CheckpointRules.forStory()
 ) {
-    private val untrustedSlots = HashSet<Int>()
-
-    /** False after a [StoreWriteResult.StateUnknown] on [slot], until a new store is built after restart. */
-    fun isTrusted(slot: Int): Boolean = slot !in untrustedSlots
+    /**
+     * False after a [StoreWriteResult.StateUnknown] on [slot], for every store and wrapper over the same
+     * file in this process, until the process restarts and reloads the file from disk.
+     */
+    fun isTrusted(slot: Int): Boolean = !shared(slot).untrusted
 
     /** Reads the slot's file, returning only records valid for [expectedLineage]. Never throws. */
     fun readAll(slot: Int, expectedLineage: String): CheckpointReadResult {
         requireSlot(slot)
-        val prefs = prefsForSlot(slot)
-        val memoryMayDiffer = slot in untrustedSlots
-        return try {
-            readAllUnsafe(slot, prefs, expectedLineage, memoryMayDiffer)
-        } catch (e: RuntimeException) {
-            CheckpointReadResult(emptyList(), emptyList(), FileState.UNREADABLE, null, memoryMayDiffer)
+        return locked(slot) { prefs, file ->
+            val memoryMayDiffer = file.untrusted
+            try {
+                readAllUnsafe(slot, prefs, expectedLineage, memoryMayDiffer)
+            } catch (e: RuntimeException) {
+                CheckpointReadResult(emptyList(), emptyList(), FileState.UNREADABLE, null, memoryMayDiffer)
+            }
         }
     }
 
     /** The lineage stored in the slot's header, or null when there is no readable header. */
     fun storedLineage(slot: Int): String? {
         requireSlot(slot)
-        return try {
-            prefsForSlot(slot).getString(CheckpointCodec.HEADER_LINEAGE, null)
-        } catch (e: RuntimeException) {
-            null
+        return locked(slot) { prefs, _ ->
+            try {
+                prefs.getString(CheckpointCodec.HEADER_LINEAGE, null)
+            } catch (e: RuntimeException) {
+                null
+            }
         }
     }
 
     /**
      * Replaces the slot's entire contents with [records] under [lineage] in one commit. Every record must
-     * be valid for [lineage] and chapters must be distinct; otherwise nothing is touched.
+     * be valid for [lineage] and chapters must be distinct; otherwise nothing is touched. This is the
+     * explicit whole-file operation: it replaces whatever is there, including a headerless, wrong-slot or
+     * damaged file the incremental operations refuse, so the caller decides when that is appropriate.
+     *
+     * It will **not** destroy a file written in a newer format ([FileState.UNSUPPORTED_VERSION], for
+     * example after an app downgrade) unless [discardNewerFormat] is true. Passing true is a deliberate
+     * decision to throw that data away; nothing in the normal flow should do it.
      */
-    fun replaceAll(slot: Int, lineage: String, records: List<CheckpointRecord>): StoreWriteResult {
+    fun replaceAll(
+        slot: Int,
+        lineage: String,
+        records: List<CheckpointRecord>,
+        discardNewerFormat: Boolean = false
+    ): StoreWriteResult {
         requireSlot(slot)
-        refuseIfUntrusted(slot)?.let { return it }
-        validateForWrite(lineage, records)?.let { return StoreWriteResult.Rejected(it) }
-        return guardedCommit(slot) { editor, _ ->
-            editor.clear()
-            CheckpointCodec.writeHeader(editor, slot, lineage)
-            records.forEach { CheckpointCodec.write(editor, it) }
+        return locked(slot) { prefs, file ->
+            refuseIfUntrusted(slot, file)
+                ?: validateForWrite(lineage, records)?.let { StoreWriteResult.Rejected(it) }
+                ?: refuseToDiscardNewerFormat(slot, prefs, discardNewerFormat)
+                ?: guardedCommit(slot, prefs, file) { editor, _ ->
+                    editor.clear()
+                    CheckpointCodec.writeHeader(editor, slot, lineage)
+                    records.forEach { CheckpointCodec.write(editor, it) }
+                }
         }
     }
 
     /**
-     * Writes or replaces the single record for its chapter, leaving every other record alone. If the
-     * file has a different lineage the write is refused (use [replaceAll] to start a new timeline).
+     * Writes or replaces the single record for its chapter, leaving every other record alone. Refused
+     * unless the file is empty or has an intact header for this slot and [lineage] (use [replaceAll] to
+     * start a new timeline).
      */
     fun upsert(slot: Int, lineage: String, record: CheckpointRecord): StoreWriteResult {
         requireSlot(slot)
-        refuseIfUntrusted(slot)?.let { return it }
-        validateForWrite(lineage, listOf(record))?.let { return StoreWriteResult.Rejected(it) }
-        val existing = storedLineage(slot)
-        if (existing != null && existing != lineage) {
-            return StoreWriteResult.Rejected("file lineage $existing differs from $lineage")
+        return locked(slot) { prefs, file ->
+            refuseIfUntrusted(slot, file)
+                ?: validateForWrite(lineage, listOf(record))?.let { StoreWriteResult.Rejected(it) }
+                ?: preflightIncremental(slot, prefs, lineage)
+                ?: guardedCommit(slot, prefs, file) { editor, keys ->
+                    CheckpointCodec.keysOfGroup(keys, record.chapterNumber).forEach { editor.remove(it) }
+                    CheckpointCodec.writeHeader(editor, slot, lineage)
+                    CheckpointCodec.write(editor, record)
+                }
         }
-        return guardedCommit(slot) { editor, keys ->
-            CheckpointCodec.keysOfGroup(keys, record.chapterNumber).forEach { editor.remove(it) }
-            CheckpointCodec.writeHeader(editor, slot, lineage)
-            CheckpointCodec.write(editor, record)
+    }
+
+    /**
+     * The chapter-arrival write: in **one** commit, removes every record for chapters `>=` the record's
+     * chapter K (the abandoned future, including K itself and any malformed leftovers in those groups)
+     * and writes [record] as K. Records below K are untouched. Because it is a single `commit()` a crash
+     * leaves either the old file or the new one, never "the future removed but K missing" or the reverse.
+     * It also sweeps keys that look like chapter groups but can never be valid (see
+     * [CheckpointCodec.malformedGroupKeys]). Same preconditions as [upsert].
+     */
+    fun replaceFrom(slot: Int, lineage: String, record: CheckpointRecord): StoreWriteResult {
+        requireSlot(slot)
+        return locked(slot) { prefs, file ->
+            refuseIfUntrusted(slot, file)
+                ?: validateForWrite(lineage, listOf(record))?.let { StoreWriteResult.Rejected(it) }
+                ?: preflightIncremental(slot, prefs, lineage)
+                ?: guardedCommit(slot, prefs, file) { editor, keys ->
+                    // Removes first, writes after: a put to the same key must win over the remove.
+                    CheckpointCodec.malformedGroupKeys(keys, rules.maxChapter).forEach { editor.remove(it) }
+                    CheckpointCodec.chapterGroups(keys).filter { it >= record.chapterNumber }.forEach { chapter ->
+                        CheckpointCodec.keysOfGroup(keys, chapter).forEach { editor.remove(it) }
+                    }
+                    CheckpointCodec.writeHeader(editor, slot, lineage)
+                    CheckpointCodec.write(editor, record)
+                }
         }
     }
 
@@ -149,11 +206,17 @@ class CheckpointStore(
     fun pruneAbove(slot: Int, lineage: String, chapterNumber: Int): StoreWriteResult =
         removeWhere(slot, lineage) { it > chapterNumber }
 
-    /** Deletes the slot's whole checkpoint file contents. */
-    fun clear(slot: Int): StoreWriteResult {
+    /**
+     * Deletes the slot's whole checkpoint file contents. Explicit whole-file operation, like [replaceAll],
+     * and like it refuses to destroy a newer-format file unless [discardNewerFormat] is true.
+     */
+    fun clear(slot: Int, discardNewerFormat: Boolean = false): StoreWriteResult {
         requireSlot(slot)
-        refuseIfUntrusted(slot)?.let { return it }
-        return guardedCommit(slot) { editor, _ -> editor.clear() }
+        return locked(slot) { prefs, file ->
+            refuseIfUntrusted(slot, file)
+                ?: refuseToDiscardNewerFormat(slot, prefs, discardNewerFormat)
+                ?: guardedCommit(slot, prefs, file) { editor, _ -> editor.clear() }
+        }
     }
 
     /**
@@ -169,18 +232,99 @@ class CheckpointStore(
 
     // ---- internals -------------------------------------------------------------------------
 
+    /** What every store and wrapper over this slot's physical file shares (lock, untrusted flag). */
+    private fun shared(slot: Int): SharedFile = StoreRegistry.forFile(storage.memoryScope, storage.fileName(slot))
+
+    /** Runs [block] on the slot's preferences while holding the one process-wide lock for that file. */
+    private inline fun <T> locked(slot: Int, block: (SharedPreferences, SharedFile) -> T): T {
+        val file = shared(slot)
+        val prefs = storage.prefs(slot)
+        return synchronized(file.lock) { block(prefs, file) }
+    }
+
     private fun removeWhere(slot: Int, lineage: String, predicate: (Int) -> Boolean): StoreWriteResult {
         requireSlot(slot)
-        refuseIfUntrusted(slot)?.let { return it }
-        val existing = storedLineage(slot)
-        if (existing != null && existing != lineage) {
-            return StoreWriteResult.Rejected("file lineage $existing differs from $lineage")
+        return locked(slot) { prefs, file ->
+            refuseIfUntrusted(slot, file)
+                ?: preflightIncremental(slot, prefs, lineage)
+                ?: run {
+                    val (doomedGroups, malformed) = try {
+                        val keys = prefs.all.keys
+                        CheckpointCodec.chapterGroups(keys).filter(predicate) to
+                            CheckpointCodec.malformedGroupKeys(keys, rules.maxChapter)
+                    } catch (e: RuntimeException) {
+                        return@run StoreWriteResult.Rejected("could not read the current contents: ${e.javaClass.simpleName}")
+                    }
+                    if (doomedGroups.isEmpty() && malformed.isEmpty()) {
+                        StoreWriteResult.Committed // already as requested; nothing to write
+                    } else {
+                        guardedCommit(slot, prefs, file) { editor, keys ->
+                            malformed.forEach { editor.remove(it) }
+                            doomedGroups.forEach { chapter ->
+                                CheckpointCodec.keysOfGroup(keys, chapter).forEach { editor.remove(it) }
+                            }
+                        }
+                    }
+                }
         }
-        return guardedCommit(slot) { editor, keys ->
-            CheckpointCodec.chapterGroups(keys).filter(predicate).forEach { chapter ->
-                CheckpointCodec.keysOfGroup(keys, chapter).forEach { editor.remove(it) }
-            }
+    }
+
+    /** What the header says about a file, without decoding any record. */
+    private class Header(val state: FileState, val storedLineage: String?)
+
+    /**
+     * Classifies the file header. [FileState.OK] here means only "intact, supported version, this slot";
+     * comparing the lineage is the caller's job. Throws on an unreadable file (callers handle it).
+     */
+    private fun inspectHeader(slot: Int, prefs: SharedPreferences, keys: Set<String>): Header {
+        if (keys.isEmpty()) return Header(FileState.EMPTY, null)
+        val storedLineage = try { prefs.getString(CheckpointCodec.HEADER_LINEAGE, null) } catch (e: ClassCastException) { null }
+        val headerVersion = try { prefs.getInt(CheckpointCodec.HEADER_VERSION, -1) } catch (e: ClassCastException) { return Header(FileState.NO_HEADER, storedLineage) }
+        val headerSlot = try { prefs.getInt(CheckpointCodec.HEADER_SLOT, -1) } catch (e: ClassCastException) { return Header(FileState.NO_HEADER, storedLineage) }
+        if (storedLineage == null || !prefs.contains(CheckpointCodec.HEADER_VERSION) || !prefs.contains(CheckpointCodec.HEADER_SLOT)) {
+            return Header(FileState.NO_HEADER, storedLineage)
         }
+        if (headerVersion != CHECKPOINT_FORMAT_VERSION) return Header(FileState.UNSUPPORTED_VERSION, storedLineage)
+        if (headerSlot != slot) return Header(FileState.SLOT_MISMATCH, storedLineage)
+        return Header(FileState.OK, storedLineage)
+    }
+
+    /**
+     * The gate every incremental write passes. Allowed only on an empty file (first write) or an intact
+     * header for this slot whose lineage equals [lineage]. Everything else is refused before any edit is
+     * built, so a newer-format file, a file copied from another slot, a headerless leftover or an
+     * unreadable file is never modified or adopted.
+     */
+    private fun preflightIncremental(slot: Int, prefs: SharedPreferences, lineage: String): StoreWriteResult.Rejected? {
+        val header = try {
+            inspectHeader(slot, prefs, prefs.all.keys)
+        } catch (e: RuntimeException) {
+            return StoreWriteResult.Rejected("could not read the current contents: ${e.javaClass.simpleName}")
+        }
+        return when (header.state) {
+            FileState.EMPTY -> null
+            FileState.OK ->
+                if (header.storedLineage == lineage) null
+                else StoreWriteResult.Rejected("file lineage ${header.storedLineage} differs from $lineage")
+            else -> StoreWriteResult.Rejected("checkpoint file is ${header.state}; incremental writes are refused")
+        }
+    }
+
+    /**
+     * The gate for the whole-file operations: a file whose header names a newer format is somebody
+     * else's data (a newer app version wrote it) and is never destroyed by accident. A file whose header
+     * is unreadable cannot be identified as newer and remains replaceable as before.
+     */
+    private fun refuseToDiscardNewerFormat(slot: Int, prefs: SharedPreferences, discard: Boolean): StoreWriteResult.Rejected? {
+        if (discard) return null
+        val header = try {
+            inspectHeader(slot, prefs, prefs.all.keys)
+        } catch (e: RuntimeException) {
+            return null // unreadable: guardedCommit's own snapshot step will refuse if it truly cannot read
+        }
+        return if (header.state == FileState.UNSUPPORTED_VERSION) {
+            StoreWriteResult.Rejected("checkpoint file is in a newer format; pass discardNewerFormat = true to destroy it deliberately")
+        } else null
     }
 
     private fun readAllUnsafe(
@@ -190,17 +334,10 @@ class CheckpointStore(
         memoryMayDiffer: Boolean
     ): CheckpointReadResult {
         val keys = prefs.all.keys
-        if (keys.isEmpty()) return CheckpointReadResult(emptyList(), emptyList(), FileState.EMPTY, null, memoryMayDiffer)
-        val storedLineage = try { prefs.getString(CheckpointCodec.HEADER_LINEAGE, null) } catch (e: ClassCastException) { null }
+        val header = inspectHeader(slot, prefs, keys)
+        val storedLineage = header.storedLineage
         fun empty(state: FileState) = CheckpointReadResult(emptyList(), emptyList(), state, storedLineage, memoryMayDiffer)
-
-        val headerVersion = try { prefs.getInt(CheckpointCodec.HEADER_VERSION, -1) } catch (e: ClassCastException) { return empty(FileState.NO_HEADER) }
-        val headerSlot = try { prefs.getInt(CheckpointCodec.HEADER_SLOT, -1) } catch (e: ClassCastException) { return empty(FileState.NO_HEADER) }
-        if (storedLineage == null || !prefs.contains(CheckpointCodec.HEADER_VERSION) || !prefs.contains(CheckpointCodec.HEADER_SLOT)) {
-            return empty(FileState.NO_HEADER)
-        }
-        if (headerVersion != CHECKPOINT_FORMAT_VERSION) return empty(FileState.UNSUPPORTED_VERSION)
-        if (headerSlot != slot) return empty(FileState.SLOT_MISMATCH)
+        if (header.state != FileState.OK) return empty(header.state)
         if (storedLineage != expectedLineage) return empty(FileState.LINEAGE_MISMATCH)
 
         val records = ArrayList<CheckpointRecord>()
@@ -227,15 +364,20 @@ class CheckpointStore(
         return null
     }
 
-    private fun refuseIfUntrusted(slot: Int): StoreWriteResult.Rejected? =
-        if (slot in untrustedSlots) StoreWriteResult.Rejected("slot $slot is untrusted until restart") else null
+    private fun refuseIfUntrusted(slot: Int, file: SharedFile): StoreWriteResult.Rejected? =
+        if (file.untrusted) StoreWriteResult.Rejected("slot $slot is untrusted until restart") else null
 
     /**
      * Runs [build] on a fresh editor and commits it once. On any failure it restores the captured previous
-     * contents with a second commit and reports honestly whether that worked.
+     * contents with a second commit and reports honestly whether that worked. Callers hold the file lock,
+     * so nothing else can touch the file between the snapshot and the restore.
      */
-    private fun guardedCommit(slot: Int, build: (SharedPreferences.Editor, Set<String>) -> Unit): StoreWriteResult {
-        val prefs = prefsForSlot(slot)
+    private fun guardedCommit(
+        slot: Int,
+        prefs: SharedPreferences,
+        file: SharedFile,
+        build: (SharedPreferences.Editor, Set<String>) -> Unit
+    ): StoreWriteResult {
         val before = try {
             RawSnapshot.capture(prefs)
         } catch (e: RuntimeException) {
@@ -260,7 +402,7 @@ class CheckpointStore(
         return if (restored) {
             StoreWriteResult.RolledBack("commit failed; previous contents re-committed")
         } else {
-            untrustedSlots.add(slot)
+            file.untrusted = true
             StoreWriteResult.StateUnknown("commit failed and the previous contents could not be re-committed")
         }
     }
