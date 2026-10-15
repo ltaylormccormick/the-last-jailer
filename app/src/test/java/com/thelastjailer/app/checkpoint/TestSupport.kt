@@ -120,3 +120,32 @@ fun commitThrowsOnce(base: SharedPreferences): SharedPreferences {
         }
     }
 }
+
+/** Lets a test hold one thread inside a chosen `commit()` while other threads try to get in. */
+class CommitGate {
+    val entered = java.util.concurrent.CountDownLatch(1)
+    val release = java.util.concurrent.CountDownLatch(1)
+}
+
+/**
+ * A view of [base] whose [pauseOnCommit]-th `commit()` (1 = the first) stops, after announcing itself on
+ * [gate], until the test releases it. The pause happens *before* the underlying commit runs.
+ * Use ONE instance per file so every store sees the same object, as Android does.
+ */
+fun gatedPrefs(base: SharedPreferences, pauseOnCommit: Int, gate: CommitGate): SharedPreferences {
+    val calls = java.util.concurrent.atomic.AtomicInteger()
+    return object : SharedPreferences by base {
+        override fun edit(): SharedPreferences.Editor {
+            val inner = base.edit()
+            return object : SharedPreferences.Editor by inner {
+                override fun commit(): Boolean {
+                    if (calls.incrementAndGet() == pauseOnCommit) {
+                        gate.entered.countDown()
+                        check(gate.release.await(20, java.util.concurrent.TimeUnit.SECONDS)) { "test never released the gate" }
+                    }
+                    return inner.commit()
+                }
+            }
+        }
+    }
+}
