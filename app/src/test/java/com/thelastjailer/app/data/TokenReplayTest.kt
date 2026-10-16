@@ -12,7 +12,7 @@ import org.junit.Test
  * Token replay follow-up: "Keep the token." and "Leave the past buried." clear each other's flag, so a
  * later telling never holds both decisions. Flags only: no inventory removal, no save-format change,
  * no trophy change. A clasp carried over from an earlier telling stays in the inventory (documented
- * replay limitation in docs/CONSEQUENCE_LEDGER.md).
+ * replay limitation, tracked in the project's private consequence ledger).
  */
 class TokenReplayTest {
 
