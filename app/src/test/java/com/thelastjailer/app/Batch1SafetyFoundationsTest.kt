@@ -202,8 +202,10 @@ class Batch1SafetyFoundationsTest {
         assertEquals(after, store.load(1))
         assertTrue(store.hasPreviousState(1))
         val restored = store.restorePreviousState(1)!!
-        assertEquals(before.copy(chapterId = restored.chapterId), restored)
-        assertFalse(restored.trophies.contains("New"))
+        // Batch 2B-3 (deliberate change): everything reversible comes back exactly as it was, but a trophy the
+        // taken-back choice earned stays earned. This used to assert the trophy was dropped.
+        assertEquals(before.copy(chapterId = restored.chapterId, trophies = setOf("T", "New")), restored)
+        assertTrue(restored.trophies.contains("New"))
         assertFalse(restored.inventory.contains("sturdy_buckler"))
         assertFalse(store.hasPreviousState(1))
     }

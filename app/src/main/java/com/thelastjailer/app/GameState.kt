@@ -268,9 +268,20 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
         editor.apply()
     }
 
-    /** Restores and consumes the one-step story checkpoint, and autosaves the restored state. */
+    /**
+     * Restores and consumes the one-step story checkpoint, and autosaves the restored state.
+     *
+     * Everything reversible comes back exactly as it was before the choice, **except** trophies: the restored
+     * state keeps every trophy the slot already holds ([mergeEarnedTrophies]), so a trophy earned by the choice
+     * being taken back stays earned. Trophies are display-only (no choice or scene reads them), so keeping one
+     * never keeps the abandoned decision alive. The merge only ever adds, so repeating it after a crash is
+     * harmless, and it uses this slot's own live trophies only. No new keys are written.
+     */
     fun restorePreviousState(slot: Int): GameState? {
-        val previous = loadPreviousState(slot) ?: return null
+        val snapshot = loadPreviousState(slot) ?: return null
+        val live = load(slot)
+        val previous = if (live == null) snapshot
+        else snapshot.copy(trophies = mergeEarnedTrophies(snapshot.trophies, live.trophies))
         // Back never changes which timeline the slot is on, so the ledger is left exactly as it is.
         save(slot, previous, TimelineWrite.Keep)
         clearPreviousState(slot)

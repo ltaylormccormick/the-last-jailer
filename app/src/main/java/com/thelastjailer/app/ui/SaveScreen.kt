@@ -78,7 +78,8 @@ fun SaveScreen(
         OrnatePanel(modifier = Modifier.fillMaxWidth()) {
             Text("ACTIVE SLOT ${state.activeSlot}", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
             Text(
-                "Go Back restores the complete state from before your last story choice — including health, stats, items and flags. " +
+                "Go Back restores the state from before your last story choice — including health, stats, items and flags. " +
+                    "Trophies you have earned are kept. " +
                     "It is cleared after combat or shop purchases.",
                 style = MaterialTheme.typography.bodySmall
             )

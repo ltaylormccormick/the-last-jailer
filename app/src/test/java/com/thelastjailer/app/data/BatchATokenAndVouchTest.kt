@@ -102,7 +102,10 @@ class BatchATokenAndVouchTest {
         val after = pick(before, "Show him")
         store.save(1, after); store.savePreviousState(1, before)
         val restored = store.restorePreviousState(1)!!
-        assertEquals(before.copy(activeSlot = 1), restored)
+        // Batch 2B-3 (deliberate change): the trophy the taken-back choice earned stays earned; everything else
+        // is exactly the pre-choice state. The old assertion expected the trophy to be dropped.
+        assertEquals(before.copy(activeSlot = 1, trophies = after.trophies), restored)
+        assertTrue(after.trophies.isNotEmpty())
         val again = pick(restored, "Show him")
         assertEquals(after.trophies, again.trophies)
         assertEquals(after.inventory, again.inventory)
