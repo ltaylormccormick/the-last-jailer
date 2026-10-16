@@ -34,6 +34,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
+import com.thelastjailer.app.checkpoint.ArrivalRecorder
+import com.thelastjailer.app.checkpoint.CheckpointStore
+import com.thelastjailer.app.checkpoint.PrefsCheckpointStorage
 import com.thelastjailer.app.data.BillingRepository
 import com.thelastjailer.app.data.LocalEntitlementRepository
 import com.thelastjailer.app.ui.AppScreen
@@ -48,6 +51,43 @@ import com.thelastjailer.app.ui.SaveScreen
 import com.thelastjailer.app.ui.StoryScreen
 import com.thelastjailer.app.ui.bottomNavScreens
 import com.thelastjailer.app.ui.isNavigationEnabled
+
+/**
+ * Kill switch for chapter-arrival recording. Off: no checkpoint file is read or written, but the slot's
+ * ledger is still maintained and invalidated (a stale ledger must never outlive the state it described).
+ */
+private const val ARRIVAL_RECORDING_ENABLED = true
+
+/**
+ * The one app-level [ArrivalRecorder] (and so the one [CheckpointStore]) for the process. Its memory scope
+ * is the **application** context, which never changes while the process lives, so the per-file locks and
+ * the "untrusted" flags survive Activity recreation. Construction failure yields null: gameplay and the
+ * ordinary save are unaffected, and every slot's timeline is simply invalidated by the default save.
+ */
+private object ArrivalRecorderHolder {
+    private var recorder: ArrivalRecorder? = null
+    private var built = false
+
+    @Synchronized
+    fun get(context: Context): ArrivalRecorder? {
+        if (!built) {
+            built = true
+            recorder = try {
+                val app = context.applicationContext
+                val storage = PrefsCheckpointStorage(app) { name -> app.getSharedPreferences(name, Context.MODE_PRIVATE) }
+                ArrivalRecorder(
+                    store = CheckpointStore(storage),
+                    recordingEnabled = ARRIVAL_RECORDING_ENABLED,
+                    log = { message, error -> android.util.Log.w("ArrivalRecorder", message, error) }
+                )
+            } catch (e: Exception) {
+                android.util.Log.w("ArrivalRecorder", "checkpoint recording unavailable", e)
+                null
+            }
+        }
+        return recorder
+    }
+}
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
@@ -72,6 +112,7 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
     val entitlements = remember(context) {
         LocalEntitlementRepository(context.getSharedPreferences("jailer_entitlements", Context.MODE_PRIVATE))
     }
+    val recorder = remember(context) { ArrivalRecorderHolder.get(context) }
     val activity = context as Activity
     val billing = remember(context) { BillingRepository(context, entitlements) }
     DisposableEffect(billing) {
@@ -129,11 +170,11 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                     onChoiceSelected = { choice ->
                         // Keeps one exact pre-choice snapshot so "go back one step" restores stats,
                         // flags and items as well as the previous scene (see StateCommits.kt).
-                        state = store.commitChoice(state, choice)
+                        state = store.commitChoice(state, choice, recorder)
                     },
                     onCombatResolved = { encounter, outcome ->
                         // Combat is deliberately irreversible through the one-step story back action.
-                        state = store.commitCombatResult(state, encounter, outcome)
+                        state = store.commitCombatResult(state, encounter, outcome, recorder)
                     },
                     onOpenJournal = { screen = AppScreen.JOURNAL },
                     onOpenInventory = { openShop = false; screen = AppScreen.INVENTORY },
@@ -148,7 +189,7 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                     openShop = openShop,
                     onPurchase = { itemId, price ->
                         // Clears the story undo so it cannot refund/duplicate a shop transaction.
-                        state = store.commitPurchase(state, itemId, price)
+                        state = store.commitPurchase(state, itemId, price, recorder)
                     }
                 )
                 AppScreen.MAP -> MapScreen(entitlements)
@@ -156,7 +197,8 @@ fun JailerApp(isExpandedWidth: Boolean = false) {
                     store = store,
                     entitlements = entitlements,
                     state = state,
-                    onStateChange = { state = it }
+                    onStateChange = { state = it },
+                    recorder = recorder
                 )
                 AppScreen.OPTIONS -> OptionsScreen(
                     entitlements = entitlements,
