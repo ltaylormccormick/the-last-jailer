@@ -23,8 +23,14 @@
 //    left without a recovery copy. Undo is a reversible swap.
 // 4. Achievements (2B/2D). Trophies are per slot, separate from story flags, never duplicated, and
 //    survive rewinds, ordinary Back and undo: restore uses live trophies united with the
-//    checkpoint's, and a swap keeps both timelines' trophies. (One Batch 1 test that pins Back
-//    dropping a just-earned trophy changes deliberately in 2B.)
+//    checkpoint's, and a swap keeps both timelines' trophies. 2B-3 IMPLEMENTED this for ordinary Back
+//    (SaveStore.restorePreviousState + mergeEarnedTrophies; the Batch 1 test that pinned the old behaviour
+//    changed deliberately). The same helper is for 2D rewind and undo, which must merge in the SAME commit as
+//    the restored state. Known, accepted consequence: a Back that keeps a trophy the abandoned step earned
+//    leaves the live state different from the chapter-arrival state, so rule R declines to rebuild that
+//    arrival record (digest mismatch). The record stays missing; a wrong one is never written.
+//    Open, tracked separately: SAVE into another slot still replaces that slot's trophies (2C), and Back is
+//    still reachable while a fight is on screen (must be closed before fatal outcomes or any rewind UI).
 // 5. Start Again. Receives the same recovery protection as an overwritten slot, under a new lineage.
 // 6. Purchases. Records never contain or imply entitlement. The Chapter IX boundary is enforced at
 //    render from the scene's chapter, so a restored record cannot pass it.
