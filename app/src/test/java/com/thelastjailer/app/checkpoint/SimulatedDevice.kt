@@ -64,6 +64,12 @@ class SimulatedDevice {
         queuedApplies.clear()
     }
 
+    /** Writes only the first [count] queued `apply()` writes, in order, and drops the rest (a crash part way through). */
+    fun flushFirstApplies(count: Int) = synchronized(lock) {
+        queuedApplies.take(count).forEach { (name, snapshot) -> disks[name] = LinkedHashMap(copyOf(snapshot)) }
+        queuedApplies.clear()
+    }
+
     /** Throws the queued `apply()` writes away without a restart (they never reach disk). */
     fun dropQueuedApplies() = synchronized(lock) { queuedApplies.clear() }
 

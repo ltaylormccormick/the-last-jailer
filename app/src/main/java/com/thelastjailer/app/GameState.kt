@@ -215,9 +215,21 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
      * can only make recorded history disappear, never leave history that no longer matches the state.
      * Ordinary same-timeline callers (a choice, combat, a purchase, Back, SAVE onto the active slot) opt in
      * with [TimelineWrite.Keep] or [TimelineWrite.Set].
+     *
+     * [clearBackSnapshot] removes the slot's Back snapshot in the same batch (see the comment in the body).
+     * It is off by default, so every existing caller behaves exactly as before.
      */
-    fun save(slot: Int, state: GameState, timeline: TimelineWrite = TimelineWrite.Invalidate) {
+    fun save(
+        slot: Int,
+        state: GameState,
+        timeline: TimelineWrite = TimelineWrite.Invalidate,
+        clearBackSnapshot: Boolean = false
+    ) {
         val editor = writeState(slot.toString(), state, prefs.edit()).putInt("active_slot", slot)
+        // The slot's one-step Back snapshot belongs to the game that was in the slot. When this write replaces
+        // that game with a different one, the snapshot must go in the SAME editor batch as the new state, so no
+        // crash can leave the new game next to the old game's snapshot.
+        if (clearBackSnapshot) removePreviousKeys(editor, slot)
         when (timeline) {
             TimelineWrite.Keep -> Unit
             TimelineWrite.Invalidate -> editor
@@ -264,8 +276,12 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
 
     fun clearPreviousState(slot: Int) {
         val editor = prefs.edit()
-        stateFields.forEach { field -> editor.remove("${previousPrefix(slot)}.$field") }
+        removePreviousKeys(editor, slot)
         editor.apply()
+    }
+
+    private fun removePreviousKeys(editor: android.content.SharedPreferences.Editor, slot: Int) {
+        stateFields.forEach { field -> editor.remove("${previousPrefix(slot)}.$field") }
     }
 
     /**

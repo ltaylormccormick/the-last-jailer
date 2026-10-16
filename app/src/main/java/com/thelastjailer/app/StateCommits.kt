@@ -63,16 +63,22 @@ fun SaveStore.commitRestart(slot: Int, recorder: ArrivalRecorder? = null): GameS
 }
 
 /**
- * SAVE on the slot screen. Saving onto the active slot keeps its timeline; copying into another slot makes
- * the destination a different timeline (its old ledger must not vouch for the copied-in state), so the
- * destination's lineage and ledger are removed in the same batch. The destination's one-step Back snapshot
- * is cleared as before.
+ * SAVE on the slot screen. Saving onto the active slot keeps its timeline and its Back snapshot; copying into
+ * another slot makes the destination a different game, so in **one** editor batch the destination gets the
+ * incoming state (and so the incoming trophies - the destination's old trophies are replaced, never merged),
+ * its lineage and ledger are removed (the old ledger must not vouch for the copied-in state), and its old
+ * Back snapshot is removed. One batch means a crash leaves either the old game complete or the new game
+ * complete, never the new game next to the old game's snapshot. The source slot is not written.
  */
 fun SaveStore.commitSlotSave(slot: Int, state: GameState): GameState {
     val moved = state.copy(activeSlot = slot)
     val sameSlot = slot == state.activeSlot
-    save(slot, moved, if (sameSlot) TimelineWrite.Keep else TimelineWrite.Invalidate)
-    if (!sameSlot) clearPreviousState(slot)
+    save(
+        slot,
+        moved,
+        if (sameSlot) TimelineWrite.Keep else TimelineWrite.Invalidate,
+        clearBackSnapshot = !sameSlot
+    )
     return moved
 }
 
