@@ -585,7 +585,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     // Mutually exclusive with keeping it. A clasp carried over from an earlier telling
-                    // stays in the inventory (known replay limitation; see docs/CONSEQUENCE_LEDGER.md).
+                    // stays in the inventory (known replay limitation, tracked in the private consequence ledger).
                     clearFlags = setOf("kept_the_token"),
                     setFlags = setOf("buried_the_past")
                 )
