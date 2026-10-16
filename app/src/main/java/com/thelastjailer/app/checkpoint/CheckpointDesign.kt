@@ -57,7 +57,7 @@
 // * 2B-2 must build exactly ONE app-level CheckpointStore from PrefsCheckpointStorage (scope = application
 //   context, files from CheckpointFiles) and must pin that with a test.
 //
-// ---- Requirements for the arrival ledger (2B-2). Written down now, NOT implemented ----------------
+// ---- The arrival ledger (2B-2). Requirements L1-L7 as written, with how 2B-2 implements them ---------
 //
 // The live save is written with SharedPreferences.apply(): asynchronous, no result, can be lost, and
 // not ordered against a commit() on another file. The checkpoint file cannot therefore rely on write
@@ -78,19 +78,30 @@
 // L6. A checkpoint failure never changes the player's transition and never surfaces to the player.
 // L7. A kill switch may turn recording off but must never turn invalidation off.
 //
-// Open items that MUST be examined in 2B-2 before it is implemented (not decided here):
+// 2B-2 status: IMPLEMENTED by ArrivalRecorder (plan / afterSave / beforeCommit), CheckpointDigest,
+// Ledger / Timeline / TimelineWrite (CheckpointTimeline.kt), SaveStore.save(timeline) and the commit helpers in
+// StateCommits.kt. Refinements to the text below: the ledger holds a 128-bit SHA-256 digest (not the record
+// CRC32); invalidation removes the two keys and a lineage is minted lazily at the first recorded arrival;
+// an arrival always drops ledger entries from its chapter upward even with recording off (so an abandoned
+// branch can never match again); the first record under a new lineage replaces the whole file; repair
+// ("rule R") runs lazily at the next commit, not at startup, and only ever adds a record; a record whose
+// write failed while the app stayed alive is retried verbatim while the ledger still vouches for it;
+// a newer-format checkpoint file switches recording off for that slot for the process and is never touched.
+// Reading and trusting records (the L2 rule) is for the rewind batch; the tests carry an independent oracle.
 //
-// O1. Stronger arrival binding. CRC32 of the record is the proposed binding. Examine a wider or second
+// Open items examined in 2B-2 (outcomes):
+//
+// O1. [CLOSED by D5: 128-bit digest bound to slot, lineage and chapter; no counter or chain.] Stronger arrival binding. CRC32 of the record is the proposed binding. Examine a wider or second
 //     digest, and binding an arrival sequence number or counter, to shrink collision risk and to detect
 //     "same state, different path" arrivals that the CRC alone cannot tell apart.
-// O2. Back followed by other actions. Back across a chapter boundary leaves the ledger entry for the
+// O2. [CLOSED: every sequence is covered by ArrivalTimelineInteractionTest.] Back followed by other actions. Back across a chapter boundary leaves the ledger entry for the
 //     abandoned chapter in place. Examine every sequence: Back then a different choice into the same
 //     chapter, Back then purchase, Back then save to another slot, Back then Start Again, Back then app
 //     kill before and after the live writes land, Back twice via two different routes. Confirm each
 //     ends with a missing record rather than a wrong one, and that a stale entry cannot be resurrected
 //     by a later arrival.
-// O3. Older-build rollback: an older app version cannot invalidate on Start Again or SAVE. Examine
+// O3. [OPEN, accepted: low, internal-track only.] Older-build rollback: an older app version cannot invalidate on Start Again or SAVE. Examine
 //     whether a live-save fingerprint is worth its cost.
-// O4. The real-device interrupted-write test (kill during arrival, copy and rewind) is a release gate
+// O4. [OPEN: release gate.] The real-device interrupted-write test (kill during arrival, copy and rewind) is a release gate
 //     before any rewind UI ships.
 package com.thelastjailer.app.checkpoint

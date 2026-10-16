@@ -112,6 +112,22 @@ class CheckpointStore(
         }
     }
 
+    /**
+     * What the slot's file header says, without decoding any record: [FileState.EMPTY], [FileState.OK]
+     * (intact, supported version, this slot), [FileState.UNSUPPORTED_VERSION] (written by a newer app), and
+     * so on. Never throws; an unreadable file reports [FileState.UNREADABLE].
+     */
+    fun fileState(slot: Int): FileState {
+        requireSlot(slot)
+        return locked(slot) { prefs, _ ->
+            try {
+                inspectHeader(slot, prefs, prefs.all.keys).state
+            } catch (e: RuntimeException) {
+                FileState.UNREADABLE
+            }
+        }
+    }
+
     /** The lineage stored in the slot's header, or null when there is no readable header. */
     fun storedLineage(slot: Int): String? {
         requireSlot(slot)

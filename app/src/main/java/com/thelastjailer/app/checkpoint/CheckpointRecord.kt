@@ -146,6 +146,13 @@ class CheckpointRecord internal constructor(
 /** CRC32 over a canonical, length-prefixed rendering of every field except the CRC itself. */
 internal object CheckpointCrc {
     fun compute(r: CheckpointRecord): Long {
+        val crc = CRC32()
+        crc.update(canonical(r).toByteArray(Charsets.UTF_8))
+        return crc.value
+    }
+
+    /** The canonical rendering both the CRC and the arrival digest hash. It never includes the CRC itself. */
+    fun canonical(r: CheckpointRecord): String {
         val sb = StringBuilder()
         fun s(v: String) { sb.append(v.length).append(':').append(v).append(';') }
         fun i(v: Int) { sb.append(v).append(';') }
@@ -162,9 +169,7 @@ internal object CheckpointCrc {
         r.trophies.sorted().forEach { s(it) }
         i(r.flags.size)
         r.flags.sorted().forEach { s(it) }
-        val crc = CRC32()
-        crc.update(sb.toString().toByteArray(Charsets.UTF_8))
-        return crc.value
+        return sb.toString()
     }
 }
 

@@ -21,6 +21,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.thelastjailer.app.GameState
 import com.thelastjailer.app.SaveStore
+import com.thelastjailer.app.checkpoint.ArrivalRecorder
+import com.thelastjailer.app.commitRestart
+import com.thelastjailer.app.commitSlotSave
 import com.thelastjailer.app.data.EntitlementRepository
 import com.thelastjailer.app.data.StoryRepository
 
@@ -34,7 +37,8 @@ fun SaveScreen(
     entitlements: EntitlementRepository,
     state: GameState,
     onStateChange: (GameState) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    recorder: ArrivalRecorder? = null
 ) {
     var confirmRestart by remember(state.activeSlot) { mutableStateOf(false) }
 
@@ -51,7 +55,7 @@ fun SaveScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        val fresh = store.restart(state.activeSlot)
+                        val fresh = store.commitRestart(state.activeSlot, recorder)
                         onStateChange(fresh)
                         confirmRestart = false
                     }
@@ -112,13 +116,10 @@ fun SaveScreen(
                     }
                     Row {
                         TextButton(onClick = {
-                            val movedState = state.copy(activeSlot = slot)
-                            store.save(slot, movedState)
                             // Copying progress into another slot must not inherit that slot's old
-                            // one-step checkpoint. Saving the currently active slot preserves its
-                            // legitimate story undo checkpoint.
-                            if (slot != state.activeSlot) store.clearPreviousState(slot)
-                            onStateChange(movedState)
+                            // one-step checkpoint or its checkpoint timeline. Saving the currently active
+                            // slot preserves its legitimate story undo checkpoint and timeline.
+                            onStateChange(store.commitSlotSave(slot, state))
                         }) { Text("SAVE") }
                         OutlinedButton(
                             enabled = saved != null,

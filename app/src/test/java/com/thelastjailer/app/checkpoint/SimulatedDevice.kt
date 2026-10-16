@@ -47,6 +47,29 @@ class SimulatedDevice {
     private val lock = Any()
 
     /**
+     * Real `apply()` updates the in-memory map at once but reaches disk later, on a background queue, and
+     * can be lost if the process dies first. When this is true, `apply()` behaves like that: memory now,
+     * disk only on [flushApplies]; [restart] throws unflushed applies away. A `commit()` on the same file
+     * writes the whole map, so it makes earlier applies to that file durable too, exactly as on Android.
+     * Default false keeps the older tests' "apply is immediately durable" behaviour.
+     */
+    @Volatile
+    var asyncApply: Boolean = false
+
+    private val queuedApplies = ArrayList<Pair<String, LinkedHashMap<String, Any?>>>()
+
+    /** Writes every queued `apply()` to disk, in order (the background queue finishing). */
+    fun flushApplies() = synchronized(lock) {
+        queuedApplies.forEach { (name, snapshot) -> disks[name] = LinkedHashMap(copyOf(snapshot)) }
+        queuedApplies.clear()
+    }
+
+    /** Throws the queued `apply()` writes away without a restart (they never reach disk). */
+    fun dropQueuedApplies() = synchronized(lock) { queuedApplies.clear() }
+
+    fun queuedApplyCount(): Int = synchronized(lock) { queuedApplies.size }
+
+    /**
      * Identifies this phone's in-memory world, like the application `Context` does in production. A
      * [restart] gives the next "process" a new scope, which is what makes it start with nothing flagged.
      */
@@ -63,6 +86,7 @@ class SimulatedDevice {
     fun restart() = synchronized(lock) {
         live.clear()
         armed.clear()
+        queuedApplies.clear()
         memoryScope = Any()
     }
 
@@ -234,6 +258,7 @@ class SimulatedDevice {
                     null -> {
                         applyTo(memory)
                         disks[name] = copyOf(memory)
+                        queuedApplies.removeAll { it.first == name } // this write already contains them
                         true
                     }
                 }
@@ -242,7 +267,14 @@ class SimulatedDevice {
             override fun commit(): Boolean = write()
 
             override fun apply() {
-                write()
+                if (asyncApply) {
+                    synchronized(lock) {
+                        applyTo(memory)
+                        queuedApplies.add(name to copyOf(memory))
+                    }
+                } else {
+                    write()
+                }
             }
         }
     }

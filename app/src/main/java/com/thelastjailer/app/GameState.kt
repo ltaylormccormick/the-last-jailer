@@ -1,5 +1,10 @@
 package com.thelastjailer.app
 
+import com.thelastjailer.app.checkpoint.Ledger
+import com.thelastjailer.app.checkpoint.Lineage
+import com.thelastjailer.app.checkpoint.Timeline
+import com.thelastjailer.app.checkpoint.TimelineKeys
+import com.thelastjailer.app.checkpoint.TimelineWrite
 import com.thelastjailer.app.data.ItemCatalog
 import com.thelastjailer.app.data.StoryRepository
 
@@ -201,10 +206,46 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
         "xp", "xpToNextLevel", "inventory", "trophies", "flags"
     )
 
-    fun save(slot: Int, state: GameState) {
-        writeState(slot.toString(), state, prefs.edit())
-            .putInt("active_slot", slot)
-            .apply()
+    /**
+     * Autosaves [state] to [slot]. [timeline] says what happens to the slot's checkpoint timeline keys
+     * (`<slot>.lineage`, `<slot>.arrivals`), always in the **same editor batch** as the state, so the proof
+     * and the state it describes can never disagree on disk.
+     *
+     * The default is [TimelineWrite.Invalidate]: a caller that does not say "this is the same timeline"
+     * can only make recorded history disappear, never leave history that no longer matches the state.
+     * Ordinary same-timeline callers (a choice, combat, a purchase, Back, SAVE onto the active slot) opt in
+     * with [TimelineWrite.Keep] or [TimelineWrite.Set].
+     */
+    fun save(slot: Int, state: GameState, timeline: TimelineWrite = TimelineWrite.Invalidate) {
+        val editor = writeState(slot.toString(), state, prefs.edit()).putInt("active_slot", slot)
+        when (timeline) {
+            TimelineWrite.Keep -> Unit
+            TimelineWrite.Invalidate -> editor
+                .remove(TimelineKeys.lineage(slot))
+                .remove(TimelineKeys.arrivals(slot))
+            is TimelineWrite.Set -> {
+                editor.putString(TimelineKeys.lineage(slot), timeline.lineage)
+                if (timeline.ledger.isEmpty) editor.remove(TimelineKeys.arrivals(slot))
+                else editor.putString(TimelineKeys.arrivals(slot), timeline.ledger.encode())
+            }
+        }
+        editor.apply()
+    }
+
+    /**
+     * The slot's checkpoint timeline, or null when it has none or it is damaged (malformed lineage,
+     * malformed ledger, wrong value type). Never throws: a damaged timeline is simply "no timeline".
+     */
+    fun readTimeline(slot: Int): Timeline? = try {
+        val lineage = prefs.getString(TimelineKeys.lineage(slot), null)
+        if (lineage == null || !Lineage.isWellFormed(lineage)) {
+            null
+        } else {
+            Ledger.parse(prefs.getString(TimelineKeys.arrivals(slot), null), StoryRepository.chapters.size)
+                ?.let { Timeline(lineage, it) }
+        }
+    } catch (e: RuntimeException) {
+        null
     }
 
     /**
@@ -230,16 +271,17 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
     /** Restores and consumes the one-step story checkpoint, and autosaves the restored state. */
     fun restorePreviousState(slot: Int): GameState? {
         val previous = loadPreviousState(slot) ?: return null
-        save(slot, previous)
+        // Back never changes which timeline the slot is on, so the ledger is left exactly as it is.
+        save(slot, previous, TimelineWrite.Keep)
         clearPreviousState(slot)
         return previous
     }
 
     /** Resets one slot to a clean Chapter I state without affecting entitlements or other slots. */
-    fun restart(slot: Int): GameState {
+    fun restart(slot: Int, timeline: TimelineWrite = TimelineWrite.Invalidate): GameState {
         clearPreviousState(slot)
         val fresh = GameState(activeSlot = slot)
-        save(slot, fresh)
+        save(slot, fresh, timeline)
         return fresh
     }
 
