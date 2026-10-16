@@ -204,7 +204,8 @@ class ArrivalRecorder(
      * | forward to K, no timeline                    | new lineage, ledger {K}                      | replaceAll |
      * | forward, recording off or slot disabled      | ledger without >=K (Invalidate if no lineage)| none  |
      * | Chapter 30 to 1                              | new lineage, ledger {1}                      | replaceAll |
-     * | unknown or any other non-forward change      | Invalidate                                   | none  |
+     * | unknown, forward by more than 1, or any      | Invalidate                                   | none  |
+     * | other non-forward change                     |                                              |       |
      * | fresh game, first choice (no timeline)       | additionally record Chapter 1 from [state]   | in the same replaceAll |
      */
     fun plan(state: GameState, next: GameState, current: Timeline?): ArrivalPlan = try {
@@ -225,6 +226,15 @@ class ArrivalRecorder(
         if (before > after) {
             // The only backward edge in the story is the Chapter 30 to Chapter 1 "the watch goes on" loop.
             return if (before == max && after == 1) newTimeline(slot, next, recording) else ArrivalPlan.INVALIDATE
+        }
+
+        if (after > before + 1) {
+            // No edge in the story moves forward by more than one chapter. If one ever appears, the chapters
+            // it jumps over may still carry ledger entries from an abandoned branch (Back, then a different
+            // route), and keeping them would let a record from that branch vouch for this timeline. Refuse
+            // to guess: drop the timeline and let the next ordinary arrival start a fresh one.
+            log("unexpected chapter jump $before -> $after in slot $slot; invalidating the slot's timeline", null)
+            return ArrivalPlan.INVALIDATE
         }
 
         var lineage = current?.lineage

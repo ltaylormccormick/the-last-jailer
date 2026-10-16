@@ -89,7 +89,8 @@
 // digest equals the ledger entry; a loop or legacy Chapter 1 is never rebuilt) - and it proves a candidate by
 // digest before any file I/O, so a state that has moved on costs no reads and nothing is cached against it; a record whose
 // write failed while the app stayed alive is retried verbatim while the ledger still vouches for it;
-// a newer-format checkpoint file switches recording off for that slot for the process and is never touched.
+// a newer-format checkpoint file switches recording off for that slot for the process and is never touched;
+// a forward chapter jump of more than one invalidates the timeline (no such edge exists in the story today).
 // Reading and trusting records (the L2 rule) is for the rewind batch; the tests carry an independent oracle.
 //
 // Open items examined in 2B-2 (outcomes):
@@ -103,7 +104,9 @@
 //     kill before and after the live writes land, Back twice via two different routes. Confirm each
 //     ends with a missing record rather than a wrong one, and that a stale entry cannot be resurrected
 //     by a later arrival.
-// O3. [OPEN, accepted: low, internal-track only.] Older-build rollback: an older app version cannot invalidate on Start Again or SAVE. Examine
+// O3. [OPEN. MANDATORY GATE: must be resolved before any checkpoint-reading or rewind UI is enabled; not
+//     implemented in 2B-2. Until then it is accepted as low risk because nothing reads records and only the
+//     internal track could downgrade.] Older-build rollback: an older app version cannot invalidate on Start Again or SAVE. Examine
 //     whether a live-save fingerprint is worth its cost.
 // O4. [OPEN: release gate.] The real-device interrupted-write test (kill during arrival, copy and rewind) is a release gate
 //     before any rewind UI ships.
