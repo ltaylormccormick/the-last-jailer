@@ -72,7 +72,9 @@ class ArrivalRecorder(
 
     private val pending = HashMap<Int, Pending>()
     private val disabled = HashSet<Int>()
-    private val confirmed = HashMap<Int, Triple<String, Int, String>>()
+
+    /** Per slot: (lineage, chapter, ledger digest) triples this process has seen present in, or written to, the file. */
+    private val confirmed = HashMap<Int, HashSet<Triple<String, Int, String>>>()
 
     /** True while recording is on for [slot]: the kill switch is on and the slot was not shut off. */
     fun isRecording(slot: Int): Boolean = synchronized(this) { recordingEnabled && slot !in disabled }
@@ -121,29 +123,72 @@ class ArrivalRecorder(
         p.attempts += 1
         val result = writeRecords(slot, p.lineage, stillVouched.map { it.value })
         if (result === StoreWriteResult.Committed) {
+            stillVouched.forEach { (chapter, record) -> confirm(slot, p.lineage, chapter, hooks.digest(slot, record)) }
             pending.remove(slot)
         } else {
+            forget(slot, stillVouched.keys.min())
             p.records.keys.retainAll(stillVouched.map { it.key }.toSet())
         }
     }
 
+    /**
+     * Rule R. Pure first, I/O only if there is something provable to repair: a ledger entry can be rebuilt
+     * only from a state whose digest equals the entry exactly, so the candidates are computed without
+     * touching the file. A state that has moved on therefore costs nothing (no read, no write, and nothing
+     * cached that could outlive a changed store), and a lost record stays recoverable for as long as its
+     * proof state exists.
+     *
+     * Two candidates exist: the ledger's latest entry when the player is standing in that chapter (the live
+     * state is the arrival state), and the Chapter 1 genesis entry, which can be rebuilt only from the exact
+     * fresh `GameState` of this slot. A Chapter 1 record that did not come from a fresh game (the Chapter 30
+     * to 1 loop) never matches that digest and is never rebuilt.
+     */
     private fun reconcile(slot: Int, state: GameState, timeline: Timeline?) {
         if (timeline == null) return
-        val (chapter, digest) = timeline.ledger.latest() ?: return
-        if (chapterNumberOf(state) != chapter) return
-        val key = Triple(timeline.lineage, chapter, digest)
-        if (confirmed[slot] == key) return
-        if (!store.isTrusted(slot)) return
-        val read = store.readAll(slot, timeline.lineage)
-        if (read.memoryMayDiffer) return
-        if (read.records.any { it.chapterNumber == chapter && hooks.digest(slot, it) == digest }) {
-            confirmed[slot] = key
-            return
+        val lineage = timeline.lineage
+        fun alreadyKnown(chapter: Int, digest: String) = confirmed[slot]?.contains(Triple(lineage, chapter, digest)) == true
+        val candidates = TreeMap<Int, CheckpointRecord>()
+        timeline.ledger.latest()?.let { (chapter, digest) ->
+            if (chapterNumberOf(state) == chapter && !alreadyKnown(chapter, digest)) {
+                val rebuilt = hooks.buildRecord(state, chapter, lineage)
+                if (hooks.digest(slot, rebuilt) == digest) candidates[chapter] = rebuilt
+            }
         }
-        val rebuilt = hooks.buildRecord(state, chapter, timeline.lineage)
-        if (hooks.digest(slot, rebuilt) != digest) return // the state has moved on: stay absent, never guess
-        val result = writeRecords(slot, timeline.lineage, listOf(rebuilt))
-        if (result === StoreWriteResult.Committed) confirmed[slot] = key else remember(slot, timeline.lineage, listOf(rebuilt))
+        timeline.ledger.digestFor(1)?.let { digest ->
+            if (1 !in candidates && !alreadyKnown(1, digest)) {
+                val genesis = hooks.buildRecord(GameState(activeSlot = slot), 1, lineage)
+                if (hooks.digest(slot, genesis) == digest) candidates[1] = genesis
+            }
+        }
+        val unconfirmed: Map<Int, CheckpointRecord> = candidates
+        if (unconfirmed.isEmpty()) return
+        if (!store.isTrusted(slot)) return
+        val read = store.readAll(slot, lineage)
+        if (read.memoryMayDiffer) return
+        val present = unconfirmed.filter { (chapter, rebuilt) ->
+            read.records.any { it.chapterNumber == chapter && hooks.digest(slot, it) == hooks.digest(slot, rebuilt) }
+        }
+        present.forEach { (chapter, rebuilt) -> confirm(slot, lineage, chapter, hooks.digest(slot, rebuilt)) }
+        val missing = unconfirmed.filterKeys { it !in present.keys }.toSortedMap()
+        if (missing.isEmpty()) return
+        val result = writeRecords(slot, lineage, missing.values.toList())
+        if (result === StoreWriteResult.Committed) {
+            missing.forEach { (chapter, rebuilt) -> confirm(slot, lineage, chapter, hooks.digest(slot, rebuilt)) }
+        } else {
+            forget(slot, missing.firstKey())
+            remember(slot, lineage, missing.values.toList())
+        }
+    }
+
+    private fun confirm(slot: Int, lineage: String, chapter: Int, digest: String) {
+        val set = confirmed.getOrPut(slot) { HashSet() }
+        set.removeAll { it.second == chapter }
+        set.add(Triple(lineage, chapter, digest))
+    }
+
+    /** Drops what is remembered as present for [fromChapter] and above: the file may no longer say so. */
+    private fun forget(slot: Int, fromChapter: Int) {
+        confirmed[slot]?.removeAll { it.second >= fromChapter }
     }
 
     // ---- 2. planning: pure, no I/O, never throws ----------------------------------------------------------
@@ -246,14 +291,18 @@ class ArrivalRecorder(
         try {
             synchronized(this) {
                 if (!recordingEnabled || slot in disabled) return
+                // Before the write, not after: even if the write never returns, the file may now differ from
+                // what was remembered about it, so nothing stale may be trusted as "already present".
+                when (action) {
+                    is ArrivalPlan.ReplaceAll -> confirmed.remove(slot)
+                    is ArrivalPlan.ReplaceFrom -> forget(slot, action.record.chapterNumber)
+                }
                 val result = when (action) {
                     is ArrivalPlan.ReplaceAll -> store.replaceAll(slot, action.lineage, action.records)
                     is ArrivalPlan.ReplaceFrom -> store.replaceFrom(slot, action.lineage, action.record)
                 }
                 if (result === StoreWriteResult.Committed) {
-                    action.records.lastOrNull()?.let { last ->
-                        confirmed[slot] = Triple(action.lineage, last.chapterNumber, hooks.digest(slot, last))
-                    }
+                    action.records.forEach { confirm(slot, action.lineage, it.chapterNumber, hooks.digest(slot, it)) }
                     when (action) {
                         is ArrivalPlan.ReplaceAll -> pending.remove(slot)
                         is ArrivalPlan.ReplaceFrom -> pending[slot]?.let { p ->

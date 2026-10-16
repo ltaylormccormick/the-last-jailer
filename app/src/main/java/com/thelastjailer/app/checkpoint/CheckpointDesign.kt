@@ -84,7 +84,10 @@
 // CRC32); invalidation removes the two keys and a lineage is minted lazily at the first recorded arrival;
 // an arrival always drops ledger entries from its chapter upward even with recording off (so an abandoned
 // branch can never match again); the first record under a new lineage replaces the whole file; repair
-// ("rule R") runs lazily at the next commit, not at startup, and only ever adds a record; a record whose
+// ("rule R") runs lazily at the next commit, not at startup, and only ever adds a record - the ledger's latest
+// entry (from the live arrival state) or a lost Chapter 1 genesis (only from the exact fresh GameState whose
+// digest equals the ledger entry; a loop or legacy Chapter 1 is never rebuilt) - and it proves a candidate by
+// digest before any file I/O, so a state that has moved on costs no reads and nothing is cached against it; a record whose
 // write failed while the app stayed alive is retried verbatim while the ledger still vouches for it;
 // a newer-format checkpoint file switches recording off for that slot for the process and is never touched.
 // Reading and trusting records (the L2 rule) is for the rewind batch; the tests carry an independent oracle.
