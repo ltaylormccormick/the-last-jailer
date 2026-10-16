@@ -373,6 +373,36 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
 
     fun hasSave(slot: Int): Boolean = prefs.contains("$slot.scene")
 
+    /**
+     * Read-only: the exact stored contents of everything under [slot] (the game, its Back snapshot, its
+     * trophies, its timeline keys), as one deterministic text. Two calls return the same text only if nothing
+     * stored for the slot changed in between. Used by the overwrite confirmation to tell that the slot it asked
+     * about is still the slot it is about to replace. Reads the already-loaded preferences map; writes nothing
+     * and adds no keys.
+     */
+    internal fun slotSignature(slot: Int): String {
+        val prefix = "$slot."
+        val out = StringBuilder()
+        prefs.all.entries
+            .filter { it.key.startsWith(prefix) }
+            .sortedBy { it.key }
+            .forEach { entry ->
+                val value = entry.value
+                out.append(entry.key.length).append(':').append(entry.key).append('=')
+                when (value) {
+                    is Set<*> -> {
+                        out.append("set[")
+                        value.map { it.toString() }.sorted().forEach { out.append(it.length).append(':').append(it) }
+                        out.append(']')
+                    }
+                    is String -> out.append("str").append(value.length).append(':').append(value)
+                    else -> out.append(value?.javaClass?.simpleName ?: "null").append(':').append(value)
+                }
+                out.append(';')
+            }
+        return out.toString()
+    }
+
     fun currentActiveSlot(): Int? = prefs.getInt("active_slot", -1).takeIf { it > 0 }
 
     fun setActiveSlot(slot: Int) {

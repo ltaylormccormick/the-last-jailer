@@ -23,7 +23,12 @@ import com.thelastjailer.app.GameState
 import com.thelastjailer.app.SaveStore
 import com.thelastjailer.app.checkpoint.ArrivalRecorder
 import com.thelastjailer.app.commitRestart
-import com.thelastjailer.app.commitSlotSave
+import com.thelastjailer.app.OverwriteRequest
+import com.thelastjailer.app.OverwriteResult
+import com.thelastjailer.app.STALE_MESSAGE
+import com.thelastjailer.app.SlotSaveRequest
+import com.thelastjailer.app.confirmSlotOverwrite
+import com.thelastjailer.app.requestSlotSave
 import com.thelastjailer.app.data.EntitlementRepository
 import com.thelastjailer.app.data.StoryRepository
 
@@ -41,6 +46,41 @@ fun SaveScreen(
     recorder: ArrivalRecorder? = null
 ) {
     var confirmRestart by remember(state.activeSlot) { mutableStateOf(false) }
+    // Not rememberSaveable on purpose: a rotation or process restart drops the question instead of resuming it.
+    // A change of the game on screen also drops it. Dismissing never writes; see SlotOverwrite.kt.
+    var pendingOverwrite by remember(state) { mutableStateOf<OverwriteRequest?>(null) }
+    var notice by remember(state) { mutableStateOf<String?>(null) }
+
+    pendingOverwrite?.let { request ->
+        AlertDialog(
+            onDismissRequest = {
+                request.cancel()
+                pendingOverwrite = null
+            },
+            title = { Text(request.title) },
+            text = { Text(request.message) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingOverwrite = null
+                        when (val result = store.confirmSlotOverwrite(request, state)) {
+                            is OverwriteResult.Saved -> onStateChange(result.state)
+                            is OverwriteResult.Stale -> { notice = result.message }
+                            OverwriteResult.AlreadyHandled -> Unit
+                        }
+                    }
+                ) { Text(request.confirmLabel) }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        request.cancel()
+                        pendingOverwrite = null
+                    }
+                ) { Text("CANCEL") }
+            }
+        )
+    }
 
     if (confirmRestart) {
         AlertDialog(
@@ -96,6 +136,8 @@ fun SaveScreen(
             ) { Text("START AGAIN") }
         }
 
+        notice?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = JailerColors.Gold) }
+
         (1..entitlements.maxSaveSlots()).forEach { slot ->
             val saved = store.load(slot)
             val isActive = slot == state.activeSlot
@@ -117,10 +159,16 @@ fun SaveScreen(
                     }
                     Row {
                         TextButton(onClick = {
-                            // Copying progress into another slot must not inherit that slot's old
-                            // one-step checkpoint or its checkpoint timeline. Saving the currently active
-                            // slot preserves its legitimate story undo checkpoint and timeline.
-                            onStateChange(store.commitSlotSave(slot, state))
+                            // Saving the active slot or an empty slot happens at once. Replacing a different
+                            // occupied slot asks first (requestSlotSave); the copy itself is commitSlotSave.
+                            pendingOverwrite?.cancel()
+                            pendingOverwrite = null
+                            notice = null
+                            when (val result = store.requestSlotSave(slot, state)) {
+                                is SlotSaveRequest.Saved -> onStateChange(result.state)
+                                is SlotSaveRequest.NeedsConfirmation -> { pendingOverwrite = result.request }
+                                SlotSaveRequest.Stale -> { notice = STALE_MESSAGE }
+                            }
                         }) { Text("SAVE") }
                         OutlinedButton(
                             enabled = saved != null,
