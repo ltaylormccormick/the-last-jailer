@@ -95,17 +95,19 @@ class OverwriteRequest internal constructor(
  * Called when SAVE is pressed for [slot] with the game currently on screen.
  *
  * The occupancy check is made now, on the live data, not taken from what the row showed when it was last drawn.
- * For a different, occupied destination it also refuses to ask when the screen is behind the store (a tap that
- * was queued behind an earlier SAVE would otherwise offer to copy a game the player has already moved off).
+ * On every path it refuses to act when the screen is behind the store (a tap queued behind an earlier SAVE would
+ * otherwise copy or ask about a game the player has already moved off); nothing is written then.
  */
 fun SaveStore.requestSlotSave(
     slot: Int,
     state: GameState,
     titleOf: (String) -> String = { StoryRepository.nodeOrNull(it)?.title ?: it }
 ): SlotSaveRequest {
+    // First of all: a tap carrying a screen that is behind the store (a queued tap after an earlier SAVE switched
+    // the active slot) writes nothing, on every path. A game with no persisted active slot is always current.
+    if (!screenIsCurrent(state)) return SlotSaveRequest.Stale
     if (slot == state.activeSlot || !hasSave(slot)) return SlotSaveRequest.Saved(commitSlotSave(slot, state))
     val destination = load(slot) ?: return SlotSaveRequest.Saved(commitSlotSave(slot, state))
-    if (!screenIsCurrent(state)) return SlotSaveRequest.Stale
     return SlotSaveRequest.NeedsConfirmation(
         OverwriteRequest(
             sourceSlot = state.activeSlot,

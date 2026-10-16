@@ -271,6 +271,62 @@ class SlotOverwriteConfirmationTest {
         assertEquals(0, rig.device.queuedApplyCount())
     }
 
+    @Test
+    fun `a queued SAVE for an empty slot with an outdated screen is ignored, not copied`() {
+        val rig = newRig()
+        val source = twoGames(rig)
+        assertTrue(rig.saves.requestSlotSave(3, source) is SlotSaveRequest.Saved) // first tap: active slot is now 3
+        rig.device.flushApplies()
+        val memory = live(rig)
+
+        // second queued tap, still carrying the screen from before the switch, aimed at another empty slot
+        assertEquals(SlotSaveRequest.Stale, rig.saves.requestSlotSave(4, source))
+
+        assertFalse("nothing was copied into slot 4", rig.saves.hasSave(4))
+        assertEquals(3, rig.saves.currentActiveSlot())
+        assertEquals(memory, live(rig))
+        assertEquals(0, rig.device.queuedApplyCount())
+    }
+
+    @Test
+    fun `a queued same-slot SAVE with an outdated screen is ignored, not written`() {
+        val rig = newRig()
+        val source = twoGames(rig)
+        assertTrue(rig.saves.requestSlotSave(3, source) is SlotSaveRequest.Saved)
+        rig.device.flushApplies()
+        val memory = live(rig)
+
+        // tap on the old active slot's own SAVE, with the old screen
+        assertEquals(SlotSaveRequest.Stale, rig.saves.requestSlotSave(1, source.copy(gold = 1)))
+
+        assertEquals("slot 1 untouched", 99, rig.saves.load(1)!!.gold)
+        assertEquals("active slot not switched back", 3, rig.saves.currentActiveSlot())
+        assertEquals(memory, live(rig))
+        assertEquals(0, rig.device.queuedApplyCount())
+    }
+
+    @Test
+    fun `a brand-new game with no persisted active slot can still save to the same and to an empty slot`() {
+        val rig = newRig()
+        assertEquals(null, rig.saves.currentActiveSlot())
+        val fresh = GameState(activeSlot = 1)
+
+        assertTrue(rig.saves.requestSlotSave(1, fresh) is SlotSaveRequest.Saved)
+        val rig2 = newRig()
+        assertTrue(rig2.saves.requestSlotSave(2, fresh) is SlotSaveRequest.Saved)
+        assertTrue(rig2.saves.hasSave(2))
+    }
+
+    @Test
+    fun `a normal same-slot SAVE still saves when the screen matches the persisted active slot`() {
+        val rig = newRig()
+        val source = twoGames(rig)
+        assertEquals(1, rig.saves.currentActiveSlot())
+
+        assertTrue(rig.saves.requestSlotSave(1, source.copy(gold = 5)) is SlotSaveRequest.Saved)
+        assertEquals(5, rig.saves.load(1)!!.gold)
+    }
+
     // ---- stale confirmations ----------------------------------------------------------------------------------
 
     private fun assertStale(rig: Rig, r: OverwriteRequest, current: GameState, reason: StaleReason, memory: Map<String, Any?>) {
