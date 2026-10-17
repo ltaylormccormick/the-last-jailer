@@ -135,6 +135,8 @@ jobs:
               echo "::group::apksigner output for $label"
               echo "$certs"
               echo "::endgroup::"
+              # Also as an annotation, so the exact format can be read without downloading logs.
+              echo "::notice title=apksigner $label::${certs//$'\n'/%0A}"
               # Accept "Signer #1 ..." and "Signer (minSdkVersion=..., maxSdkVersion=...) ..." forms, any hex case.
               digests="$(sed -n 's/^Signer .*certificate SHA-256 digest: *\([0-9A-Fa-f]*\) *$/\1/p' <<<"$certs" | tr 'A-F' 'a-f' | sort -u)"
               n="$(grep -c . <<<"$digests" || true)"
