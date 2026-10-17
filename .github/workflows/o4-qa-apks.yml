@@ -1,0 +1,207 @@
+name: O4 QA APKs
+
+# Builds the three reviewed O4 QA builds in ONE job, so they are all signed by the same temporary debug key
+# that the Android build tools create on this one runner. The key never leaves the runner: only the three
+# APKs and a manifest are uploaded. No secrets, no release or upload key, no stored key of any kind.
+#
+# The three commits are fixed on purpose. Changing them is a reviewed change to this file.
+# The PR trigger runs this workflow when (and only when) this file changes, so it can be validated before merge.
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/o4-qa-apks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      OLD_A_SHA: 3127d2a04115e1992d2c64b32396d27e6da3df12   # Batch 1: safety foundations (#117)
+      OLD_B_SHA: 4755ae45610371f82e26f80d455abd392f52eebe   # Batch 2C-1b-1: confirm before SAVE replaces a slot (#124)
+      NEW_SHA: 071439fc1145a4df21fc844492639ac82e48e6c6     # O3-B: slot state stamp (#125)
+      EXPECTED_PACKAGE: com.thelastjailer.app.debug
+    steps:
+      - name: Checkout OLD-A
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.OLD_A_SHA }}
+          path: src/OLD-A
+          persist-credentials: false
+      - name: Checkout OLD-B
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.OLD_B_SHA }}
+          path: src/OLD-B
+          persist-credentials: false
+      - name: Checkout NEW
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.NEW_SHA }}
+          path: src/NEW
+          persist-credentials: false
+
+      - name: Confirm the exact commits (fail closed)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for pair in "OLD-A:$OLD_A_SHA" "OLD-B:$OLD_B_SHA" "NEW:$NEW_SHA"; do
+            label="${pair%%:*}"; want="${pair#*:}"
+            case "$want" in
+              *[!0-9a-f]*|"") echo "::error::$label commit id is not lowercase hex"; exit 1 ;;
+            esac
+            [ "${#want}" -eq 40 ] || { echo "::error::$label commit id is not 40 characters"; exit 1; }
+            got="$(git -C "src/$label" rev-parse HEAD)"
+            if [ "$got" != "$want" ]; then
+              echo "::error::$label checked out $got, expected $want"; exit 1
+            fi
+            # The commit must be part of main's history ("ahead" = main is ahead of it, "identical" = it is main).
+            status="$(gh api "repos/${GITHUB_REPOSITORY}/compare/${want}...main" --jq .status)"
+            case "$status" in
+              ahead|identical) echo "$label $want is on main ($status)" ;;
+              *) echo "::error::$label $want is not an ancestor of main (compare status: $status)"; exit 1 ;;
+            esac
+          done
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Note any debug key already on the runner
+        run: |
+          set -eu
+          found=no
+          for d in "${ANDROID_USER_HOME:-}" "$HOME/.android"; do
+            if [ -n "$d" ] && [ -e "$d/debug.keystore" ]; then found=yes; fi
+          done
+          echo "debug keystore present before the first build: $found"
+          if [ "$found" = yes ]; then
+            echo "::warning title=Debug key pre-existed::A debug keystore was already on this runner before the first build."
+          fi
+
+      - name: Build the three debug APKs in one job
+        run: |
+          set -euo pipefail
+          mkdir -p qa-apks
+          for label in OLD-A OLD-B NEW; do
+            echo "::group::assembleDebug $label"
+            (cd "src/$label" && ./gradlew assembleDebug --stacktrace)
+            echo "::endgroup::"
+            cp "src/$label/app/build/outputs/apk/debug/app-debug.apk" "qa-apks/$label.apk"
+          done
+          ls -l qa-apks
+
+      - name: Verify the APKs, then write the manifest (fail closed)
+        run: |
+          set -euo pipefail
+          QA_DIR="${QA_DIR:-qa-apks}"
+          BT="${QA_BUILD_TOOLS:-}"
+          if [ -z "$BT" ]; then
+            root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}/build-tools"
+            [ -d "$root" ] || { echo "::error::Android build-tools folder not found"; exit 1; }
+            BT="$root/$(ls "$root" | sort -V | tail -1)"
+          fi
+          AAPT2="$BT/aapt2"; APKSIGNER="$BT/apksigner"
+          [ -x "$AAPT2" ] && [ -x "$APKSIGNER" ] || { echo "::error::aapt2 or apksigner missing in $BT"; exit 1; }
+
+          fail=0
+          problem() { echo "::error::$*"; fail=1; }
+          declare -A COMMIT=( [OLD-A]="$OLD_A_SHA" [OLD-B]="$OLD_B_SHA" [NEW]="$NEW_SHA" )
+          declare -A FP SHA BYTES VCODE VNAME PKG LABELTXT
+          for label in OLD-A OLD-B NEW; do
+            apk="$QA_DIR/$label.apk"
+            if [ ! -s "$apk" ]; then problem "$label: $apk is missing or empty"; continue; fi
+            SHA[$label]="$(sha256sum "$apk" | cut -d' ' -f1)"
+            BYTES[$label]="$(stat -c %s "$apk")"
+            badging="$("$AAPT2" dump badging "$apk" 2>/dev/null || true)"
+            PKG[$label]="$(sed -n "s/^package: name='\([^']*\)'.*/\1/p" <<<"$badging" | head -n1)"
+            VCODE[$label]="$(sed -n "s/^package: .* versionCode='\([^']*\)'.*/\1/p" <<<"$badging" | head -n1)"
+            VNAME[$label]="$(sed -n "s/^package: .* versionName='\([^']*\)'.*/\1/p" <<<"$badging" | head -n1)"
+            LABELTXT[$label]="$(sed -n "s/^application-label:'\(.*\)'$/\1/p" <<<"$badging" | head -n1)"
+            [ "${PKG[$label]}" = "$EXPECTED_PACKAGE" ] || problem "$label: package is '${PKG[$label]}', expected $EXPECTED_PACKAGE"
+            [ "${VCODE[$label]}" = "1" ] || problem "$label: versionCode is '${VCODE[$label]}', expected 1"
+            grep -q '^application-debuggable' <<<"$badging" || problem "$label: not a debuggable build"
+            if certs="$("$APKSIGNER" verify --print-certs "$apk" 2>&1)"; then
+              n="$(grep -c '^Signer #[0-9]* certificate SHA-256 digest: ' <<<"$certs" || true)"
+              [ "$n" = "1" ] || problem "$label: expected exactly 1 signer, found $n"
+              FP[$label]="$(sed -n 's/^Signer #1 certificate SHA-256 digest: \([0-9a-f]*\)$/\1/p' <<<"$certs" | head -n1)"
+              [ -n "${FP[$label]}" ] || problem "$label: could not read the signer fingerprint"
+            else
+              problem "$label: apksigner could not verify the signature"
+              FP[$label]=""
+            fi
+          done
+
+          if [ "$fail" -eq 0 ]; then
+            [ "${FP[OLD-A]}" = "${FP[OLD-B]}" ] && [ "${FP[OLD-B]}" = "${FP[NEW]}" ] \
+              || problem "the three APKs are NOT signed by the same certificate"
+            if [ "${SHA[OLD-A]}" = "${SHA[OLD-B]}" ] || [ "${SHA[OLD-B]}" = "${SHA[NEW]}" ] || [ "${SHA[OLD-A]}" = "${SHA[NEW]}" ]; then
+              problem "two APKs are byte-identical, so they are not three different builds"
+            fi
+          fi
+
+          # Nothing but the three APKs and the manifest may ever be uploaded (no key material, no extras).
+          unexpected="$(cd "$QA_DIR" && find . -type f ! -name OLD-A.apk ! -name OLD-B.apk ! -name NEW.apk ! -name MANIFEST.txt | sort)"
+          [ -z "$unexpected" ] || problem "unexpected files in $QA_DIR: $unexpected"
+
+          if [ "$fail" -ne 0 ]; then echo "Verification FAILED; nothing will be uploaded."; exit 1; fi
+
+          {
+            echo "The Last Jailer - O4 QA APK set"
+            echo "workflow run: ${GITHUB_RUN_ID:-local} (attempt ${GITHUB_RUN_ATTEMPT:-1})"
+            echo "workflow commit: ${GITHUB_SHA:-local}"
+            echo "runner image: ${ImageOS:-unknown} ${ImageVersion:-unknown}"
+            echo "expected package: $EXPECTED_PACKAGE"
+            echo "signing: one temporary debug key created on this runner; the key is not stored or uploaded"
+            echo
+            for label in OLD-A OLD-B NEW; do
+              echo "$label.apk"
+              echo "  commit:       ${COMMIT[$label]}"
+              echo "  bytes:        ${BYTES[$label]}"
+              echo "  sha256:       ${SHA[$label]}"
+              echo "  package:      ${PKG[$label]}"
+              echo "  versionCode:  ${VCODE[$label]}"
+              echo "  versionName:  ${VNAME[$label]}"
+              echo "  app label:    ${LABELTXT[$label]}"
+              echo "  signer sha256 ${FP[$label]}"
+            done
+            echo
+            echo "All three APKs have the same signer certificate: ${FP[NEW]}"
+          } > "$QA_DIR/MANIFEST.txt"
+          cat "$QA_DIR/MANIFEST.txt"
+
+          for label in OLD-A OLD-B NEW; do
+            echo "::notice title=O4 $label::commit=${COMMIT[$label]} sha256=${SHA[$label]} signer=${FP[$label]} package=${PKG[$label]} versionCode=${VCODE[$label]} label='${LABELTXT[$label]}'"
+          done
+          if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+            {
+              echo "### O4 QA APK set (fingerprints and hashes only)"
+              echo
+              echo "| Build | Commit | APK SHA-256 | Signer SHA-256 |"
+              echo "|---|---|---|---|"
+              for label in OLD-A OLD-B NEW; do
+                echo "| $label | \`${COMMIT[$label]:0:7}\` | \`${SHA[$label]}\` | \`${FP[$label]}\` |"
+              done
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload the QA APKs and manifest
+        uses: actions/upload-artifact@v7
+        with:
+          name: o4-qa-apks-${{ github.run_id }}
+          path: |
+            qa-apks/OLD-A.apk
+            qa-apks/OLD-B.apk
+            qa-apks/NEW.apk
+            qa-apks/MANIFEST.txt
+          if-no-files-found: error
+          retention-days: 14
