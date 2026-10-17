@@ -130,12 +130,22 @@ jobs:
             [ "${PKG[$label]}" = "$EXPECTED_PACKAGE" ] || problem "$label: package is '${PKG[$label]}', expected $EXPECTED_PACKAGE"
             [ "${VCODE[$label]}" = "1" ] || problem "$label: versionCode is '${VCODE[$label]}', expected 1"
             grep -q '^application-debuggable' <<<"$badging" || problem "$label: not a debuggable build"
-            if certs="$("$APKSIGNER" verify --print-certs "$apk" 2>&1)"; then
-              n="$(grep -c '^Signer #[0-9]* certificate SHA-256 digest: ' <<<"$certs" || true)"
-              [ "$n" = "1" ] || problem "$label: expected exactly 1 signer, found $n"
-              FP[$label]="$(sed -n 's/^Signer #1 certificate SHA-256 digest: \([0-9a-f]*\)$/\1/p' <<<"$certs" | head -n1)"
-              [ -n "${FP[$label]}" ] || problem "$label: could not read the signer fingerprint"
+            if certs="$("$APKSIGNER" verify --print-certs -v "$apk" 2>&1)"; then
+              # Public information only: certificate subject and SHA-256 fingerprints, never key material.
+              echo "::group::apksigner output for $label"
+              echo "$certs"
+              echo "::endgroup::"
+              # Accept "Signer #1 ..." and "Signer (minSdkVersion=..., maxSdkVersion=...) ..." forms, any hex case.
+              digests="$(sed -n 's/^Signer .*certificate SHA-256 digest: *\([0-9A-Fa-f]*\) *$/\1/p' <<<"$certs" | tr 'A-F' 'a-f' | sort -u)"
+              n="$(grep -c . <<<"$digests" || true)"
+              if [ "$n" = "1" ]; then
+                FP[$label]="$digests"
+              else
+                problem "$label: expected exactly 1 distinct signer certificate, found $n"
+                FP[$label]=""
+              fi
             else
+              echo "$certs"
               problem "$label: apksigner could not verify the signature"
               FP[$label]=""
             fi
