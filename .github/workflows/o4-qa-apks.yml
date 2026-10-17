@@ -76,17 +76,46 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Note any debug key already on the runner
+      - name: Write the fresh-key guard
         run: |
-          set -eu
-          found=no
-          for d in "${ANDROID_USER_HOME:-}" "$HOME/.android"; do
-            if [ -n "$d" ] && [ -e "$d/debug.keystore" ]; then found=yes; fi
+          cat > "$RUNNER_TEMP/fresh-key-guard.sh" <<'GUARD'
+          #!/bin/bash
+          # Fails if ANY debug keystore already exists where the Android build tools would look for one.
+          # The QA builds must use a key created on this runner during this job, so the guard must pass
+          # BEFORE the first build. The three builds then share the key the first build creates.
+          set -u
+          found=""
+          for d in "${ANDROID_USER_HOME:-}" "${ANDROID_SDK_HOME:-}/.android" "${HOME:-}/.android"; do
+            case "$d" in ""|"/.android") continue ;; esac
+            if [ -e "$d/debug.keystore" ]; then found="$found $d/debug.keystore"; fi
           done
-          echo "debug keystore present before the first build: $found"
-          if [ "$found" = yes ]; then
-            echo "::warning title=Debug key pre-existed::A debug keystore was already on this runner before the first build."
+          if [ -n "$found" ]; then
+            echo "::error title=Debug key pre-existed::A debug keystore already exists on this runner:$found. The QA builds must use a fresh key."
+            exit 1
           fi
+          echo "no pre-existing debug keystore"
+          GUARD
+          chmod +x "$RUNNER_TEMP/fresh-key-guard.sh"
+      - name: Self-test the fresh-key guard
+        run: |
+          set -u
+          guard="$RUNNER_TEMP/fresh-key-guard.sh"
+          t="$(mktemp -d)"
+          mkdir -p "$t/clean" "$t/dirty/.android" "$t/custom"
+          : > "$t/dirty/.android/debug.keystore"
+          : > "$t/custom/debug.keystore"
+          env -u ANDROID_USER_HOME -u ANDROID_SDK_HOME HOME="$t/clean" "$guard" >/dev/null \
+            || { echo "::error::guard self-test: a clean home was wrongly rejected"; exit 1; }
+          if env -u ANDROID_USER_HOME -u ANDROID_SDK_HOME HOME="$t/dirty" "$guard" >/dev/null 2>&1; then
+            echo "::error::guard self-test: a pre-existing ~/.android/debug.keystore was NOT rejected"; exit 1
+          fi
+          if env -u ANDROID_SDK_HOME HOME="$t/clean" ANDROID_USER_HOME="$t/custom" "$guard" >/dev/null 2>&1; then
+            echo "::error::guard self-test: a pre-existing keystore in ANDROID_USER_HOME was NOT rejected"; exit 1
+          fi
+          rm -rf "$t"
+          echo "guard self-test passed: clean home accepted, both pre-existing-key cases rejected"
+      - name: Require a fresh runner (no pre-existing debug key)
+        run: '"$RUNNER_TEMP/fresh-key-guard.sh"'
 
       - name: Build the three debug APKs in one job
         run: |
@@ -196,6 +225,9 @@ jobs:
             echo "All three APKs have the same signer certificate: ${FP[NEW]}"
           } > "$QA_DIR/MANIFEST.txt"
           cat "$QA_DIR/MANIFEST.txt"
+          # The same content as annotations (public information only), so the result is readable without downloading logs.
+          echo "::notice title=MANIFEST.txt::$(sed ':a;N;$!ba;s/\n/%0A/g' "$QA_DIR/MANIFEST.txt")"
+          echo "::notice title=Upload folder::$(cd "$QA_DIR" && find . -type f -printf '%P (%s bytes)\n' | sort | paste -sd ';' -)"
 
           for label in OLD-A OLD-B NEW; do
             echo "::notice title=O4 $label::commit=${COMMIT[$label]} sha256=${SHA[$label]} signer=${FP[$label]} package=${PKG[$label]} versionCode=${VCODE[$label]} label='${LABELTXT[$label]}'"
