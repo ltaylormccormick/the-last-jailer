@@ -137,9 +137,15 @@ jobs:
               echo "::endgroup::"
               # Also as an annotation, so the exact format can be read without downloading logs.
               echo "::notice title=apksigner $label::${certs//$'\n'/%0A}"
-              # Accept "Signer #1 ..." and "Signer (minSdkVersion=..., maxSdkVersion=...) ..." forms, any hex case.
-              digests="$(sed -n 's/^Signer .*certificate SHA-256 digest: *\([0-9A-Fa-f]*\) *$/\1/p' <<<"$certs" | tr 'A-F' 'a-f' | sort -u)"
+              # apksigner words this differently across versions: "Signer #1 certificate SHA-256 digest: <hex>" or,
+              # as seen on the GitHub runner, "V2 Signer: certificate SHA-256 digest: <hex>" (V3 forms exist too).
+              # Any hex case. Several schemes repeat the same digest, so the digests are de-duplicated.
+              digests="$(sed -n 's/^\(Signer\|V[0-9.]* Signer\)[^:]*:\{0,1\} certificate SHA-256 digest: *\([0-9A-Fa-f]*\) *$/\2/p' <<<"$certs" | tr 'A-F' 'a-f' | sort -u)"
               n="$(grep -c . <<<"$digests" || true)"
+              signers="$(sed -n 's/^Number of signers: *\([0-9]*\) *$/\1/p' <<<"$certs" | head -n1)"
+              if [ -n "$signers" ] && [ "$signers" != "1" ]; then
+                problem "$label: apksigner reports $signers signers, expected 1"
+              fi
               if [ "$n" = "1" ]; then
                 FP[$label]="$digests"
               else
