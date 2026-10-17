@@ -110,10 +110,16 @@
 //     kill before and after the live writes land, Back twice via two different routes. Confirm each
 //     ends with a missing record rather than a wrong one, and that a stale entry cannot be resurrected
 //     by a later arrival.
-// O3. [OPEN. MANDATORY GATE: must be resolved before any checkpoint-reading or rewind UI is enabled; not
-//     implemented in 2B-2. Until then it is accepted as low risk because nothing reads records and only the
-//     internal track could downgrade.] Older-build rollback: an older app version cannot invalidate on Start Again or SAVE. Examine
-//     whether a live-save fingerprint is worth its cost.
+// O3. [CODE DONE in O3-B (SlotStamp.kt, SaveStore.save / readTimeline / stampValid); the real-device downgrade
+//     check stays in the O4 gate before any checkpoint-reading or rewind UI is enabled.] Older-build rollback: an
+//     older app version cannot invalidate on Start Again or SAVE, so it can change the game and leave a ledger that
+//     no longer describes it. The slot stamp (`<slot>.stamp`, one additive key) is a 128-bit digest over the slot,
+//     every stored state field and the stored lineage and ledger text, written in the same editor batch as them.
+//     A build without the stamp changes the state and leaves the stamp, so the timeline is unvouched: readTimeline
+//     returns null, and a Keep save is downgraded to Invalidate so an ordinary save can never re-bless the stale
+//     ledger. History goes missing, never wrong; progress and trophies are never touched. The stamp is an extra gate:
+//     the lineage, ledger-digest and checkpoint-file checks still apply to everything it lets through.
+//     Accepted limitation: an older build that writes back the byte-identical stamped state restores trust.
 // O4. [OPEN: release gate.] The real-device interrupted-write test (kill during arrival, copy and rewind) is a release gate
 //     before any rewind UI ships.
 package com.thelastjailer.app.checkpoint

@@ -157,7 +157,15 @@ class CheckpointTimelineTest {
         val device = SimulatedDevice()
         // a fresh process view each time, as after a restart, so what is read is what is on disk
         fun read(): Timeline? = SaveStore(device.prefs(Story.LIVE)).readTimeline(1)
-        fun put(k: String, v: Any?) = device.putDiskValue(Story.LIVE, k, v)
+        // This test is about the *format* of the lineage and ledger, so each stored combination carries a valid
+        // slot stamp (O3-B) over exactly the text stored; the stamp's own behaviour is in SlotStampTest.
+        SaveStore(device.prefs(Story.LIVE)).save(1, GameState(activeSlot = 1), TimelineWrite.Invalidate)
+        val stateKeys = listOf("chapter", "scene", "courage", "honour", "health", "maxHealth", "gold", "level", "xp", "xpToNextLevel", "inventory", "trophies", "flags")
+        fun put(k: String, v: Any?) {
+            device.putDiskValue(Story.LIVE, k, v)
+            val d = device.disk(Story.LIVE)
+            device.putDiskValue(Story.LIVE, "1.stamp", SlotStamp.of(1, stateKeys.map { it to d["1.$it"] }, d["1.lineage"] as? String, d["1.arrivals"] as? String))
+        }
         put("1.lineage", lineage)
         assertEquals(Timeline(lineage, Ledger.EMPTY), read())
         put("1.arrivals", "2:$d1")
@@ -172,6 +180,10 @@ class CheckpointTimelineTest {
         put("1.lineage", lineage)
         put("1.arrivals", 7)
         assertTrue("a wrong value type must not throw", read() == null)
+        put("1.arrivals", "2:$d1")
+        assertEquals(Timeline(lineage, Ledger.EMPTY.with(2, d1)), read())
+        device.putDiskValue(Story.LIVE, "1.arrivals", "2:$d1,3:$d1") // changed without re-stamping: not vouched for
+        assertTrue("a timeline the stamp does not vouch for is no timeline", read() == null)
     }
 
     @Test
