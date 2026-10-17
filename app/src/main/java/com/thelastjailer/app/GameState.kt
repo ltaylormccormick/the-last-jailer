@@ -2,6 +2,7 @@ package com.thelastjailer.app
 
 import com.thelastjailer.app.checkpoint.Ledger
 import com.thelastjailer.app.checkpoint.Lineage
+import com.thelastjailer.app.checkpoint.SlotStamp
 import com.thelastjailer.app.checkpoint.Timeline
 import com.thelastjailer.app.checkpoint.TimelineKeys
 import com.thelastjailer.app.checkpoint.TimelineWrite
@@ -218,6 +219,12 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
      *
      * [clearBackSnapshot] removes the slot's Back snapshot in the same batch (see the comment in the body).
      * It is off by default, so every existing caller behaves exactly as before.
+     *
+     * Every call also writes the slot stamp ([SlotStamp]) in the same batch, over the state, lineage and ledger
+     * this batch leaves behind. A [TimelineWrite.Keep] is honoured only if the timeline that is stored right now
+     * still matches its stamp; otherwise (an older build touched the slot, the stamp is missing or damaged) it is
+     * downgraded to [TimelineWrite.Invalidate]. Without that, an ordinary save would re-stamp, and so re-bless,
+     * a ledger that no longer describes the state.
      */
     fun save(
         slot: Int,
@@ -225,31 +232,54 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
         timeline: TimelineWrite = TimelineWrite.Invalidate,
         clearBackSnapshot: Boolean = false
     ) {
+        val effective = if (timeline === TimelineWrite.Keep && !stampValid(slot)) TimelineWrite.Invalidate else timeline
+        val lineageText: String?
+        val arrivalsText: String?
+        when (effective) {
+            TimelineWrite.Keep -> {
+                // Only reached when stampValid(slot) held, so each of these is a genuine string or absent.
+                val stored = prefs.all
+                lineageText = stored[TimelineKeys.lineage(slot)] as? String
+                arrivalsText = stored[TimelineKeys.arrivals(slot)] as? String
+            }
+            TimelineWrite.Invalidate -> {
+                lineageText = null
+                arrivalsText = null
+            }
+            is TimelineWrite.Set -> {
+                lineageText = effective.lineage
+                arrivalsText = if (effective.ledger.isEmpty) null else effective.ledger.encode()
+            }
+        }
         val editor = writeState(slot.toString(), state, prefs.edit()).putInt("active_slot", slot)
+            .putString(TimelineKeys.stamp(slot), SlotStamp.of(slot, stampFields(stateValues(state)), lineageText, arrivalsText))
         // The slot's one-step Back snapshot belongs to the game that was in the slot. When this write replaces
         // that game with a different one, the snapshot must go in the SAME editor batch as the new state, so no
         // crash can leave the new game next to the old game's snapshot.
         if (clearBackSnapshot) removePreviousKeys(editor, slot)
-        when (timeline) {
+        when (effective) {
             TimelineWrite.Keep -> Unit
             TimelineWrite.Invalidate -> editor
                 .remove(TimelineKeys.lineage(slot))
                 .remove(TimelineKeys.arrivals(slot))
             is TimelineWrite.Set -> {
-                editor.putString(TimelineKeys.lineage(slot), timeline.lineage)
-                if (timeline.ledger.isEmpty) editor.remove(TimelineKeys.arrivals(slot))
-                else editor.putString(TimelineKeys.arrivals(slot), timeline.ledger.encode())
+                editor.putString(TimelineKeys.lineage(slot), effective.lineage)
+                if (effective.ledger.isEmpty) editor.remove(TimelineKeys.arrivals(slot))
+                else editor.putString(TimelineKeys.arrivals(slot), effective.ledger.encode())
             }
         }
         editor.apply()
     }
 
     /**
-     * The slot's checkpoint timeline, or null when it has none or it is damaged (malformed lineage,
-     * malformed ledger, wrong value type). Never throws: a damaged timeline is simply "no timeline".
+     * The slot's checkpoint timeline, or null when it has none, it is damaged (malformed lineage, malformed
+     * ledger, wrong value type), or the slot stamp does not match what is stored ([stampValid]: the slot was
+     * changed by something that does not stamp, such as an older build). Never throws: a damaged or unvouched
+     * timeline is simply "no timeline". This is the only place the raw timeline keys are read; every consumer
+     * of history goes through here, so none can see a timeline the stamp does not vouch for.
      */
     fun readTimeline(slot: Int): Timeline? = try {
-        val lineage = prefs.getString(TimelineKeys.lineage(slot), null)
+        val lineage = if (stampValid(slot)) prefs.getString(TimelineKeys.lineage(slot), null) else null
         if (lineage == null || !Lineage.isWellFormed(lineage)) {
             null
         } else {
@@ -259,6 +289,53 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
     } catch (e: RuntimeException) {
         null
     }
+
+    /**
+     * True only if the stored `<slot>.stamp` equals the stamp of the state fields, lineage text and ledger text
+     * that are stored right now, exactly as stored. Missing, malformed or wrong-typed anything is false. Reads
+     * the already-loaded preferences map; writes nothing.
+     */
+    internal fun stampValid(slot: Int): Boolean = try {
+        val stored = prefs.all
+        val stamp = stored[TimelineKeys.stamp(slot)] as? String
+        stamp != null && stored["$slot.scene"] is String && stamp == SlotStamp.of(
+            slot,
+            stampFields(stateFields.associateWith { stored["$slot.$it"] }),
+            storedTimelineText(stored[TimelineKeys.lineage(slot)]),
+            storedTimelineText(stored[TimelineKeys.arrivals(slot)])
+        )
+    } catch (e: RuntimeException) {
+        false
+    }
+
+    /**
+     * Absent stays null (a slot stamped without a timeline stays valid); a string is itself; anything else is a
+     * marker no stamp was ever computed over, so a wrong-typed value can never pass for an absent one.
+     */
+    private fun storedTimelineText(value: Any?): String? = when (value) {
+        null -> null
+        is String -> value
+        else -> "\u0000wrong-type:" + value.javaClass.name
+    }
+
+    private fun stampFields(values: Map<String, Any?>): List<Pair<String, Any?>> = stateFields.map { it to values[it] }
+
+    /** The state fields exactly as [writeState] stores them (same types), for the stamp. */
+    private fun stateValues(state: GameState): Map<String, Any?> = mapOf(
+        "chapter" to state.chapterId,
+        "scene" to state.sceneId,
+        "courage" to state.courage,
+        "honour" to state.honour,
+        "health" to state.health,
+        "maxHealth" to state.maxHealth,
+        "gold" to state.gold,
+        "level" to state.level,
+        "xp" to state.xp,
+        "xpToNextLevel" to state.xpToNextLevel,
+        "inventory" to state.inventory.joinToString(","),
+        "trophies" to state.trophies,
+        "flags" to state.flags
+    )
 
     /**
      * Persists exactly one pre-choice state for the active slot. Restoring this snapshot is safer

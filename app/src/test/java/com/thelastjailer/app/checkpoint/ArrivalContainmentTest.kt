@@ -248,9 +248,12 @@ class ArrivalContainmentTest {
         session(withRec)
         session(without)
 
-        fun stripped(rig: Rig) = rig.liveFile().filterKeys { !it.endsWith(".lineage") && !it.endsWith(".arrivals") }
+        // The slot stamp (O3-B) is part of the timeline bookkeeping: it covers the timeline text, so it differs
+        // whenever the timeline keys differ. Every other key, including every game-state key, must be identical.
+        fun stripped(rig: Rig) = rig.liveFile().filterKeys { !it.endsWith(".lineage") && !it.endsWith(".arrivals") && !it.endsWith(".stamp") }
         assertEquals(stripped(without), stripped(withRec))
         assertEquals(without.device.disk(Story.ENTITLEMENTS), withRec.device.disk(Story.ENTITLEMENTS))
+        assertTrue("every slot with a game is stamped and the stamp is valid", listOf(1, 2, 3).all { withRec.saves.stampValid(it) && without.saves.stampValid(it) })
         val previousKeys = withRec.liveFile().keys.filter { it.startsWith("1.previous.") }.map { it.removePrefix("1.previous.") }.toSet()
         assertTrue(previousKeys.all { it in setOf("chapter", "scene", "courage", "honour", "health", "maxHealth", "gold", "level", "xp", "xpToNextLevel", "inventory", "trophies", "flags") })
     }

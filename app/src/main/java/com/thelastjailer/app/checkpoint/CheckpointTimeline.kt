@@ -6,6 +6,9 @@ import java.util.TreeMap
 object TimelineKeys {
     fun lineage(slot: Int): String = "$slot.lineage"
     fun arrivals(slot: Int): String = "$slot.arrivals"
+
+    /** The slot stamp (see [SlotStamp]): proof that the state, lineage and ledger were written together. */
+    fun stamp(slot: Int): String = "$slot.stamp"
 }
 
 /**
