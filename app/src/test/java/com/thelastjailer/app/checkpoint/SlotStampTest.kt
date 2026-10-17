@@ -222,6 +222,35 @@ class SlotStampTest {
     }
 
     @Test
+    fun `a wrong typed timeline key is not the same as an absent one`() {
+        // The slot was stamped with NO timeline. A wrong-typed value later appearing under a timeline key must
+        // not look like "still absent": the stamp must fail closed, and a Keep save must remove the stray key.
+        for (key in listOf("1.lineage", "1.arrivals")) {
+            val rig = Rig(withRecorder = false)
+            rig.saves.save(1, GameState(activeSlot = 1, gold = 5))
+            assertTrue(rig.saves.stampValid(1))
+            rig.device.prefs(Story.LIVE).edit().putInt(key, 7).commit()
+
+            assertFalse("$key as an int", rig.saves.stampValid(1))
+            assertTrue(rig.timeline() == null)
+
+            rig.saves.save(1, rig.saves.load(1)!!, TimelineWrite.Keep)
+            assertFalse("$key: the stray value is removed by the downgraded Keep", rig.liveFile().containsKey(key))
+            assertTrue("$key: and the slot is vouched for again", rig.saves.stampValid(1))
+        }
+        for (key in listOf("1.lineage", "1.arrivals")) {   // other wrong types, and a set where a string belongs
+            val rig = Rig(withRecorder = false)
+            rig.saves.save(1, GameState(activeSlot = 1))
+            rig.device.prefs(Story.LIVE).edit().putStringSet(key, setOf("x")).commit()
+            assertFalse("$key as a set", rig.saves.stampValid(1))
+            rig.device.prefs(Story.LIVE).edit().remove(key).putBoolean(key, true).commit()
+            assertFalse("$key as a boolean", rig.saves.stampValid(1))
+            rig.device.prefs(Story.LIVE).edit().remove(key).commit()
+            assertTrue("$key genuinely absent is valid again", rig.saves.stampValid(1))
+        }
+    }
+
+    @Test
     fun `a stamp replayed from an earlier moment does not vouch for a later state`() {
         val rig = Rig(); rig.playTo(3)
         val early = rig.device.disk(Story.LIVE)["1.stamp"]

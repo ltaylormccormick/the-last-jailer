@@ -237,6 +237,7 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
         val arrivalsText: String?
         when (effective) {
             TimelineWrite.Keep -> {
+                // Only reached when stampValid(slot) held, so each of these is a genuine string or absent.
                 val stored = prefs.all
                 lineageText = stored[TimelineKeys.lineage(slot)] as? String
                 arrivalsText = stored[TimelineKeys.arrivals(slot)] as? String
@@ -300,11 +301,21 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
         stamp != null && stored["$slot.scene"] is String && stamp == SlotStamp.of(
             slot,
             stampFields(stateFields.associateWith { stored["$slot.$it"] }),
-            stored[TimelineKeys.lineage(slot)] as? String,
-            stored[TimelineKeys.arrivals(slot)] as? String
+            storedTimelineText(stored[TimelineKeys.lineage(slot)]),
+            storedTimelineText(stored[TimelineKeys.arrivals(slot)])
         )
     } catch (e: RuntimeException) {
         false
+    }
+
+    /**
+     * Absent stays null (a slot stamped without a timeline stays valid); a string is itself; anything else is a
+     * marker no stamp was ever computed over, so a wrong-typed value can never pass for an absent one.
+     */
+    private fun storedTimelineText(value: Any?): String? = when (value) {
+        null -> null
+        is String -> value
+        else -> "\u0000wrong-type:" + value.javaClass.name
     }
 
     private fun stampFields(values: Map<String, Any?>): List<Pair<String, Any?>> = stateFields.map { it to values[it] }
