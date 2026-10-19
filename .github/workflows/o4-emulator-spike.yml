@@ -643,7 +643,7 @@ jobs:
               function attr(s, name,   re, v) { re = " " name "=\"[^\"]*\""; if (match(s, re)) { v = substr(s, RSTART + length(name) + 3, RLENGTH - length(name) - 4); return v } return "" }
               { t = attr($0, "text"); d = attr($0, "content-desc"); b = attr($0, "bounds"); c = attr($0, "clickable")
                 ok = (M == "exact") ? (t == L || d == L) : (index(t, L) > 0 || index(d, L) > 0)
-                if (!ok || b == "") next
+                if (!ok || b !~ /^\[[0-9]+,[0-9]+\]\[[0-9]+,[0-9]+\]$/) next
                 gsub(/[][,]/, " ", b); split(b, p, " ")
                 x = int((p[1] + p[3]) / 2); y = int((p[2] + p[4]) / 2)
                 if (p[3] <= p[1] || p[4] <= p[2]) next
@@ -651,27 +651,43 @@ jobs:
                 if (NAVTOP > 0 && y >= NAVTOP - 10) next
                 print x, y, (c == "true" ? 1 : 0) }' <<<"$UIXML"
           }
-          SCREEN_H=0; NAV_TOP=0
-          learn_screen() { # screen height and the top of the bottom navigation bar, from the current $UIXML
+          SCREEN_H=0; NAV_TOP=0; NAV_OK=no
+          # The bottom navigation bar is the LOWEST row of navigation labels. The lowest node that carries one of the six names sets
+          # the row, and at least three different names must sit in that row (within 40 px of it, in the lower half of the screen).
+          # Same-named icons elsewhere (the Story header has an "Inventory" icon at the top) and stray text above the row are ignored.
+          # If the row cannot be established, NAV_OK stays "no" and nothing is tapped.
+          learn_screen() {
             SCREEN_H="$(dsh "wm size" | sed -n 's/.*: *[0-9]*x\([0-9]*\).*/\1/p' | tail -n1)"; SCREEN_H="${SCREEN_H:-0}"
-            NAV_TOP=0
-            local l top t
-            for l in $LABELS; do
-              top="$(awk -v L="$l" '
-                function attr(s, name,   re) { re = " " name "=\"[^\"]*\""; if (match(s, re)) return substr(s, RSTART + length(name) + 3, RLENGTH - length(name) - 4); return "" }
-                { if (attr($0, "text") == L || attr($0, "content-desc") == L) { b = attr($0, "bounds"); gsub(/[][,]/, " ", b); split(b, p, " "); print p[2] } }' <<<"$UIXML" | head -n1)"
-              if [ -n "$top" ] && { [ "$NAV_TOP" -eq 0 ] || [ "$top" -lt "$NAV_TOP" ]; }; then NAV_TOP="$top"; fi
-            done
+            NAV_TOP=0; NAV_OK=no
+            [ "$SCREEN_H" -gt 0 ] 2>/dev/null || { SCREEN_H=0; return 0; }
+            local row cnt top
+            row="$(awk -v LABELS="$LABELS" -v H="$SCREEN_H" '
+              function attr(s, name,   re) { re = " " name "=\"[^\"]*\""; if (match(s, re)) return substr(s, RSTART + length(name) + 3, RLENGTH - length(name) - 4); return "" }
+              BEGIN { n = split(LABELS, want, " "); for (i = 1; i <= n; i++) isnav[want[i]] = 1 }
+              { b = attr($0, "bounds"); if (b !~ /^\[[0-9]+,[0-9]+\]\[[0-9]+,[0-9]+\]$/) next
+                l = attr($0, "text"); if (!(l in isnav)) l = attr($0, "content-desc"); if (!(l in isnav)) next
+                gsub(/[][,]/, " ", b); split(b, p, " ")
+                if (p[3] <= p[1] || p[4] <= p[2] || p[4] > H) next
+                if (!(l in lowest) || p[2] > lowest[l]) lowest[l] = p[2] }
+              END { max = -1; for (l in lowest) if (lowest[l] > max) max = lowest[l]
+                    if (max < 0) { print "0 0"; exit }
+                    cnt = 0; min = max; for (l in lowest) if (lowest[l] >= max - 40) { cnt++; if (lowest[l] < min) min = lowest[l] }
+                    print cnt, min }' <<<"$UIXML")"
+            read -r cnt top <<<"$row"
+            if [ "${cnt:-0}" -ge 3 ] && [ "${top:-0}" -gt $((SCREEN_H / 2)) ]; then NAV_TOP="$top"; NAV_OK=yes; fi
+            return 0
           }
           ui_has() { # label mode : 0 shown / 1 not shown / 2 UI unreadable
             ui_dump || return 2
             [ -n "$(ui_match "$1" "$2" | head -n1)" ]
           }
-          tap_label() { # label : find the button (clickable) with bounded scrolling and activate it once. 0 tapped / 1 not found / 2 unreadable / 3 tap limit
-            local label="$1" n m x y c
+          tap_label() { # label : find the button (clickable) with bounded scrolling and activate it once. 0 tapped / 1 not found / 2 unreadable / 3 tap limit / 4 no safe area
+            local label="$1" n m x y c nav_seen=no
             for n in $(seq 0 "$SCROLL_TRIES"); do
               ui_dump || return 2
               learn_screen
+              if [ "$NAV_OK" != yes ]; then sleep 1; continue; fi   # no safe tap area established: neither tap nor scroll on a guess
+              nav_seen=yes
               m="$(ui_match "$label" contains | sort -k3,3nr | head -n1)"
               if [ -n "$m" ]; then
                 [ "$taps" -lt "$MAX_TAPS" ] || return 3
@@ -680,10 +696,10 @@ jobs:
                 taps=$((taps + 1)); SCROLLS_USED="$n"
                 return 0
               fi
-              [ "$SCREEN_H" -gt 0 ] || SCREEN_H=2400
               dsh "input swipe 540 $((SCREEN_H * 70 / 100)) 540 $((SCREEN_H * 30 / 100)) 400" >/dev/null
               swipes=$((swipes + 1)); sleep 1
             done
+            [ "$nav_seen" = yes ] || return 4
             return 1
           }
 
@@ -769,6 +785,7 @@ jobs:
             0) rec PASS S3 "activated 'OPEN THE DOOR' once in OLD-A (after $SCROLLS_USED scroll swipe(s))" ;;
             1) bail INCONCLUSIVE S3 "no 'OPEN THE DOOR' button was found within $SCROLL_TRIES scroll swipes; nothing was tapped" ;;
             2) bail INCONCLUSIVE S3 "the UI could not be dumped while looking for the button; nothing was tapped" ;;
+            4) bail INCONCLUSIVE S3 "the bottom navigation bar could not be located, so no safe tap area was established; nothing was tapped" ;;
             *) bail INCONCLUSIVE S3 "the tap limit was reached" ;;
           esac
 
@@ -848,6 +865,7 @@ jobs:
             0) rec PASS S10 "activated 'Go through.' once in NEW (after $SCROLLS_USED scroll swipe(s))" ;;
             1) bail INCONCLUSIVE S10 "no 'Go through.' button was found within $SCROLL_TRIES scroll swipes; nothing more was tapped" ;;
             2) bail INCONCLUSIVE S10 "the UI could not be dumped while looking for the button; nothing more was tapped" ;;
+            4) bail INCONCLUSIVE S10 "the bottom navigation bar could not be located, so no safe tap area was established; nothing more was tapped" ;;
             *) bail INCONCLUSIVE S10 "the tap limit was reached" ;;
           esac
           SIG_BEFORE="$SIG"
