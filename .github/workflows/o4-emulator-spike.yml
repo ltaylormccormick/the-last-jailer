@@ -380,25 +380,61 @@ jobs:
           export ADB="$SDK/platform-tools/adb"
           RES="$RUNNER_TEMP/o4-spike-results.txt"
           export RESULTS_FILE="$RES"
+          ELOG="$RUNNER_TEMP/emulator.log"
+          TRIES="${O4_BOOT_TRIES:-120}"   # 120 x 5 s = 10 minutes
+          # Diagnostics are bounded and contain no app storage, saves, keys or credentials: runner/emulator facts and the
+          # emulator's own startup log. Everything goes out as annotations (step logs cannot be read without a download).
+          ann() { # level title ; message on stdin
+            local m; m="$(head -c 3500 | tr -d '\r' | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')"
+            echo "::$1 title=$2::$m"
+          }
+          diagnose() { # reason
+            {
+              echo "reason: $1"
+              echo "runner: ${ImageOS:-?} ${ImageVersion:-?}; cpus=$(nproc 2>&1); mem_mb=$(free -m 2>&1 | awk '/Mem:/{print $2}'); disk_free=$(df -h / 2>&1 | awk 'NR==2{print $4}')"
+              ls -l /dev/kvm 2>&1; echo "user=$(id -un 2>&1) groups=$(id -Gn 2>&1)"
+              ls -l "$SDK/emulator/emulator" 2>&1
+            } | ann notice "emulator diag 1: runner"
+            { timeout 30 "$SDK/emulator/emulator" -version 2>&1 | head -n 6; } | ann notice "emulator diag 2: emulator version"
+            { timeout 60 "$SDK/cmdline-tools/latest/bin/sdkmanager" --list_installed 2>&1 | grep -E 'emulator|system-images|platform-tools|Path' | head -n 12
+              grep -E '^(Pkg\.Desc|Pkg\.Revision|SystemImage\.)' "$SDK/system-images/android-34/default/x86_64/source.properties" 2>&1 | head -n 8
+              grep -E '^(abi\.type|image\.sysdir\.1|hw\.cpu\.arch|hw\.ramSize|hw\.gpu\.(enabled|mode)|AvdId|tag\.id)' "$HOME/.android/avd/o4.avd/config.ini" 2>&1 | head -n 10
+            } | ann notice "emulator diag 3: system image and AVD"
+            { echo "--- first 25 lines"; head -n 25 "$ELOG" 2>&1 | cut -c1-300; } | ann notice "emulator diag 4: log head"
+            { echo "--- last 40 lines"; tail -n 40 "$ELOG" 2>&1 | cut -c1-300; } | ann notice "emulator diag 5: log tail"
+            { echo "processes:"; pgrep -fa 'qemu-system|emulator' 2>&1 | cut -c1-200 | head -n 6
+              echo "adb devices:"; timeout 20 "$ADB" devices -l 2>&1 | head -n 6
+              echo "boot_completed: $(timeout 20 "$ADB" shell getprop sys.boot_completed 2>&1 | tr -d '\r')"
+            } | ann notice "emulator diag 6: processes and adb"
+          }
           echo "no" | "$SDK/cmdline-tools/latest/bin/avdmanager" create avd --force -n o4 -k "system-images;android-34;default;x86_64" --device pixel_6 > "$RUNNER_TEMP/avd.log" 2>&1 \
             || { tail -n 20 "$RUNNER_TEMP/avd.log"; echo "FAIL E0: avdmanager could not create the virtual device" > "$RES"; exit 1; }
-          setsid nohup "$SDK/emulator/emulator" -avd o4 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -accel on -memory 3072 > "$RUNNER_TEMP/emulator.log" 2>&1 &
+          setsid nohup "$SDK/emulator/emulator" -avd o4 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -accel on -memory 3072 > "$ELOG" 2>&1 &
           emu_pid=$!
           stop_emulator() { "$ADB" emu kill >/dev/null 2>&1 || true; kill "$emu_pid" >/dev/null 2>&1 || true; }
           trap stop_emulator EXIT
           "$ADB" start-server >/dev/null 2>&1
-          booted=no
-          for _ in $(seq 1 120); do
-            if ! kill -0 "$emu_pid" 2>/dev/null; then break; fi
+          booted=no; exited=no; started=$SECONDS
+          for _ in $(seq 1 "$TRIES"); do
+            if ! kill -0 "$emu_pid" 2>/dev/null; then exited=yes; break; fi
             if [ "$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ]; then booted=yes; break; fi
             sleep 5
           done
+          waited=$((SECONDS - started))
           if [ "$booted" != yes ]; then
-            echo "::group::emulator log (tail)"; tail -n 40 "$RUNNER_TEMP/emulator.log"; echo "::endgroup::"
-            echo "FAIL E0: the emulator did not finish booting within 10 minutes" > "$RES"
+            if [ "$exited" = yes ]; then
+              wait "$emu_pid" 2>/dev/null; emu_rc=$?
+              sleep 15   # observation only: is an emulator process still alive after the tracked process exited?
+              reason="the tracked emulator process exited after about ${waited}s with exit code ${emu_rc} (wait status; 127 means unavailable)"
+              echo "FAIL E0: $reason" > "$RES"
+            else
+              reason="the emulator process was still running but sys.boot_completed was not 1 after ${waited}s (limit $((TRIES * 5))s)"
+              echo "FAIL E0: $reason" > "$RES"
+            fi
+            diagnose "$reason"
             exit 1
           fi
-          echo "emulator booted"
+          echo "emulator booted after about ${waited}s"
           "$ADB" version | head -n 1
           bash "$RUNNER_TEMP/device-checks.sh"
 
