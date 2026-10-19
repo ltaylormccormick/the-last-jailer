@@ -11,8 +11,13 @@ name: O4 Emulator Spike
 # reach a healthy foreground, checks it stays up, looks for the six navigation labels in a UI dump, scans this package's
 # crash/ANR events, and inspects private storage by file NAMES and SIZES only (the one file whose content is read is the
 # Stage 2 harness marker). It never taps, never commits a story choice, never takes a screenshot, never uploads anything.
-# Neither stage proves ANYTHING about checkpoint stamps, lineage, stale-history rejection or interrupted-write
-# recovery: no game state is created or read. Launching the app alone writes no save.
+# Stage 4 (only after Stage 3 passes) removes the QA package once to start clean, installs OLD-A, makes ONE predetermined
+# Chapter 1 choice ("OPEN THE DOOR"), waits for the save to reach disk, restarts OLD-A, installs OLD-B and then NEW over it
+# in place (OLD-B is never launched), cold-launches NEW, checks that NEW loads the progressed scene and state, and makes ONE
+# further predetermined choice ("Go through.") in NEW. Exactly two choices are ever activated. The save is synthetic and its
+# content is never printed, stored or uploaded; results are PASS / FAIL / INCONCLUSIVE lines and true/false state checks only.
+# No stage proves ANYTHING about checkpoint stamp validity or rejection, lineage, stale-history rejection or interrupted-write
+# recovery, nor about trophies, items, levels or combat. Stages 2 and 3 create no game state at all.
 #
 # Same Stage 1 safeguards as o4-qa-apks.yml: fixed commits that must be on main, read-only token, no secrets, fresh-key
 # guard (self-tested), exactly one signer shared by all three APKs, package/versionCode/debuggable checks.
@@ -504,6 +509,373 @@ jobs:
           chmod +x "$RUNNER_TEMP/launch-observe.sh"
           bash -n "$RUNNER_TEMP/launch-observe.sh"
 
+      - name: Write the save-compatibility checks
+        run: |
+          cat > "$RUNNER_TEMP/save-compat.sh" <<'SAVECOMPAT'
+          #!/bin/bash
+          # O4 Stage 4: does a save written by the OLD-A build load and continue in the NEW build?
+          # Runs only after the Stage 2 device checks and the Stage 3 launch checks have passed.
+          #
+          # Exactly TWO story choices are ever activated, both predetermined, both in Chapter 1 and neither starting a fight:
+          #   tap 1, in OLD-A: "OPEN THE DOOR"  (The Fallen Knight -> A Witness at the Door)
+          #   tap 2, in NEW:   "Go through."    (A Witness at the Door -> The Door Without a Wall)
+          # Nothing else is operated (scrolling only to bring the button into view). No purchases, no menus, no screenshots.
+          #
+          # Only the QA package com.thelastjailer.app.debug on this disposable emulator is touched. To start from a clean OLD-A it
+          # is uninstalled ONCE at the start; after that OLD-A -> OLD-B -> NEW are installed over each other with "install -r"
+          # (data is never cleared between them).
+          #
+          # The save is synthetic: it exists only because this script made one choice on a throwaway emulator. Even so, its
+          # content is never printed, stored or uploaded. It is streamed through a pipe and compared in memory; this script
+          # prints only PASS / FAIL / INCONCLUSIVE lines, expected ids (taken from the story source, not from the save) and
+          # true/false results. No hash or checksum of the save is printed.
+          #
+          # Outcomes: PASS / FAIL / INCONCLUSIVE. INCONCLUSIVE is never counted as a pass and makes the script exit non-zero.
+          # What a pass here does NOT show: stamp validity or rejection, lineage, stale-history rejection, interrupted-write
+          # recovery, or anything about trophies, items, levels or combat. OLD-B is installed over but never launched.
+          set -u
+          set +e   # never abort on a failed probe; every failure is recorded explicitly and decides the exit code
+          PKG="${EXPECTED_PACKAGE:?EXPECTED_PACKAGE is required}"
+          QA_DIR="${QA_DIR:-qa-apks}"
+          ADB="${ADB:-adb}"
+          OUT="${RESULTS_FILE:?RESULTS_FILE is required}"
+          ACT="com.thelastjailer.app.MainActivity"
+          COMP="$PKG/$ACT"
+          POLL="${O4_POLL_SECS:-2}"
+          HEALTHY_TRIES="${O4_HEALTHY_TRIES:-30}"
+          SETTLE_TRIES="${O4_SETTLE_TRIES:-15}"     # polls while waiting for a save to reach disk and stop changing
+          SCROLL_TRIES="${O4_SCROLL_TRIES:-10}"     # most swipes used to bring a button into view
+          SAVE_FILE="shared_prefs/jailer_saves.xml"
+          MAX_TAPS=2
+          LABELS="Story Character Inventory Map Save Options"
+          passes=0; fails=0; incs=0; taps=0; swipes=0
+          t_start=$SECONDS
+          secs() { awk -v a="$1" -v b="$2" 'BEGIN { printf "%g", a * b }'; }
+          rec() { # status id detail
+            printf '%s %s: %s\n' "$1" "$2" "$3" | tee -a "$OUT"
+            case "$1" in PASS) passes=$((passes + 1)) ;; FAIL) fails=$((fails + 1)) ;; INCONCLUSIVE) incs=$((incs + 1)) ;; esac
+            return 0
+          }
+          finish() {
+            rec INFO S99 "stage 4 took $((SECONDS - t_start))s; story choices activated: $taps (limit $MAX_TAPS); scroll swipes: $swipes"
+            rec RESULT STAGE4 "$passes passed, $fails failed, $incs inconclusive (INFO lines are not passes; inconclusive is not a pass)"
+            if [ "$fails" -gt 0 ]; then exit 1; fi
+            if [ "$incs" -gt 0 ]; then exit 3; fi
+            exit 0
+          }
+          bail() { # status id detail : record, say what was not run, stop
+            rec "$1" "$2" "$3"
+            rec INFO S98 "the remaining Stage 4 steps were NOT run, so they are neither passed nor failed"
+            finish
+          }
+          stop_here() { rec INFO S98 "the remaining Stage 4 steps were NOT run, so they are neither passed nor failed"; finish; }
+          dsh() { local o rc; o="$(timeout 60 "$ADB" shell "$1" 2>&1)"; rc=$?; printf '%s\n' "$o" | tr -d '\r'; return "$rc"; }
+          names() { local o; if o="$(dsh "run-as $PKG ls -1 $1")"; then printf '%s' "$o" | paste -sd ',' -; else printf '(absent)'; fi; }
+          sizes() { dsh "run-as $PKG sh -c 'for f in shared_prefs/* files/*; do [ -f \"\$f\" ] && stat -c \"%n %s\" \"\$f\"; done'" | grep -v '^$' | paste -sd ';' -; }
+          pkg_field() { dsh "dumpsys package $PKG" | sed -n "s/^ *$1=\(.*\)$/\1/p" | head -n1; }
+          installed_sha() {
+            local p; p="$(dsh "pm path $PKG" | sed -n 's/^package://p' | grep '/base\.apk$' | head -n1)"
+            [ -n "$p" ] || return 1
+            dsh "sha256sum $p" | cut -d' ' -f1
+          }
+          foreground_ok() { grep -q "$PKG/.*MainActivity" <<<"$1" && ! grep -qiE 'Application Error|Application Not Responding|isn.t responding|has stopped' <<<"$1"; }
+          look() {
+            local p f
+            p="$(dsh "pidof $PKG" | head -n1)"
+            f="$(dsh "dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'; dumpsys activity activities | grep -E 'topResumedActivity'" | head -n 4 | paste -sd ' ' -)"
+            printf '%s|%s' "$p" "$f"
+          }
+
+          # ---- launch and crash helpers ------------------------------------------------------------------------------------
+          PID=""
+          launch_app() { # clears logcat, starts MainActivity, waits for a healthy foreground. 0 healthy / 1 not.
+            timeout 30 "$ADB" logcat -b all -c >/dev/null 2>&1
+            local out rc r pid focus
+            out="$(timeout 90 "$ADB" shell "am start -W -n $COMP" 2>&1)"; rc=$?
+            if [ "$rc" -ne 0 ] || ! grep -q '^Status: ok' <<<"$out" || grep -q '^Error' <<<"$out"; then
+              LAUNCH_WHY="am start did not report success (rc=$rc)"; return 1
+            fi
+            for _ in $(seq 1 "$HEALTHY_TRIES"); do
+              r="$(look)"; pid="${r%%|*}"; focus="${r#*|}"
+              if [ -n "$pid" ] && foreground_ok "$focus"; then PID="$pid"; return 0; fi
+              sleep "$POLL"
+            done
+            LAUNCH_WHY="no healthy foreground within $(secs "$HEALTHY_TRIES" "$POLL")s (pid='${pid:-none}')"; return 1
+          }
+          stop_app() { # force-stop and confirm the process is gone. 0 gone / 1 still there.
+            dsh "am force-stop $PKG" >/dev/null
+            local p
+            for _ in 1 2 3 4 5; do p="$(dsh "pidof $PKG" | head -n1)"; [ -z "$p" ] && return 0; sleep 1; done
+            return 1
+          }
+          crash_scan() { # prints relevant events for this package since the last logcat clear; empty = none
+            local bad=""
+            [ -n "$PID" ] && bad="$bad$(dsh "logcat -d -b main,crash --pid=$PID" | grep -E 'FATAL EXCEPTION' | head -n 2)"$'\n'
+            bad="$bad$(dsh "logcat -d -b crash" | grep -F "$PKG" | head -n 2)"$'\n'
+            bad="$bad$(dsh "logcat -d -b events" | grep -E 'am_crash|am_anr|am_proc_died' | grep -F "$PKG" | head -n 2)"$'\n'
+            bad="$bad$(dsh "logcat -d -b system,main" | grep -E "ANR in $PKG|Process $PKG .*has died" | head -n 2)"
+            grep -v '^$' <<<"$bad" | head -n 4 | cut -c1-200 | paste -sd '|' -
+          }
+          apk_ok() { # label : the installed base.apk is the built APK
+            local want got
+            want="$(sha256sum "$QA_DIR/$1.apk" | cut -d' ' -f1)"; got="$(installed_sha)"
+            [ -n "$want" ] && [ "$want" = "$got" ]
+          }
+
+          # ---- UI helpers --------------------------------------------------------------------------------------------------
+          UIXML=""
+          ui_dump() { # bounded retries; the app's own nodes land in $UIXML (one <node .../> per line). 0 ok / 1 unreadable.
+            local o rc raw
+            for a in 1 2 3; do
+              o="$(dsh "uiautomator dump /sdcard/o4-window.xml")"; rc=$?
+              if [ "$rc" -eq 0 ] && grep -qi 'dumped to' <<<"$o"; then
+                raw="$(dsh "cat /sdcard/o4-window.xml")"; dsh "rm -f /sdcard/o4-window.xml" >/dev/null
+                UIXML="$(grep -oE "<node [^>]*package=\"$PKG\"[^>]*>" <<<"$raw")"
+                [ -n "$UIXML" ] && return 0
+              fi
+              sleep 3
+            done
+            UIXML=""; return 1
+          }
+          # match mode "exact": the node's text (or content-desc) IS the label; "contains": the label is part of it.
+          ui_match() { # label mode : prints "x y clickable" per matching on-screen node
+            awk -v L="$1" -v M="$2" -v H="$SCREEN_H" -v NAVTOP="$NAV_TOP" '
+              function attr(s, name,   re, v) { re = " " name "=\"[^\"]*\""; if (match(s, re)) { v = substr(s, RSTART + length(name) + 3, RLENGTH - length(name) - 4); return v } return "" }
+              { t = attr($0, "text"); d = attr($0, "content-desc"); b = attr($0, "bounds"); c = attr($0, "clickable")
+                ok = (M == "exact") ? (t == L || d == L) : (index(t, L) > 0 || index(d, L) > 0)
+                if (!ok || b == "") next
+                gsub(/[][,]/, " ", b); split(b, p, " ")
+                x = int((p[1] + p[3]) / 2); y = int((p[2] + p[4]) / 2)
+                if (p[3] <= p[1] || p[4] <= p[2]) next
+                if (H > 0 && (p[2] < 0 || p[4] > H)) next
+                if (NAVTOP > 0 && y >= NAVTOP - 10) next
+                print x, y, (c == "true" ? 1 : 0) }' <<<"$UIXML"
+          }
+          SCREEN_H=0; NAV_TOP=0
+          learn_screen() { # screen height and the top of the bottom navigation bar, from the current $UIXML
+            SCREEN_H="$(dsh "wm size" | sed -n 's/.*: *[0-9]*x\([0-9]*\).*/\1/p' | tail -n1)"; SCREEN_H="${SCREEN_H:-0}"
+            NAV_TOP=0
+            local l top t
+            for l in $LABELS; do
+              top="$(awk -v L="$l" '
+                function attr(s, name,   re) { re = " " name "=\"[^\"]*\""; if (match(s, re)) return substr(s, RSTART + length(name) + 3, RLENGTH - length(name) - 4); return "" }
+                { if (attr($0, "text") == L || attr($0, "content-desc") == L) { b = attr($0, "bounds"); gsub(/[][,]/, " ", b); split(b, p, " "); print p[2] } }' <<<"$UIXML" | head -n1)"
+              if [ -n "$top" ] && { [ "$NAV_TOP" -eq 0 ] || [ "$top" -lt "$NAV_TOP" ]; }; then NAV_TOP="$top"; fi
+            done
+          }
+          ui_has() { # label mode : 0 shown / 1 not shown / 2 UI unreadable
+            ui_dump || return 2
+            [ -n "$(ui_match "$1" "$2" | head -n1)" ]
+          }
+          tap_label() { # label : find the button (clickable) with bounded scrolling and activate it once. 0 tapped / 1 not found / 2 unreadable / 3 tap limit
+            local label="$1" n m x y c
+            for n in $(seq 0 "$SCROLL_TRIES"); do
+              ui_dump || return 2
+              learn_screen
+              m="$(ui_match "$label" contains | sort -k3,3nr | head -n1)"
+              if [ -n "$m" ]; then
+                [ "$taps" -lt "$MAX_TAPS" ] || return 3
+                read -r x y c <<<"$m"
+                dsh "input tap $x $y" >/dev/null
+                taps=$((taps + 1)); SCROLLS_USED="$n"
+                return 0
+              fi
+              [ "$SCREEN_H" -gt 0 ] || SCREEN_H=2400
+              dsh "input swipe 540 $((SCREEN_H * 70 / 100)) 540 $((SCREEN_H * 30 / 100)) 400" >/dev/null
+              swipes=$((swipes + 1)); sleep 1
+            done
+            return 1
+          }
+
+          # ---- save helpers: the save is streamed through a pipe and never printed or written to disk ---------------------
+          save_flat() { timeout 60 "$ADB" shell "run-as $PKG cat $SAVE_FILE" 2>/dev/null | tr -d '\r\n' | sed 's/> *</></g'; }
+          save_sig() { save_flat | sha256sum | cut -d' ' -f1; }     # compared in memory only, never printed
+          save_present() { dsh "run-as $PKG ls -1 shared_prefs" | grep -qx 'jailer_saves.xml'; }
+          settle() { # wait (bounded) until the save exists and is identical on 3 consecutive polls. Sets SIG. 0 settled / 1 absent / 2 never stable
+            local prev="" cur same=0 seen=no
+            for _ in $(seq 1 "$SETTLE_TRIES"); do
+              if save_present; then
+                seen=yes; cur="$(save_sig)"
+                if [ -n "$cur" ] && [ "$cur" = "$prev" ]; then same=$((same + 1)); else same=0; fi
+                prev="$cur"
+                if [ "$same" -ge 2 ]; then SIG="$cur"; return 0; fi
+              fi
+              sleep "$POLL"
+            done
+            [ "$seen" = yes ] && return 2
+            return 1
+          }
+          # check_state SCENE COURAGE "flag flag ..." [stamp]: true/false per field. 0 all true / 1 a field is wrong / 2 unreadable or unexpected shape
+          STATE_DETAIL=""
+          check_state() {
+            local scene="$1" courage="$2" flags="$3" want_stamp="${4:-}" s fset f
+            s="$(save_flat)"
+            if [ -z "$s" ]; then STATE_DETAIL="the save could not be read"; return 2; fi
+            if ! printf '%s' "$s" | grep -F '<string name="1.scene">' >/dev/null; then STATE_DETAIL="a save file exists but not in the expected shape"; return 2; fi
+            local r_scene r_chapter r_courage r_slot r_flags=true r_stamp=n/a
+            printf '%s' "$s" | grep -F "<string name=\"1.scene\">$scene</string>" >/dev/null && r_scene=true || r_scene=false
+            printf '%s' "$s" | grep -F '<string name="1.chapter">chapter_1</string>' >/dev/null && r_chapter=true || r_chapter=false
+            printf '%s' "$s" | grep -F "<int name=\"1.courage\" value=\"$courage\" />" >/dev/null && r_courage=true || r_courage=false
+            printf '%s' "$s" | grep -F '<int name="active_slot" value="1" />' >/dev/null && r_slot=true || r_slot=false
+            fset="$(printf '%s' "$s" | grep -oE '<set name="1\.flags">(<string>[^<]*</string>)*</set>' | head -n1)"
+            for f in $flags; do printf '%s' "$fset" | grep -F "<string>$f</string>" >/dev/null || r_flags=false; done
+            if [ -n "$want_stamp" ]; then
+              printf '%s' "$s" | grep -E '<string name="1\.stamp">[0-9a-f]{32}</string>' >/dev/null && r_stamp=true || r_stamp=false
+            fi
+            STATE_DETAIL="scene=$r_scene chapter=$r_chapter courage=$r_courage active_slot=$r_slot flags=$r_flags${want_stamp:+ stamp_key=$r_stamp}"
+            local v bad=0
+            for v in $r_scene $r_chapter $r_courage $r_slot $r_flags; do [ "$v" = true ] || bad=1; done
+            if [ -n "$want_stamp" ] && [ "$r_stamp" != true ]; then bad=1; fi
+            return "$bad"
+          }
+          state_record() { # id okmsg SCENE COURAGE FLAGS [stamp]: record the result of check_state
+            check_state "$3" "$4" "$5" "${6:-}"; local rc=$?
+            case "$rc" in
+              0) rec PASS "$1" "$2 ($STATE_DETAIL)" ;;
+              1) rec FAIL "$1" "the stored game state is not what the story requires ($STATE_DETAIL)" ;;
+              *) rec INCONCLUSIVE "$1" "$STATE_DETAIL, so the state could not be assessed" ;;
+            esac
+            return "$rc"
+          }
+
+          # ======================================================================================================================
+          # S0: a clean start. Only the QA package is removed, and only this once.
+          if [ "$PKG" != "com.thelastjailer.app.debug" ]; then bail FAIL S0 "refusing to run: package is '$PKG', not com.thelastjailer.app.debug"; fi
+          stop_app >/dev/null
+          un="$(timeout 90 "$ADB" uninstall "$PKG" 2>&1 | tr -d '\r' | tail -n1)"
+          if dsh 'pm list packages' | grep -qx "package:$PKG"; then bail FAIL S0 "the debug package is still installed after uninstall ('$un')"; fi
+          rec PASS S0 "removed only $PKG from the disposable emulator to start from a clean OLD-A (uninstall said '$un'); the Play package is never touched"
+
+          # S1: OLD-A, fresh install
+          inst="$(timeout 120 "$ADB" install "$QA_DIR/OLD-A.apk" 2>&1 | tr -d '\r' | tail -n1)"
+          first_install="$(pkg_field firstInstallTime)"
+          if [ "$inst" = Success ] && apk_ok OLD-A && [ -n "$first_install" ]; then rec PASS S1 "OLD-A installed fresh and the installed APK is the built OLD-A"
+          else bail FAIL S1 "OLD-A did not install cleanly (install said '$inst')"; fi
+
+          # S2: launch OLD-A, check it is on the expected opening screen and holds no save yet
+          if ! launch_app; then bail FAIL S2 "OLD-A did not reach a healthy foreground: $LAUNCH_WHY"; fi
+          if save_present; then bail FAIL S2 "a save file already exists before any choice, so the experiment cannot start clean"; fi
+          ui_has "The Fallen Knight" exact; rc=$?
+          case "$rc" in
+            0) rec PASS S2 "OLD-A is in the foreground (pid $PID) on the opening scene 'The Fallen Knight'; no save exists yet" ;;
+            2) bail INCONCLUSIVE S2 "the UI could not be dumped, so the opening scene could not be confirmed; nothing was tapped" ;;
+            *) bail INCONCLUSIVE S2 "the opening scene title 'The Fallen Knight' was not found as a text node; nothing was tapped" ;;
+          esac
+
+          # S3: tap 1, in OLD-A
+          SCROLLS_USED=0
+          tap_label "OPEN THE DOOR"; rc=$?
+          case "$rc" in
+            0) rec PASS S3 "activated 'OPEN THE DOOR' once in OLD-A (after $SCROLLS_USED scroll swipe(s))" ;;
+            1) bail INCONCLUSIVE S3 "no 'OPEN THE DOOR' button was found within $SCROLL_TRIES scroll swipes; nothing was tapped" ;;
+            2) bail INCONCLUSIVE S3 "the UI could not be dumped while looking for the button; nothing was tapped" ;;
+            *) bail INCONCLUSIVE S3 "the tap limit was reached" ;;
+          esac
+
+          # S4: the save reaches disk and the state is what the choice must produce. apply() is asynchronous, so wait (bounded)
+          # until the file exists and has stopped changing before looking at it.
+          t0=$SECONDS
+          settle; rc=$?
+          if [ "$rc" -eq 1 ]; then
+            ui_has "The Fallen Knight" exact; u=$?
+            if [ "$u" -eq 0 ]; then bail INCONCLUSIVE S4 "no save appeared and the screen still shows the opening scene, so the tap may not have registered"; fi
+            bail FAIL S4 "the screen moved on but no save file appeared within $(secs "$SETTLE_TRIES" "$POLL")s"
+          elif [ "$rc" -eq 2 ]; then
+            bail INCONCLUSIVE S4 "a save appeared but kept changing for $(secs "$SETTLE_TRIES" "$POLL")s, so it was not assessed"
+          fi
+          rec INFO S4a "the save reached disk and stopped changing after about $((SECONDS - t0))s"
+          state_record S4 "OLD-A wrote the expected state after the choice" ch1_door_witness 3 "opened_black_door hunted_on_the_road" || stop_here
+          SIG_A="$SIG"
+          ui_has "A Witness at the Door" exact; rc=$?
+          case "$rc" in
+            0) rec PASS S5 "OLD-A shows the next scene 'A Witness at the Door'" ;;
+            2) rec INCONCLUSIVE S5 "the UI could not be dumped to confirm the next scene" ;;
+            *) rec FAIL S5 "the saved state moved on but the screen does not show 'A Witness at the Door'" ;;
+          esac
+
+          # S6: stop OLD-A completely, start it again, and check the progress is still there. This is an ordinary stop after the
+          # save has settled; it says nothing about an interrupted write.
+          if ! stop_app; then bail INCONCLUSIVE S6 "OLD-A could not be stopped, so the restart check was not run"; fi
+          if ! launch_app; then bail FAIL S6 "OLD-A did not come back to a healthy foreground after a restart: $LAUNCH_WHY"; fi
+          settle; rc=$?
+          if [ "$rc" -ne 0 ] || [ "$SIG" != "$SIG_A" ]; then rec FAIL S6 "the save changed or disappeared across an ordinary restart of OLD-A"
+          else
+            ui_has "A Witness at the Door" exact; rc=$?
+            case "$rc" in
+              0) rec PASS S6 "after stopping and restarting OLD-A the save is unchanged and the screen shows 'A Witness at the Door'" ;;
+              2) rec INCONCLUSIVE S6 "the save is unchanged after the restart but the UI could not be dumped" ;;
+              *) rec FAIL S6 "the save is unchanged but OLD-A does not show 'A Witness at the Door' after a restart" ;;
+            esac
+          fi
+          bad="$(crash_scan)"
+          if [ -z "$bad" ]; then rec PASS S6b "no crash, ANR or process-death event for $PKG while OLD-A ran"; else rec FAIL S6b "relevant event(s): $bad"; fi
+
+          # S7/S8: update in place to OLD-B, then NEW. install -r keeps the data. OLD-B is never launched.
+          prev_first="$first_install"
+          for label in OLD-B NEW; do
+            stop_app >/dev/null
+            inst="$(timeout 120 "$ADB" install -r "$QA_DIR/$label.apk" 2>&1 | tr -d '\r' | tail -n1)"
+            now_first="$(pkg_field firstInstallTime)"
+            [ "$label" = OLD-B ] && id=S7 || id=S8
+            if [ "$inst" != Success ] || ! apk_ok "$label"; then bail FAIL "$id" "$label did not install over the previous build (install said '$inst')"; fi
+            if [ "$now_first" != "$first_install" ]; then bail FAIL "$id" "firstInstallTime changed, so $label replaced the app instead of updating it"; fi
+            settle; rc=$?
+            if [ "$rc" -eq 0 ] && [ "$SIG" = "$SIG_A" ]; then rec PASS "$id" "$label installed in place over the previous build; the save is unchanged by the update"
+            elif [ "$rc" -eq 0 ]; then rec FAIL "$id" "$label installed in place but the save file changed during the update"
+            else rec FAIL "$id" "$label installed in place but the save file is missing or unstable afterwards"; fi
+          done
+
+          # S9: cold-launch NEW. It must load the save OLD-A wrote.
+          pid_before="$(dsh "pidof $PKG" | head -n1)"
+          if [ -n "$pid_before" ]; then bail INCONCLUSIVE S9 "NEW is already running (pid $pid_before) before launch, so this would not be a cold launch"; fi
+          if ! launch_app; then bail FAIL S9 "NEW did not reach a healthy foreground: $LAUNCH_WHY"; fi
+          bad="$(crash_scan)"
+          if [ -z "$bad" ]; then rec PASS S9a "NEW cold-launched (pid $PID) with no crash, ANR or process-death event for $PKG"; else rec FAIL S9a "relevant event(s): $bad"; fi
+          ui_has "A Witness at the Door" exact; rc=$?
+          case "$rc" in
+            0) rec PASS S9b "NEW shows 'A Witness at the Door', the scene OLD-A saved" ;;
+            2) rec INCONCLUSIVE S9b "the UI could not be dumped, so what NEW loaded was not confirmed on screen" ;;
+            *) rec FAIL S9b "NEW does not show 'A Witness at the Door': it did not load the OLD-A save" ;;
+          esac
+          settle >/dev/null
+          state_record S9c "NEW left the OLD-A state intact on launch" ch1_door_witness 3 "opened_black_door hunted_on_the_road" || stop_here
+          if [ "$SIG" = "$SIG_A" ]; then rec INFO S9d "the save file was not rewritten by launching NEW"; else rec INFO S9d "the save file was rewritten while NEW launched (the state checks above still decide)"; fi
+
+          # S10: tap 2, in NEW. NEW must continue the story from the loaded save.
+          SCROLLS_USED=0
+          tap_label "Go through."; rc=$?
+          case "$rc" in
+            0) rec PASS S10 "activated 'Go through.' once in NEW (after $SCROLLS_USED scroll swipe(s))" ;;
+            1) bail INCONCLUSIVE S10 "no 'Go through.' button was found within $SCROLL_TRIES scroll swipes; nothing more was tapped" ;;
+            2) bail INCONCLUSIVE S10 "the UI could not be dumped while looking for the button; nothing more was tapped" ;;
+            *) bail INCONCLUSIVE S10 "the tap limit was reached" ;;
+          esac
+          SIG_BEFORE="$SIG"
+          for _ in $(seq 1 "$SETTLE_TRIES"); do
+            settle >/dev/null
+            [ -n "$SIG" ] && [ "$SIG" != "$SIG_BEFORE" ] && break
+            sleep "$POLL"
+          done
+          settle >/dev/null   # the first change may be only one of several writes of this choice; wait for the file to stop changing
+          if [ "$SIG" = "$SIG_BEFORE" ]; then
+            ui_has "A Witness at the Door" exact; u=$?
+            if [ "$u" -eq 0 ]; then bail INCONCLUSIVE S11 "the save did not change and the screen still shows the previous scene, so the second tap may not have registered"; fi
+          fi
+          state_record S11 "NEW continued from the loaded save and stored the new state" black_door_opened 3 "opened_black_door hunted_on_the_road hunters_saw_door met_red_cord_rider" stamp
+          ui_has "The Door Without a Wall" exact; rc=$?
+          case "$rc" in
+            0) rec PASS S12 "NEW shows the next scene 'The Door Without a Wall'" ;;
+            2) rec INCONCLUSIVE S12 "the UI could not be dumped to confirm the next scene" ;;
+            *) rec FAIL S12 "NEW does not show 'The Door Without a Wall' after the second choice" ;;
+          esac
+          bad="$(crash_scan)"
+          if [ -z "$bad" ]; then rec PASS S12b "no crash, ANR or process-death event for $PKG while NEW ran"; else rec FAIL S12b "relevant event(s): $bad"; fi
+          rec INFO S13 "private storage after the run, names and sizes only: shared_prefs=[$(names shared_prefs)] sizes: $(sizes)"
+          finish
+          SAVECOMPAT
+          chmod +x "$RUNNER_TEMP/save-compat.sh"
+          bash -n "$RUNNER_TEMP/save-compat.sh"
+
       - name: Enable KVM acceleration (fail closed)
         run: |
           set -eu
@@ -649,6 +1021,9 @@ jobs:
           dc_rc=$?
           if [ "$dc_rc" -ne 0 ]; then echo "Stage 2 device checks failed (exit code $dc_rc); Stage 3 is not run."; exit "$dc_rc"; fi
           bash "$RUNNER_TEMP/launch-observe.sh"
+          lo_rc=$?
+          if [ "$lo_rc" -ne 0 ]; then echo "Stage 3 launch checks did not pass (exit code $lo_rc); Stage 4 is not run."; exit "$lo_rc"; fi
+          bash "$RUNNER_TEMP/save-compat.sh"
           exit $?
 
       - name: Report the results
@@ -661,9 +1036,15 @@ jobs:
             body="No device results were produced."
           else
             body="$(cat "$RES")"
-            s2="$(grep -vE '^[A-Z]+ X[0-9]' "$RES")"; s3="$(grep -E '^[A-Z]+ X[0-9]|^RESULT STAGE3' "$RES")"
+            s2="$(grep -vE '^[A-Z]+ (X|S)[0-9]|^RESULT STAGE[34]' "$RES")"; s3="$(grep -E '^[A-Z]+ X[0-9]|^RESULT STAGE3' "$RES")"
+            s4="$(grep -E '^[A-Z]+ S[0-9]|^RESULT STAGE4' "$RES")"
             echo "::notice title=O4 Stage 2 results::${s2//$'\n'/%0A}"
             if [ -n "$s3" ]; then echo "::notice title=O4 Stage 3 launch results::${s3//$'\n'/%0A}"; fi
+            if [ -n "$s4" ]; then
+              s4a="$(head -n 10 <<<"$s4")"; s4b="$(tail -n +11 <<<"$s4")"
+              echo "::notice title=O4 Stage 4 save results (1 of 2)::${s4a//$'\n'/%0A}"
+              if [ -n "$s4b" ]; then echo "::notice title=O4 Stage 4 save results (2 of 2)::${s4b//$'\n'/%0A}"; fi
+            fi
           fi
           {
             echo "### O4 emulator spike (feasibility only)"
@@ -674,7 +1055,9 @@ jobs:
             echo "$body"
             echo '```'
             echo
-            echo "**Not demonstrated by this run (the app is launched but no input is sent, no choice is committed, and no"
-            echo "save data is created or read):** checkpoint stamp validity or rejection, lineage correctness, stale-history"
-            echo "rejection, interrupted-write recovery, gameplay. A launched app with no saves proves none of these."
+            echo "**Not demonstrated by this run (only two predetermined Chapter 1 choices are made, with synthetic progress on a"
+            echo "disposable emulator; OLD-B is installed over but never launched):** checkpoint stamp validity or rejection,"
+            echo "lineage correctness, stale-history rejection, interrupted-write recovery or durability, trophies, items, levels,"
+            echo "combat, or any other older-save migration path. Passing Stage 4 shows only that a save written by OLD-A loads and"
+            echo "can be continued by NEW on an emulator."
           } >> "$GITHUB_STEP_SUMMARY"
