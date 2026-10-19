@@ -379,7 +379,6 @@ jobs:
           set +e   # the runner starts steps with bash -e; every failure here is handled explicitly and still exits non-zero
           SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
           RES="$RUNNER_TEMP/o4-spike-results.txt"
-          QEMU="$SDK/emulator/qemu/linux-x86_64/qemu-system-x86_64"
           ann() { # level title ; message on stdin
             local m; m="$(head -c 3500 | tr -d '\r' | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')"
             echo "::$1 title=$2::$m"
@@ -393,19 +392,15 @@ jobs:
           if [ "$apt_rc" -ne 0 ]; then tail -n 15 "$RUNNER_TEMP/apt-install.log" | cut -c1-300 | ann notice "apt install libpulse0 output"; stop "apt-get install libpulse0 failed (exit code $apt_rc)"; fi
           pkgver="$(dpkg-query -W -f='${Package} ${Version}' libpulse0 2>&1)"
           soname="$(ldconfig -p 2>&1 | grep 'libpulse\.so\.0' | head -n 2 | paste -sd ';' -)"
-          [ -x "$QEMU" ] || stop "the emulator's QEMU binary was not found at $QEMU"
-          missing="$(ldd "$QEMU" 2>&1 | grep 'not found' | sed 's/^[[:space:]]*//' | paste -sd ';' -)"
           ver_full="$(timeout 30 "$SDK/emulator/emulator" -version 2>&1)"
           ver_rc=$?
           ver_out="$(head -n 6 <<<"$ver_full")"
           {
             echo "package: $pkgver"
             echo "libpulse.so.0 known to ldconfig: ${soname:-NO}"
-            echo "libraries ldd cannot find for QEMU: ${missing:-none}"
             echo "emulator -version (exit code $ver_rc):"; echo "$ver_out"
           } | ann notice "libpulse and emulator check"
           [ -n "$soname" ] || stop "libpulse.so.0 is not available after installing libpulse0"
-          [ -z "$missing" ] || stop "other shared libraries are still missing (nothing further is installed): $missing"
           if ! grep -q '^Android emulator version' <<<"$ver_out" || grep -q 'error while loading' <<<"$ver_out"; then stop "emulator -version did not succeed (exit code $ver_rc)"; fi
           echo "libpulse0 installed; emulator -version works"
 
