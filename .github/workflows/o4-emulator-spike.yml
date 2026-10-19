@@ -1,14 +1,18 @@
 name: O4 Emulator Spike
 
-# O4 Stage 2 - FEASIBILITY SPIKE ONLY. This workflow proves (or fails to prove) four plain things on a GitHub-hosted
-# Android emulator:
+# O4 Stage 2 - FEASIBILITY SPIKE, plus Stage 3 launch-and-observe. Stage 2 proves (or fails to prove) four plain things
+# on a GitHub-hosted Android emulator:
 #   1. an emulator boots in GitHub Actions;
 #   2. the three reviewed O4 builds (built here, in this one job, with one temporary debug key) install over each other
 #      in the order OLD-A -> OLD-B -> NEW without clearing app data;
 #   3. "adb run-as" can reach the QA app's private storage;
 #   4. a harness marker written to that storage survives each update.
-# It does NOT start the game, play it, inject faults, or read any save data. It proves NOTHING about checkpoint stamps,
-# lineage, stale-history rejection or interrupted-write recovery. An empty, freshly installed app proves none of those.
+# Stage 3 (only after every Stage 2 check passes) launches the NEW debug app WITHOUT sending any input, waits for it to
+# reach a healthy foreground, checks it stays up, looks for the six navigation labels in a UI dump, scans this package's
+# crash/ANR events, and inspects private storage by file NAMES and SIZES only (the one file whose content is read is the
+# Stage 2 harness marker). It never taps, never commits a story choice, never takes a screenshot, never uploads anything.
+# Neither stage proves ANYTHING about checkpoint stamps, lineage, stale-history rejection or interrupted-write
+# recovery: no game state is created or read. Launching the app alone writes no save.
 #
 # Same Stage 1 safeguards as o4-qa-apks.yml: fixed commits that must be on main, read-only token, no secrets, fresh-key
 # guard (self-tested), exactly one signer shared by all three APKs, package/versionCode/debuggable checks.
@@ -346,6 +350,160 @@ jobs:
           chmod +x "$RUNNER_TEMP/device-checks.sh"
           bash -n "$RUNNER_TEMP/device-checks.sh"
 
+      - name: Write the launch checks
+        run: |
+          cat > "$RUNNER_TEMP/launch-observe.sh" <<'LAUNCHCHECKS'
+          #!/bin/bash
+          # O4 Stage 3: launch the NEW debug app on the emulator and observe it. Runs only after the Stage 2 device checks pass.
+          # SENDS NO INPUT (no taps, keys or text), so no choice is ever committed and no save can be written by this script.
+          # Only the QA package is touched. Private storage is inspected by file NAMES and SIZES only; the one file whose
+          # content is read is the Stage 2 harness marker. Nothing is uploaded and no screenshot is taken.
+          # Outcomes: PASS / FAIL / INCONCLUSIVE. INCONCLUSIVE is never counted as a pass and makes the script exit non-zero.
+          set -u
+          set +e   # never abort on a failed probe; every failure is recorded explicitly and decides the exit code
+          PKG="${EXPECTED_PACKAGE:?EXPECTED_PACKAGE is required}"
+          ADB="${ADB:-adb}"
+          OUT="${RESULTS_FILE:?RESULTS_FILE is required}"
+          ACT="com.thelastjailer.app.MainActivity"
+          COMP="$PKG/$ACT"
+          POLL="${O4_POLL_SECS:-2}"                 # seconds between polls
+          HEALTHY_TRIES="${O4_HEALTHY_TRIES:-30}"   # 30 x 2 s = up to 60 s to reach a healthy foreground
+          SOAK_POLLS="${O4_SOAK_POLLS:-8}"          # 8 x 2 s = about 15 s of stability
+          MARKER_FILE="files/o4-spike-marker.txt"
+          LABELS="Story Character Inventory Map Save Options"
+          passes=0; fails=0; incs=0
+          t_start=$SECONDS
+          secs() { awk -v a="$1" -v b="$2" 'BEGIN { printf "%g", a * b }'; }   # display math that cannot abort a record
+          rec() { # status id detail
+            printf '%s %s: %s\n' "$1" "$2" "$3" | tee -a "$OUT"
+            case "$1" in PASS) passes=$((passes + 1)) ;; FAIL) fails=$((fails + 1)) ;; INCONCLUSIVE) incs=$((incs + 1)) ;; esac
+            return 0
+          }
+          dsh() { local o rc; o="$(timeout 60 "$ADB" shell "$1" 2>&1)"; rc=$?; printf '%s\n' "$o" | tr -d '\r'; return "$rc"; }
+          names() { # comma-separated entry names of an app-private folder, or (absent)
+            local o; if o="$(dsh "run-as $PKG ls -1 $1")"; then printf '%s' "$o" | paste -sd ',' -; else printf '(absent)'; fi
+          }
+          sizes() { # "name bytes" for plain files under shared_prefs and files; sizes only, never contents
+            dsh "run-as $PKG sh -c 'for f in shared_prefs/* files/*; do [ -f \"\$f\" ] && stat -c \"%n %s\" \"\$f\"; done'" | grep -v '^$' | paste -sd ';' -
+          }
+          foreground_ok() { # $1 = text from window/activity dumps
+            grep -q "$PKG/.*MainActivity" <<<"$1" && ! grep -qiE 'Application Error|Application Not Responding|isn.t responding|has stopped' <<<"$1"
+          }
+          look() { # prints "<pid>|<focus lines>" for one poll
+            local p f
+            p="$(dsh "pidof $PKG" | head -n1)"
+            f="$(dsh "dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'; dumpsys activity activities | grep -E 'topResumedActivity'" | head -n 4 | paste -sd ' ' -)"
+            printf '%s|%s' "$p" "$f"
+          }
+
+          # ---- X1: fresh-launch precondition and the "before" picture
+          pid0="$(dsh "pidof $PKG" | head -n1)"
+          if [ -z "$pid0" ]; then rec PASS X1 "the app is not running before launch (so a running process afterwards is a fresh launch)"; else rec FAIL X1 "the app is already running (pid $pid0) before launch, so this would not be a fresh launch"; fi
+          pre_marker="$(dsh "run-as $PKG cat $MARKER_FILE" || true)"
+          if [ -n "$pre_marker" ]; then rec PASS X1b "the Stage 2 harness marker ${pre_marker:0:8}... is present before launch"; else rec FAIL X1b "the harness marker is missing before launch"; fi
+          pre_top="$(names .)"; pre_prefs="$(names shared_prefs)"; pre_files="$(names files)"
+
+          # ---- X2: launch. Everything from here on is the launch window (logcat is emptied first).
+          timeout 30 "$ADB" logcat -b all -c >/dev/null 2>&1
+          t_launch=$SECONDS
+          am_out="$(timeout 90 "$ADB" shell "am start -W -n $COMP" 2>&1)"; am_rc=$?
+          am_out="$(tr -d '\r' <<<"$am_out")"
+          lstate="$(sed -n 's/^LaunchState: *//p' <<<"$am_out" | head -n1)"
+          ltotal="$(sed -n 's/^TotalTime: *//p' <<<"$am_out" | head -n1)"
+          if [ "$am_rc" -eq 0 ] && grep -q '^Status: ok' <<<"$am_out" && ! grep -q '^Error' <<<"$am_out"; then
+            rec PASS X2 "am start -W reported Status ok (LaunchState=${lstate:-not reported}, TotalTime=${ltotal:-?} ms)"
+          else
+            rec FAIL X2 "am start did not report success (rc=$am_rc): $(grep -E '^(Error|Status|Warning)' <<<"$am_out" | head -n 3 | paste -sd ' ' - | cut -c1-200)"
+          fi
+
+          # ---- X3: reaches a healthy foreground: a process exists and our MainActivity has focus, no error dialog
+          healthy=no; pid=""; focus=""; t_healthy=""
+          for _ in $(seq 1 "$HEALTHY_TRIES"); do
+            r="$(look)"; pid="${r%%|*}"; focus="${r#*|}"
+            if [ -n "$pid" ] && foreground_ok "$focus"; then healthy=yes; t_healthy=$((SECONDS - t_launch)); break; fi
+            sleep "$POLL"
+          done
+          if [ "$healthy" = yes ]; then
+            fresh="a new process (pid $pid)"; [ -n "$pid0" ] && [ "$pid0" = "$pid" ] && fresh="the SAME process as before launch (pid $pid)"
+            rec PASS X3 "$PKG/$ACT is in the foreground after about ${t_healthy}s; $fresh"
+            if [ -n "$lstate" ] && [ "$lstate" != COLD ]; then rec INFO X3b "LaunchState was $lstate, not COLD; freshness rests on X1 and the new pid"; fi
+          else
+            rec FAIL X3 "never reached a healthy foreground within $(secs "$HEALTHY_TRIES" "$POLL")s (pid='${pid:-none}', focus='$(cut -c1-160 <<<"$focus")')"
+          fi
+
+          # ---- X4: stays healthy: same process, same focus, no restart, for the whole soak
+          if [ "$healthy" = yes ]; then
+            pid_start="$pid"; stable=yes; why=""
+            for _ in $(seq 1 "$SOAK_POLLS"); do
+              sleep "$POLL"
+              r="$(look)"; p="${r%%|*}"; f="${r#*|}"
+              if [ "$p" != "$pid_start" ]; then stable=no; why="pid changed or vanished ('$pid_start' -> '${p:-none}')"; break; fi
+              if ! foreground_ok "$f"; then stable=no; why="focus no longer ours: $(cut -c1-160 <<<"$f")"; break; fi
+            done
+            if [ "$stable" = yes ]; then rec PASS X4 "stable for about $(secs "$SOAK_POLLS" "$POLL")s: same pid $pid_start, our activity kept the foreground"; else rec FAIL X4 "not stable: $why"; fi
+          else
+            pid_start=""; rec INCONCLUSIVE X4 "stability not assessed because the app never reached a healthy foreground (see X3)"
+          fi
+
+          # ---- X5: crash / ANR / process death for THIS package in THIS launch window (logcat was emptied at launch)
+          if ! dsh "logcat -d -b crash -t 1" >/dev/null; then
+            rec INCONCLUSIVE X5 "logcat could not be read, so crashes were not checked"
+          else
+            bad=""
+            if [ -n "$pid_start" ]; then bad="$bad$(dsh "logcat -d -b main,crash --pid=$pid_start" | grep -E 'FATAL EXCEPTION' | head -n 2)"$'\n'; fi
+            bad="$bad$(dsh "logcat -d -b crash" | grep -F "$PKG" | head -n 2)"$'\n'
+            bad="$bad$(dsh "logcat -d -b events" | grep -E 'am_crash|am_anr|am_proc_died' | grep -F "$PKG" | head -n 2)"$'\n'
+            bad="$bad$(dsh "logcat -d -b system,main" | grep -E "ANR in $PKG|Process $PKG .*has died" | head -n 2)"
+            bad="$(grep -v '^$' <<<"$bad" | head -n 4 | cut -c1-200 | paste -sd '|' -)"
+            if [ -z "$bad" ]; then rec PASS X5 "no crash, ANR or process-death event for $PKG during the launch window"; else rec FAIL X5 "relevant event(s): $bad"; fi
+          fi
+
+          # ---- X6: initial UI. Bounded dump retries; a dump that cannot be read is INCONCLUSIVE, never a pass.
+          dumped=no; dump_note=""
+          for a in 1 2 3; do
+            o="$(dsh "uiautomator dump /sdcard/o4-window.xml")"; rc=$?
+            if [ "$rc" -eq 0 ] && grep -qi 'dumped to' <<<"$o"; then dumped=yes; break; fi
+            dump_note="attempt $a: $(head -n 1 <<<"$o" | cut -c1-120)"; sleep 3
+          done
+          if [ "$dumped" != yes ]; then
+            rec INCONCLUSIVE X6 "the UI hierarchy could not be dumped after 3 attempts ($dump_note); process and focus checks above still stand"
+          else
+            xml="$(dsh "cat /sdcard/o4-window.xml")"; dsh "rm -f /sdcard/o4-window.xml" >/dev/null
+            app_xml="$(grep -oE "<node [^>]*package=\"$PKG\"[^>]*>" <<<"$xml")"
+            app_nodes="$(grep -c . <<<"$app_xml")"; [ -n "$app_xml" ] || app_nodes=0
+            found=""; missing=""
+            for l in $LABELS; do if grep -Eq "(text|content-desc)=\"$l\"" <<<"$app_xml"; then found="$found $l"; else missing="$missing $l"; fi; done
+            nfound="$(wc -w <<<"$found")"
+            sample="$(grep -oE "(text|content-desc)=\"[^\"]{1,40}\"" <<<"$app_xml" | sort -u | head -n 12 | paste -sd ' ' -)"
+            if [ "$nfound" -eq 6 ]; then
+              rec PASS X6 "all six navigation labels are present in the UI dump ($app_nodes nodes from the app)"
+            elif [ "$app_nodes" -eq 0 ]; then
+              rec INCONCLUSIVE X6 "the UI dump contained no nodes from $PKG, so the labels could not be assessed"
+            elif [ "$nfound" -eq 0 ]; then
+              rec INCONCLUSIVE X6 "$app_nodes app nodes but none of the six labels were recognised; this may be how the dump represents them. Strings seen: $sample"
+            else
+              rec FAIL X6 "partial UI: found [$found ] missing [$missing ] ($app_nodes app nodes). Strings seen: $sample"
+            fi
+          fi
+
+          # ---- X7: private storage after launch. Names and sizes only.
+          post_top="$(names .)"; post_prefs="$(names shared_prefs)"; post_files="$(names files)"
+          unexpected="$(tr ',' '\n' <<<"$post_top,$post_prefs,$post_files" | grep -E '^jailer_(saves|ckpt_)' | paste -sd ',' -)"
+          if [ -z "$unexpected" ]; then rec PASS X7 "no jailer_saves* or jailer_ckpt_* file exists after launch"; else rec FAIL X7 "unexpected save/checkpoint file(s) after launch: $unexpected"; fi
+          rec INFO X7b "private storage, names only. before: top=[$pre_top] shared_prefs=[$pre_prefs] files=[$pre_files]; after: top=[$post_top] shared_prefs=[$post_prefs] files=[$post_files]"
+          rec INFO X7c "file sizes in bytes (shared_prefs and files): $(sizes)"
+          post_marker="$(dsh "run-as $PKG cat $MARKER_FILE" || true)"
+          if [ -n "$pre_marker" ] && [ "$post_marker" = "$pre_marker" ]; then rec PASS X8 "the harness marker is unchanged after launch"; else rec FAIL X8 "the harness marker changed or disappeared during launch"; fi
+
+          rec INFO X9 "stage 3 took $((SECONDS - t_start))s; launch to healthy foreground: ${t_healthy:-n/a}s"
+          rec RESULT STAGE3 "$passes passed, $fails failed, $incs inconclusive (INFO lines are not passes; inconclusive is not a pass)"
+          if [ "$fails" -gt 0 ]; then exit 1; fi
+          if [ "$incs" -gt 0 ]; then exit 3; fi
+          exit 0
+          LAUNCHCHECKS
+          chmod +x "$RUNNER_TEMP/launch-observe.sh"
+          bash -n "$RUNNER_TEMP/launch-observe.sh"
+
       - name: Enable KVM acceleration (fail closed)
         run: |
           set -eu
@@ -488,6 +646,10 @@ jobs:
           echo "emulator booted after about ${waited}s"
           "$ADB" version | head -n 1
           bash "$RUNNER_TEMP/device-checks.sh"
+          dc_rc=$?
+          if [ "$dc_rc" -ne 0 ]; then echo "Stage 2 device checks failed (exit code $dc_rc); Stage 3 is not run."; exit "$dc_rc"; fi
+          bash "$RUNNER_TEMP/launch-observe.sh"
+          exit $?
 
       - name: Report the results
         if: always()
@@ -499,7 +661,9 @@ jobs:
             body="No device results were produced."
           else
             body="$(cat "$RES")"
-            echo "::notice title=O4 emulator spike results::${body//$'\n'/%0A}"
+            s2="$(grep -vE '^[A-Z]+ X[0-9]' "$RES")"; s3="$(grep -E '^[A-Z]+ X[0-9]|^RESULT STAGE3' "$RES")"
+            echo "::notice title=O4 Stage 2 results::${s2//$'\n'/%0A}"
+            if [ -n "$s3" ]; then echo "::notice title=O4 Stage 3 launch results::${s3//$'\n'/%0A}"; fi
           fi
           {
             echo "### O4 emulator spike (feasibility only)"
@@ -510,7 +674,7 @@ jobs:
             echo "$body"
             echo '```'
             echo
-            echo "**Not demonstrated by this run (no game was started, no save data was created or read):** checkpoint stamp"
-            echo "validity or rejection, lineage correctness, stale-history rejection, interrupted-write recovery, gameplay."
-            echo "An empty, freshly installed app proves none of these."
+            echo "**Not demonstrated by this run (the app is launched but no input is sent, no choice is committed, and no"
+            echo "save data is created or read):** checkpoint stamp validity or rejection, lineage correctness, stale-history"
+            echo "rejection, interrupted-write recovery, gameplay. A launched app with no saves proves none of these."
           } >> "$GITHUB_STEP_SUMMARY"
