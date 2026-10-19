@@ -376,6 +376,7 @@ jobs:
       - name: Boot the emulator and run the device checks
         run: |
           set -uo pipefail
+          set +e   # the runner starts steps with bash -e; every failure in this step is handled explicitly and still exits non-zero
           SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
           export ADB="$SDK/platform-tools/adb"
           RES="$RUNNER_TEMP/o4-spike-results.txt"
