@@ -1,0 +1,429 @@
+name: O4 Emulator Spike
+
+# O4 Stage 2 - FEASIBILITY SPIKE ONLY. This workflow proves (or fails to prove) four plain things on a GitHub-hosted
+# Android emulator:
+#   1. an emulator boots in GitHub Actions;
+#   2. the three reviewed O4 builds (built here, in this one job, with one temporary debug key) install over each other
+#      in the order OLD-A -> OLD-B -> NEW without clearing app data;
+#   3. "adb run-as" can reach the QA app's private storage;
+#   4. a harness marker written to that storage survives each update.
+# It does NOT start the game, play it, inject faults, or read any save data. It proves NOTHING about checkpoint stamps,
+# lineage, stale-history rejection or interrupted-write recovery. An empty, freshly installed app proves none of those.
+#
+# Same Stage 1 safeguards as o4-qa-apks.yml: fixed commits that must be on main, read-only token, no secrets, fresh-key
+# guard (self-tested), exactly one signer shared by all three APKs, package/versionCode/debuggable checks.
+# Unlike Stage 1 nothing is uploaded: no APK, no key, no storage contents. Results are written as annotations and the
+# job summary. The emulator is started with the Android SDK tools already on the runner (no third-party action).
+# Only the QA package com.thelastjailer.app.debug is ever touched.
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/o4-emulator-spike.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  emulator-spike:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      OLD_A_SHA: 3127d2a04115e1992d2c64b32396d27e6da3df12   # Batch 1: safety foundations (#117)
+      OLD_B_SHA: 4755ae45610371f82e26f80d455abd392f52eebe   # Batch 2C-1b-1: confirm before SAVE replaces a slot (#124)
+      NEW_SHA: 071439fc1145a4df21fc844492639ac82e48e6c6     # O3-B: slot state stamp (#125)
+      EXPECTED_PACKAGE: com.thelastjailer.app.debug
+    steps:
+      - name: Checkout OLD-A
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.OLD_A_SHA }}
+          path: src/OLD-A
+          persist-credentials: false
+      - name: Checkout OLD-B
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.OLD_B_SHA }}
+          path: src/OLD-B
+          persist-credentials: false
+      - name: Checkout NEW
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.NEW_SHA }}
+          path: src/NEW
+          persist-credentials: false
+
+      - name: Confirm the exact commits (fail closed)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for pair in "OLD-A:$OLD_A_SHA" "OLD-B:$OLD_B_SHA" "NEW:$NEW_SHA"; do
+            label="${pair%%:*}"; want="${pair#*:}"
+            case "$want" in
+              *[!0-9a-f]*|"") echo "::error::$label commit id is not lowercase hex"; exit 1 ;;
+            esac
+            [ "${#want}" -eq 40 ] || { echo "::error::$label commit id is not 40 characters"; exit 1; }
+            got="$(git -C "src/$label" rev-parse HEAD)"
+            if [ "$got" != "$want" ]; then
+              echo "::error::$label checked out $got, expected $want"; exit 1
+            fi
+            # The commit must be part of main's history ("ahead" = main is ahead of it, "identical" = it is main).
+            status="$(gh api "repos/${GITHUB_REPOSITORY}/compare/${want}...main" --jq .status)"
+            case "$status" in
+              ahead|identical) echo "$label $want is on main ($status)" ;;
+              *) echo "::error::$label $want is not an ancestor of main (compare status: $status)"; exit 1 ;;
+            esac
+          done
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Write the fresh-key guard
+        run: |
+          cat > "$RUNNER_TEMP/fresh-key-guard.sh" <<'GUARD'
+          #!/bin/bash
+          # Fails if ANY debug keystore already exists where the Android build tools would look for one.
+          # The QA builds must use a key created on this runner during this job, so the guard must pass
+          # BEFORE the first build. The three builds then share the key the first build creates.
+          set -u
+          found=""
+          for d in "${ANDROID_USER_HOME:-}" "${ANDROID_SDK_HOME:-}/.android" "${HOME:-}/.android"; do
+            case "$d" in ""|"/.android") continue ;; esac
+            if [ -e "$d/debug.keystore" ]; then found="$found $d/debug.keystore"; fi
+          done
+          if [ -n "$found" ]; then
+            echo "::error title=Debug key pre-existed::A debug keystore already exists on this runner:$found. The QA builds must use a fresh key."
+            exit 1
+          fi
+          echo "no pre-existing debug keystore"
+          GUARD
+          chmod +x "$RUNNER_TEMP/fresh-key-guard.sh"
+      - name: Self-test the fresh-key guard
+        run: |
+          set -u
+          guard="$RUNNER_TEMP/fresh-key-guard.sh"
+          t="$(mktemp -d)"
+          mkdir -p "$t/clean" "$t/dirty/.android" "$t/custom"
+          : > "$t/dirty/.android/debug.keystore"
+          : > "$t/custom/debug.keystore"
+          env -u ANDROID_USER_HOME -u ANDROID_SDK_HOME HOME="$t/clean" "$guard" >/dev/null \
+            || { echo "::error::guard self-test: a clean home was wrongly rejected"; exit 1; }
+          if env -u ANDROID_USER_HOME -u ANDROID_SDK_HOME HOME="$t/dirty" "$guard" >/dev/null 2>&1; then
+            echo "::error::guard self-test: a pre-existing ~/.android/debug.keystore was NOT rejected"; exit 1
+          fi
+          if env -u ANDROID_SDK_HOME HOME="$t/clean" ANDROID_USER_HOME="$t/custom" "$guard" >/dev/null 2>&1; then
+            echo "::error::guard self-test: a pre-existing keystore in ANDROID_USER_HOME was NOT rejected"; exit 1
+          fi
+          rm -rf "$t"
+          echo "guard self-test passed: clean home accepted, both pre-existing-key cases rejected"
+      - name: Require a fresh runner (no pre-existing debug key)
+        run: '"$RUNNER_TEMP/fresh-key-guard.sh"'
+
+      - name: Build the three debug APKs in one job
+        run: |
+          set -euo pipefail
+          mkdir -p qa-apks
+          for label in OLD-A OLD-B NEW; do
+            echo "::group::assembleDebug $label"
+            (cd "src/$label" && ./gradlew assembleDebug --stacktrace)
+            echo "::endgroup::"
+            cp "src/$label/app/build/outputs/apk/debug/app-debug.apk" "qa-apks/$label.apk"
+          done
+          ls -l qa-apks
+
+      - name: Verify the APKs, then write the manifest (fail closed)
+        run: |
+          set -euo pipefail
+          QA_DIR="${QA_DIR:-qa-apks}"
+          BT="${QA_BUILD_TOOLS:-}"
+          if [ -z "$BT" ]; then
+            root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}/build-tools"
+            [ -d "$root" ] || { echo "::error::Android build-tools folder not found"; exit 1; }
+            BT="$root/$(ls "$root" | sort -V | tail -1)"
+          fi
+          AAPT2="$BT/aapt2"; APKSIGNER="$BT/apksigner"
+          [ -x "$AAPT2" ] && [ -x "$APKSIGNER" ] || { echo "::error::aapt2 or apksigner missing in $BT"; exit 1; }
+
+          fail=0
+          problem() { echo "::error::$*"; fail=1; }
+          declare -A COMMIT=( [OLD-A]="$OLD_A_SHA" [OLD-B]="$OLD_B_SHA" [NEW]="$NEW_SHA" )
+          declare -A FP SHA BYTES VCODE VNAME PKG LABELTXT
+          for label in OLD-A OLD-B NEW; do
+            apk="$QA_DIR/$label.apk"
+            if [ ! -s "$apk" ]; then problem "$label: $apk is missing or empty"; continue; fi
+            SHA[$label]="$(sha256sum "$apk" | cut -d' ' -f1)"
+            BYTES[$label]="$(stat -c %s "$apk")"
+            badging="$("$AAPT2" dump badging "$apk" 2>/dev/null || true)"
+            PKG[$label]="$(sed -n "s/^package: name='\([^']*\)'.*/\1/p" <<<"$badging" | head -n1)"
+            VCODE[$label]="$(sed -n "s/^package: .* versionCode='\([^']*\)'.*/\1/p" <<<"$badging" | head -n1)"
+            VNAME[$label]="$(sed -n "s/^package: .* versionName='\([^']*\)'.*/\1/p" <<<"$badging" | head -n1)"
+            LABELTXT[$label]="$(sed -n "s/^application-label:'\(.*\)'$/\1/p" <<<"$badging" | head -n1)"
+            [ "${PKG[$label]}" = "$EXPECTED_PACKAGE" ] || problem "$label: package is '${PKG[$label]}', expected $EXPECTED_PACKAGE"
+            [ "${VCODE[$label]}" = "1" ] || problem "$label: versionCode is '${VCODE[$label]}', expected 1"
+            grep -q '^application-debuggable' <<<"$badging" || problem "$label: not a debuggable build"
+            if certs="$("$APKSIGNER" verify --print-certs -v "$apk" 2>&1)"; then
+              # Public information only: certificate subject and SHA-256 fingerprints, never key material.
+              echo "::group::apksigner output for $label"
+              echo "$certs"
+              echo "::endgroup::"
+              # Also as an annotation, so the exact format can be read without downloading logs.
+              echo "::notice title=apksigner $label::${certs//$'\n'/%0A}"
+              # apksigner words this differently across versions: "Signer #1 certificate SHA-256 digest: <hex>" or,
+              # as seen on the GitHub runner, "V2 Signer: certificate SHA-256 digest: <hex>" (V3 forms exist too).
+              # Any hex case. Several schemes repeat the same digest, so the digests are de-duplicated.
+              digests="$(sed -n 's/^\(Signer\|V[0-9.]* Signer\)[^:]*:\{0,1\} certificate SHA-256 digest: *\([0-9A-Fa-f]*\) *$/\2/p' <<<"$certs" | tr 'A-F' 'a-f' | sort -u)"
+              n="$(grep -c . <<<"$digests" || true)"
+              signers="$(sed -n 's/^Number of signers: *\([0-9]*\) *$/\1/p' <<<"$certs" | head -n1)"
+              if [ -n "$signers" ] && [ "$signers" != "1" ]; then
+                problem "$label: apksigner reports $signers signers, expected 1"
+              fi
+              if [ "$n" = "1" ]; then
+                FP[$label]="$digests"
+              else
+                problem "$label: expected exactly 1 distinct signer certificate, found $n"
+                FP[$label]=""
+              fi
+            else
+              echo "$certs"
+              problem "$label: apksigner could not verify the signature"
+              FP[$label]=""
+            fi
+          done
+
+          if [ "$fail" -eq 0 ]; then
+            [ "${FP[OLD-A]}" = "${FP[OLD-B]}" ] && [ "${FP[OLD-B]}" = "${FP[NEW]}" ] \
+              || problem "the three APKs are NOT signed by the same certificate"
+            if [ "${SHA[OLD-A]}" = "${SHA[OLD-B]}" ] || [ "${SHA[OLD-B]}" = "${SHA[NEW]}" ] || [ "${SHA[OLD-A]}" = "${SHA[NEW]}" ]; then
+              problem "two APKs are byte-identical, so they are not three different builds"
+            fi
+          fi
+
+          # Nothing but the three APKs and the manifest may ever be uploaded (no key material, no extras).
+          unexpected="$(cd "$QA_DIR" && find . -type f ! -name OLD-A.apk ! -name OLD-B.apk ! -name NEW.apk ! -name MANIFEST.txt | sort)"
+          [ -z "$unexpected" ] || problem "unexpected files in $QA_DIR: $unexpected"
+
+          if [ "$fail" -ne 0 ]; then echo "Verification FAILED; nothing will be uploaded."; exit 1; fi
+
+          {
+            echo "The Last Jailer - O4 QA APK set"
+            echo "workflow run: ${GITHUB_RUN_ID:-local} (attempt ${GITHUB_RUN_ATTEMPT:-1})"
+            echo "workflow commit: ${GITHUB_SHA:-local}"
+            echo "runner image: ${ImageOS:-unknown} ${ImageVersion:-unknown}"
+            echo "expected package: $EXPECTED_PACKAGE"
+            echo "signing: one temporary debug key created on this runner; the key is not stored or uploaded"
+            echo
+            for label in OLD-A OLD-B NEW; do
+              echo "$label.apk"
+              echo "  commit:       ${COMMIT[$label]}"
+              echo "  bytes:        ${BYTES[$label]}"
+              echo "  sha256:       ${SHA[$label]}"
+              echo "  package:      ${PKG[$label]}"
+              echo "  versionCode:  ${VCODE[$label]}"
+              echo "  versionName:  ${VNAME[$label]}"
+              echo "  app label:    ${LABELTXT[$label]}"
+              echo "  signer sha256 ${FP[$label]}"
+            done
+            echo
+            echo "All three APKs have the same signer certificate: ${FP[NEW]}"
+          } > "$QA_DIR/MANIFEST.txt"
+          cat "$QA_DIR/MANIFEST.txt"
+          # The same content as annotations (public information only), so the result is readable without downloading logs.
+          echo "::notice title=MANIFEST.txt::$(sed ':a;N;$!ba;s/\n/%0A/g' "$QA_DIR/MANIFEST.txt")"
+          echo "::notice title=APK folder::$(cd "$QA_DIR" && find . -type f -printf '%P (%s bytes)\n' | sort | paste -sd ';' -)"
+
+          for label in OLD-A OLD-B NEW; do
+            echo "::notice title=O4 $label::commit=${COMMIT[$label]} sha256=${SHA[$label]} signer=${FP[$label]} package=${PKG[$label]} versionCode=${VCODE[$label]} label='${LABELTXT[$label]}'"
+          done
+          if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+            {
+              echo "### O4 QA APK set (fingerprints and hashes only)"
+              echo
+              echo "| Build | Commit | APK SHA-256 | Signer SHA-256 |"
+              echo "|---|---|---|---|"
+              for label in OLD-A OLD-B NEW; do
+                echo "| $label | \`${COMMIT[$label]:0:7}\` | \`${SHA[$label]}\` | \`${FP[$label]}\` |"
+              done
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Write the device checks
+        run: |
+          cat > "$RUNNER_TEMP/device-checks.sh" <<'DEVCHECKS'
+          #!/bin/bash
+          # O4 Stage 2 emulator spike: device checks.
+          # Installs the three QA builds over each other (never uninstall, never clear data, never launch the app, no gameplay)
+          # and proves what can honestly be proven about install and private-storage access.
+          # The ONLY write to the app's private storage is one harness marker file (files/o4-spike-marker.txt) holding a random
+          # value. It is not a game save. Nothing read from the app's storage is printed except file NAMES and that marker's
+          # first 8 characters.
+          set -u
+          PKG="${EXPECTED_PACKAGE:?EXPECTED_PACKAGE is required}"
+          QA_DIR="${QA_DIR:-qa-apks}"
+          ADB="${ADB:-adb}"
+          OUT="${RESULTS_FILE:?RESULTS_FILE is required}"
+          MARKER_FILE="files/o4-spike-marker.txt"
+          fails=0
+          rec() { # status id detail
+            printf '%s %s: %s\n' "$1" "$2" "$3" | tee -a "$OUT"
+            if [ "$1" = FAIL ]; then fails=$((fails + 1)); fi
+            return 0
+          }
+          # One shell command string, run on the device; remote exit status is passed back.
+          dsh() { local o rc; o="$("$ADB" shell "$1" 2>&1)"; rc=$?; printf '%s\n' "$o" | tr -d '\r'; return "$rc"; }
+          field() { # dumpsys package field, e.g. firstInstallTime
+            dsh "dumpsys package $PKG" | sed -n "s/^ *$1=\(.*\)$/\1/p" | head -n1
+          }
+          installed_sha() {
+            local p
+            p="$(dsh "pm path $PKG" | sed -n 's/^package://p' | grep '/base\.apk$' | head -n1)"
+            [ -n "$p" ] || return 1
+            dsh "sha256sum $p" | cut -d' ' -f1
+          }
+
+          # ---- E1: the device is an emulator and has finished booting
+          sdk="$(dsh 'getprop ro.build.version.sdk')"; abi="$(dsh 'getprop ro.product.cpu.abi')"
+          qemu="$(dsh 'getprop ro.kernel.qemu')"; boot="$(dsh 'getprop sys.boot_completed')"
+          if [ "$boot" = 1 ]; then rec PASS E1 "emulator booted (api=$sdk abi=$abi qemu=$qemu)"; else rec FAIL E1 "boot not completed (sys.boot_completed='$boot')"; fi
+
+          # ---- E2: starting point. Nothing of ours installed; the Play package is never touched either way.
+          pkgs="$(dsh 'pm list packages')"
+          if grep -qx "package:$PKG" <<<"$pkgs"; then rec FAIL E2 "$PKG is already installed on this emulator"; else rec PASS E2 "$PKG not installed before the first install"; fi
+          if grep -qx "package:com.thelastjailer.app" <<<"$pkgs"; then rec INFO E2b "the Play package is present on this emulator; it is never touched"; else rec PASS E2b "the Play package com.thelastjailer.app is not on this emulator"; fi
+
+          nonce="$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+          first_install=""; prev_update=""
+          i=0
+          for label in OLD-A OLD-B NEW; do
+            i=$((i + 1)); apk="$QA_DIR/$label.apk"
+            if [ ! -s "$apk" ]; then rec FAIL "I$i" "$label: $apk missing"; continue; fi
+            want="$(sha256sum "$apk" | cut -d' ' -f1)"
+            if [ "$i" -eq 1 ]; then flag=""; else flag="-r"; fi
+            # ---- I<n>: install. -r keeps data. Never -d, never uninstall, never pm clear.
+            inst="$("$ADB" install $flag "$apk" 2>&1)"; rc=$?
+            if [ "$rc" -eq 0 ] && grep -q '^Success' <<<"$inst"; then rec PASS "I$i" "$label installed (adb install${flag:+ $flag}: Success)"; else rec FAIL "I$i" "$label install failed (rc=$rc): $(tr -d '\r' <<<"$inst" | tail -n 2 | paste -sd ' ' -)"; continue; fi
+            # ---- V<n>: what Android says is installed
+            vc="$(field versionCode | sed 's/ .*//')"
+            if [ "$vc" = 1 ]; then rec PASS "V$i" "$label: Android reports versionCode=1"; else rec FAIL "V$i" "$label: versionCode='$vc'"; fi
+            if dsh "dumpsys package $PKG" | grep -q 'DEBUGGABLE'; then rec PASS "D$i" "$label: package is DEBUGGABLE"; else rec FAIL "D$i" "$label: package is not DEBUGGABLE"; fi
+            got="$(installed_sha || true)"
+            if [ -z "$got" ]; then rec INCONCLUSIVE "H$i" "$label: could not read the installed base.apk hash"
+            elif [ "$got" = "$want" ]; then rec PASS "H$i" "$label: installed base.apk SHA-256 equals the built $label.apk (${want:0:12})"
+            else rec FAIL "H$i" "$label: installed base.apk (${got:0:12}) differs from the built $label.apk (${want:0:12})"; fi
+            # ---- F<n>: an update, not a reinstall
+            fit="$(field firstInstallTime)"; lut="$(field lastUpdateTime)"
+            if [ "$i" -eq 1 ]; then
+              first_install="$fit"; rec INFO "F$i" "firstInstallTime recorded"
+            else
+              if [ -n "$fit" ] && [ "$fit" = "$first_install" ]; then rec PASS "F$i" "$label: firstInstallTime unchanged, so this was an in-place update"; else rec FAIL "F$i" "$label: firstInstallTime changed ('$first_install' -> '$fit'), so the app was reinstalled"; fi
+              if [ "$lut" != "$prev_update" ]; then rec PASS "U$i" "$label: lastUpdateTime moved forward"; else rec INFO "U$i" "$label: lastUpdateTime has the same value as before (one-second clock resolution)"; fi
+            fi
+            prev_update="$lut"
+            # ---- R<n>: run-as can reach the app's private storage
+            uidline="$(dsh "run-as $PKG id" || true)"
+            if grep -q '^uid=' <<<"$uidline"; then rec PASS "R$i" "$label: run-as works (${uidline%% *})"; else rec FAIL "R$i" "$label: run-as failed: $(head -n 1 <<<"$uidline")"; fi
+            names="$(dsh "run-as $PKG ls -1" | paste -sd ',' -)"
+            rec INFO "L$i" "$label: top-level entries in the app data dir (names only): ${names:-none}"
+            # ---- M<n>: the harness marker proves private data survives each update
+            if [ "$i" -eq 1 ]; then
+              if dsh "run-as $PKG sh -c 'mkdir -p files && echo $nonce > $MARKER_FILE'" >/dev/null; then rec PASS "M$i" "$label: wrote harness marker ${nonce:0:8}... (not a game save)"; else rec FAIL "M$i" "$label: could not write the harness marker"; fi
+            else
+              back="$(dsh "run-as $PKG cat $MARKER_FILE" || true)"
+              if [ "$back" = "$nonce" ]; then rec PASS "M$i" "$label: harness marker ${nonce:0:8}... still present, so app data survived the update"; else rec FAIL "M$i" "$label: harness marker missing or changed"; fi
+            fi
+          done
+
+          pass="$(grep -c '^PASS ' "$OUT" || true)"
+          rec RESULT SUMMARY "$pass passed, $fails failed (INFO/INCONCLUSIVE lines are not passes)"
+          [ "$fails" -eq 0 ]
+          DEVCHECKS
+          chmod +x "$RUNNER_TEMP/device-checks.sh"
+          bash -n "$RUNNER_TEMP/device-checks.sh"
+
+      - name: Enable KVM acceleration (fail closed)
+        run: |
+          set -eu
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules >/dev/null
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          if [ ! -e /dev/kvm ]; then
+            echo "::error title=No KVM::/dev/kvm is not available on this runner, so the emulator cannot run with acceleration."
+            echo "FAIL E0: /dev/kvm not available on this runner; emulator not started" > "$RUNNER_TEMP/o4-spike-results.txt"
+            exit 1
+          fi
+          ls -l /dev/kvm
+
+      - name: Install the emulator and a system image
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          SM="$SDK/cmdline-tools/latest/bin/sdkmanager"
+          [ -x "$SM" ] || { echo "::error::sdkmanager not found at $SM"; echo "FAIL E0: sdkmanager not found" > "$RUNNER_TEMP/o4-spike-results.txt"; exit 1; }
+          "$SM" --licenses < <(yes) > "$RUNNER_TEMP/sdk-licenses.log" 2>&1 || true
+          if ! "$SM" --install "platform-tools" "emulator" "system-images;android-34;default;x86_64" > "$RUNNER_TEMP/sdkmanager.log" 2>&1; then
+            tail -n 40 "$RUNNER_TEMP/sdkmanager.log"
+            echo "FAIL E0: sdkmanager could not install the emulator or system image" > "$RUNNER_TEMP/o4-spike-results.txt"
+            exit 1
+          fi
+          tail -n 5 "$RUNNER_TEMP/sdkmanager.log"
+
+      - name: Boot the emulator and run the device checks
+        run: |
+          set -uo pipefail
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          export ADB="$SDK/platform-tools/adb"
+          RES="$RUNNER_TEMP/o4-spike-results.txt"
+          export RESULTS_FILE="$RES"
+          echo "no" | "$SDK/cmdline-tools/latest/bin/avdmanager" create avd --force -n o4 -k "system-images;android-34;default;x86_64" --device pixel_6 > "$RUNNER_TEMP/avd.log" 2>&1 \
+            || { tail -n 20 "$RUNNER_TEMP/avd.log"; echo "FAIL E0: avdmanager could not create the virtual device" > "$RES"; exit 1; }
+          setsid nohup "$SDK/emulator/emulator" -avd o4 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -accel on -memory 3072 > "$RUNNER_TEMP/emulator.log" 2>&1 &
+          emu_pid=$!
+          stop_emulator() { "$ADB" emu kill >/dev/null 2>&1 || true; kill "$emu_pid" >/dev/null 2>&1 || true; }
+          trap stop_emulator EXIT
+          "$ADB" start-server >/dev/null 2>&1
+          booted=no
+          for _ in $(seq 1 120); do
+            if ! kill -0 "$emu_pid" 2>/dev/null; then break; fi
+            if [ "$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ]; then booted=yes; break; fi
+            sleep 5
+          done
+          if [ "$booted" != yes ]; then
+            echo "::group::emulator log (tail)"; tail -n 40 "$RUNNER_TEMP/emulator.log"; echo "::endgroup::"
+            echo "FAIL E0: the emulator did not finish booting within 10 minutes" > "$RES"
+            exit 1
+          fi
+          echo "emulator booted"
+          "$ADB" version | head -n 1
+          bash "$RUNNER_TEMP/device-checks.sh"
+
+      - name: Report the results
+        if: always()
+        run: |
+          set -u
+          RES="$RUNNER_TEMP/o4-spike-results.txt"
+          if [ ! -s "$RES" ]; then
+            echo "::error title=No device results::The device checks never produced results (an earlier step failed before the emulator was ready)."
+            body="No device results were produced."
+          else
+            body="$(cat "$RES")"
+            echo "::notice title=O4 emulator spike results::${body//$'\n'/%0A}"
+          fi
+          {
+            echo "### O4 emulator spike (feasibility only)"
+            echo
+            echo "Runner image: ${ImageOS:-unknown} ${ImageVersion:-unknown}. System image: android-34 default x86_64."
+            echo
+            echo '```'
+            echo "$body"
+            echo '```'
+            echo
+            echo "**Not demonstrated by this run (no game was started, no save data was created or read):** checkpoint stamp"
+            echo "validity or rejection, lineage correctness, stale-history rejection, interrupted-write recovery, gameplay."
+            echo "An empty, freshly installed app proves none of these."
+          } >> "$GITHUB_STEP_SUMMARY"
