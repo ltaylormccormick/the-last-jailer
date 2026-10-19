@@ -373,6 +373,42 @@ jobs:
           fi
           tail -n 5 "$RUNNER_TEMP/sdkmanager.log"
 
+      - name: Install libpulse0 and verify the emulator can start (fail closed)
+        run: |
+          set -uo pipefail
+          set +e   # the runner starts steps with bash -e; every failure here is handled explicitly and still exits non-zero
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          RES="$RUNNER_TEMP/o4-spike-results.txt"
+          QEMU="$SDK/emulator/qemu/linux-x86_64/qemu-system-x86_64"
+          ann() { # level title ; message on stdin
+            local m; m="$(head -c 3500 | tr -d '\r' | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')"
+            echo "::$1 title=$2::$m"
+          }
+          stop() { echo "FAIL E0: $1" > "$RES"; echo "::error title=Emulator library check::$1"; exit 1; }
+          # The emulator's QEMU binary needs libpulse.so.0 even with audio off; the runner image does not ship it.
+          # This installs exactly one package, libpulse0, and nothing else.
+          sudo apt-get update -qq > "$RUNNER_TEMP/apt-update.log" 2>&1
+          sudo apt-get install -y --no-install-recommends libpulse0 > "$RUNNER_TEMP/apt-install.log" 2>&1
+          apt_rc=$?
+          if [ "$apt_rc" -ne 0 ]; then tail -n 15 "$RUNNER_TEMP/apt-install.log" | cut -c1-300 | ann notice "apt install libpulse0 output"; stop "apt-get install libpulse0 failed (exit code $apt_rc)"; fi
+          pkgver="$(dpkg-query -W -f='${Package} ${Version}' libpulse0 2>&1)"
+          soname="$(ldconfig -p 2>&1 | grep 'libpulse\.so\.0' | head -n 2 | paste -sd ';' -)"
+          [ -x "$QEMU" ] || stop "the emulator's QEMU binary was not found at $QEMU"
+          missing="$(ldd "$QEMU" 2>&1 | grep 'not found' | sed 's/^[[:space:]]*//' | paste -sd ';' -)"
+          ver_full="$(timeout 30 "$SDK/emulator/emulator" -version 2>&1)"
+          ver_rc=$?
+          ver_out="$(head -n 6 <<<"$ver_full")"
+          {
+            echo "package: $pkgver"
+            echo "libpulse.so.0 known to ldconfig: ${soname:-NO}"
+            echo "libraries ldd cannot find for QEMU: ${missing:-none}"
+            echo "emulator -version (exit code $ver_rc):"; echo "$ver_out"
+          } | ann notice "libpulse and emulator check"
+          [ -n "$soname" ] || stop "libpulse.so.0 is not available after installing libpulse0"
+          [ -z "$missing" ] || stop "other shared libraries are still missing (nothing further is installed): $missing"
+          if ! grep -q '^Android emulator version' <<<"$ver_out" || grep -q 'error while loading' <<<"$ver_out"; then stop "emulator -version did not succeed (exit code $ver_rc)"; fi
+          echo "libpulse0 installed; emulator -version works"
+
       - name: Boot the emulator and run the device checks
         run: |
           set -uo pipefail
@@ -382,6 +418,10 @@ jobs:
           RES="$RUNNER_TEMP/o4-spike-results.txt"
           export RESULTS_FILE="$RES"
           ELOG="$RUNNER_TEMP/emulator.log"
+          # Put the virtual device in an explicit folder. avdmanager and the emulator both read ANDROID_AVD_HOME first,
+          # so they cannot disagree about where it is. (The first runs showed the emulator found nothing in ~/.android/avd.)
+          export ANDROID_AVD_HOME="$RUNNER_TEMP/avd-home"
+          mkdir -p "$ANDROID_AVD_HOME"
           TRIES="${O4_BOOT_TRIES:-120}"   # 120 x 5 s = 10 minutes
           # Diagnostics are bounded and contain no app storage, saves, keys or credentials: runner/emulator facts and the
           # emulator's own startup log. Everything goes out as annotations (step logs cannot be read without a download).
@@ -399,7 +439,7 @@ jobs:
             { timeout 30 "$SDK/emulator/emulator" -version 2>&1 | head -n 6; } | ann notice "emulator diag 2: emulator version"
             { timeout 60 "$SDK/cmdline-tools/latest/bin/sdkmanager" --list_installed 2>&1 | grep -E 'emulator|system-images|platform-tools|Path' | head -n 12
               grep -E '^(Pkg\.Desc|Pkg\.Revision|SystemImage\.)' "$SDK/system-images/android-34/default/x86_64/source.properties" 2>&1 | head -n 8
-              grep -E '^(abi\.type|image\.sysdir\.1|hw\.cpu\.arch|hw\.ramSize|hw\.gpu\.(enabled|mode)|AvdId|tag\.id)' "$HOME/.android/avd/o4.avd/config.ini" 2>&1 | head -n 10
+              grep -E '^(abi\.type|image\.sysdir\.1|hw\.cpu\.arch|hw\.ramSize|hw\.gpu\.(enabled|mode)|AvdId|tag\.id)' "$ANDROID_AVD_HOME/o4.avd/config.ini" 2>&1 | head -n 10
             } | ann notice "emulator diag 3: system image and AVD"
             { echo "--- first 25 lines"; head -n 25 "$ELOG" 2>&1 | cut -c1-300; } | ann notice "emulator diag 4: log head"
             { echo "--- last 40 lines"; tail -n 40 "$ELOG" 2>&1 | cut -c1-300; } | ann notice "emulator diag 5: log tail"
@@ -408,8 +448,23 @@ jobs:
               echo "boot_completed: $(timeout 20 "$ADB" shell getprop sys.boot_completed 2>&1 | tr -d '\r')"
             } | ann notice "emulator diag 6: processes and adb"
           }
-          echo "no" | "$SDK/cmdline-tools/latest/bin/avdmanager" create avd --force -n o4 -k "system-images;android-34;default;x86_64" --device pixel_6 > "$RUNNER_TEMP/avd.log" 2>&1 \
-            || { tail -n 20 "$RUNNER_TEMP/avd.log"; echo "FAIL E0: avdmanager could not create the virtual device" > "$RES"; exit 1; }
+          printf 'no\n' | "$SDK/cmdline-tools/latest/bin/avdmanager" create avd --force -n o4 -k "system-images;android-34;default;x86_64" --device pixel_6 > "$RUNNER_TEMP/avd.log" 2>&1
+          avd_rc=${PIPESTATUS[1]}
+          avd_listed="$(timeout 30 "$SDK/emulator/emulator" -list-avds 2>&1 | head -n 10)"
+          {
+            echo "avdmanager exit code: $avd_rc"
+            env | grep '^ANDROID_' | sed 's/^/env /'
+            echo "AVD folder: $ANDROID_AVD_HOME"; ls -la "$ANDROID_AVD_HOME" 2>&1 | head -n 12
+            echo "emulator -list-avds: ${avd_listed:-<empty>}"
+            echo "--- avdmanager output (last 15 lines)"; tail -n 15 "$RUNNER_TEMP/avd.log" | cut -c1-300
+          } | ann notice "AVD creation"
+          if [ "$avd_rc" -ne 0 ] || [ ! -f "$ANDROID_AVD_HOME/o4.ini" ] || [ ! -f "$ANDROID_AVD_HOME/o4.avd/config.ini" ] || ! grep -qx o4 <<<"$avd_listed"; then
+            where="$(find "$HOME" "$RUNNER_TEMP" -maxdepth 5 -name 'o4.ini' 2>/dev/null | head -n 5 | paste -sd ' ' -)"
+            reason="the virtual device o4 was not created and found in $ANDROID_AVD_HOME (avdmanager exit code $avd_rc; o4.ini found elsewhere at: ${where:-nowhere})"
+            echo "FAIL E0: $reason" > "$RES"
+            diagnose "$reason"
+            exit 1
+          fi
           setsid nohup "$SDK/emulator/emulator" -avd o4 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -accel on -memory 3072 > "$ELOG" 2>&1 &
           emu_pid=$!
           stop_emulator() { "$ADB" emu kill >/dev/null 2>&1 || true; kill "$emu_pid" >/dev/null 2>&1 || true; }
