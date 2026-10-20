@@ -45,7 +45,7 @@ in the game. The harness measured the bottom navigation bar from the smallest to
 labels, and the Story header has an "Inventory" icon at the top, so every choice button was rejected. Nothing was tapped
 and no save was created. The fix (the bar is the *lowest* row of labels) was reproduced locally first and then passed.
 
-Final validation of the combined workflow after consolidation: run `<filled in after the final run>`.
+Final validation of the combined workflow after consolidation: run `39373615939` on `474db95` (PR #127), success: Stage 2 25 passed, Stage 3 9 passed, Stage 4 17 passed, 0 failed, 0 inconclusive. The Stage 4 correction first ran in `39338515186`; later commits to this file change documentation only.
 
 ## What Stage 4 shows
 
