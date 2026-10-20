@@ -142,6 +142,13 @@ class RawFileAssessorTest {
         }
     }
 
+    @Test fun `the fresh-start rule itself refuses a bak even if an assessment were built by hand`() {
+        assertFalse(RawAssessment(RawClass.ABSENT, null, true).freshStartEligible)
+        assertFalse(RawAssessment(RawClass.LEGIT_EMPTY, null, true).freshStartEligible)
+        assertTrue(RawAssessment(RawClass.ABSENT, null, false).freshStartEligible)
+        assertTrue(RawAssessment(RawClass.LEGIT_EMPTY, null, true).snapshotRequired)
+    }
+
     @Test fun `valid has no reason`() {
         assertNull(assess(RawSource.Bytes(savedBytes), loaded = full).reason)
     }
