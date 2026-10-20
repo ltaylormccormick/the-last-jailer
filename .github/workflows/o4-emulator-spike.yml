@@ -1,7 +1,15 @@
 name: O4 Emulator Spike
 
-# O4 Stage 2 - FEASIBILITY SPIKE, plus Stage 3 launch-and-observe. Stage 2 proves (or fails to prove) four plain things
-# on a GitHub-hosted Android emulator:
+# O4 emulator update-compatibility check (Stages 2 to 4). A MANUAL EVIDENCE TOOL, NOT A REGRESSION GUARD.
+#
+# WHAT IT TESTS: three FIXED, reviewed historic commits (OLD_A_SHA, OLD_B_SHA and NEW_SHA below, each of which must be on
+# main), built here and exercised on a GitHub-hosted Android emulator. It does NOT build or test the code of the pull
+# request that triggers it, nor any future change, so a green run says nothing about whether a LATER update would break
+# existing saves. Making it a guard for future updates needs a separately designed, reviewed way to choose the candidate
+# build (validated refs, read-only permissions, no secrets). The verified results for these three builds, with run ids and
+# limits, are recorded in qa/O4_VERIFICATION.md. Run it by hand (workflow_dispatch) or by editing this file in a PR.
+#
+# Stage 2 proves (or fails to prove) four plain things on the emulator:
 #   1. an emulator boots in GitHub Actions;
 #   2. the three reviewed O4 builds (built here, in this one job, with one temporary debug key) install over each other
 #      in the order OLD-A -> OLD-B -> NEW without clearing app data;
@@ -1065,9 +1073,12 @@ jobs:
             fi
           fi
           {
-            echo "### O4 emulator spike (feasibility only)"
+            echo "### O4 emulator update-compatibility check (three fixed historic builds, not a future-code regression guard)"
             echo
             echo "Runner image: ${ImageOS:-unknown} ${ImageVersion:-unknown}. System image: android-34 default x86_64."
+            echo
+            echo "This run exercised only the three fixed commits named in the workflow (OLD-A, OLD-B, NEW). It did not test the code"
+            echo "of the pull request or branch that triggered it. See qa/O4_VERIFICATION.md for the recorded evidence and limits."
             echo
             echo '```'
             echo "$body"
