@@ -185,6 +185,49 @@ class SaveClassifierSlotTest {
         assertTrue(strictCatalogue.classifyLive(entries(saved()), 1) is Classification.UnsupportedContent)
     }
 
+    // ---- a failing scene lookup ----------------------------------------------------------------------------------
+
+    private val throwing = SaveClassifier(sceneExists = { throw IllegalStateException("catalogue unavailable") })
+
+    @Test
+    fun `a scene lookup that throws gives Undetermined, never Missing, Valid or an escaped exception`() {
+        val p = saved()
+        val c = throwing.classifyLive(entries(p), 1)
+        assertEquals(Classification.Undetermined, c)
+        val back = saved().also { SaveStore(it).savePreviousState(1, GameState(activeSlot = 1)) }
+        assertEquals(Classification.Undetermined, throwing.classifyBack(entries(back), 1))
+        assertFalse(c.toString().contains("catalogue"))
+    }
+
+    @Test
+    fun `a lookup failure is contained for any exception type and the rest of the report is still produced`() {
+        for (boom in listOf<() -> Nothing>({ throw RuntimeException("x") }, { throw NoSuchElementException("x") }, { throw ClassCastException("x") })) {
+            val c = SaveClassifier(sceneExists = { boom() })
+            val p = saved()
+            SaveStore(p).save(2, GameState(activeSlot = 2)); p.putRaw("2.gold", "bad")
+            val r = c.report(p) as SaveReport.Readable
+            assertEquals(Classification.Undetermined, r.slot(1)!!.live)
+            assertTrue("a type fault is still found without needing the lookup", r.slot(2)!!.live is Classification.Malformed)
+            assertTrue(r.startup is StartupDecision.NeedsAttention)
+        }
+    }
+
+    @Test
+    fun `the lookup is not consulted when the slot is already Malformed or Missing`() {
+        var calls = 0
+        val counting = SaveClassifier(sceneExists = { calls++; true })
+        counting.classifyLive(entries(saved().putRaw("1.level", "x")), 1)
+        counting.classifyLive(entries(StrictFakeSharedPreferences()), 1)
+        assertEquals(0, calls)
+    }
+
+    @Test
+    fun `an Undetermined slot never makes a startup resume`() {
+        val p = saved()
+        val d = (throwing.report(p) as SaveReport.Readable).startup
+        assertTrue("was $d", d is StartupDecision.NeedsAttention && d.state === Classification.Undetermined)
+    }
+
     // ---- many slots, ordering, independence ----------------------------------------------------------------------
 
     @Test

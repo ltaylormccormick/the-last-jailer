@@ -9,6 +9,9 @@ import com.thelastjailer.app.data.StoryRepository
 // damaged data, and takes no decision that changes live loading, autosave, persistence, the save UI or entitlement
 // behaviour. Stage B+C will connect it; until then it exists so the failure states can be defined and tested.
 //
+// "Never throws" covers everything the classifier reads: stored values of any type, and a scene-lookup callback that
+// fails (the result is then Undetermined, below). It does not cover an Error (out of memory etc.), which propagates.
+//
 // It reads ONE snapshot of the file (`SharedPreferences.getAll`) and inspects the raw value types itself. It never
 // calls a typed getter, so it cannot hit the ClassCastException that typed getters throw on real Android when a
 // value has the wrong type. If the file could not be loaded at all, `getAll` throws IllegalStateException on
@@ -82,6 +85,13 @@ sealed class Classification {
      * an explicit save-format version (see qa/G2L_STAGE_A.md). Treated as "protect, do not replace".
      */
     class UnsupportedContent(val sceneId: String) : Classification() { override fun toString() = "UnsupportedContent" }
+
+    /**
+     * The stored values are structurally intact but the scene lookup itself failed (the injected `sceneExists`
+     * threw), so whether the scene exists is unknown. Never reported as Missing or Valid, because that could let a
+     * lookup fault make a real save look empty or safe to overwrite. Protected exactly like UnsupportedContent.
+     */
+    object Undetermined : Classification() { override fun toString() = "Undetermined" }
 }
 
 sealed class ActiveSlotClass {
@@ -141,6 +151,7 @@ sealed class EntitlementReport {
 }
 
 class SaveClassifier(
+    /** Answers whether a scene id exists in this build. Expected not to throw; if it does, the slot is [Classification.Undetermined]. */
     private val sceneExists: (String) -> Boolean = { StoryRepository.nodeOrNull(it) != null }
 ) {
 
@@ -202,7 +213,7 @@ class SaveClassifier(
             when (live) {
                 Classification.Missing -> StartupDecision.FreshStart(active.slot)
                 Classification.Valid -> StartupDecision.Resume(active.slot)
-                is Classification.Malformed, is Classification.UnsupportedContent ->
+                is Classification.Malformed, is Classification.UnsupportedContent, Classification.Undetermined ->
                     StartupDecision.NeedsAttention(active.slot, live)
             }
         }
@@ -225,7 +236,11 @@ class SaveClassifier(
         }
         if (scene is String && scene.isEmpty()) faults.add(Fault(prefix + "scene", FaultReason.EMPTY_SCENE, "String"))
         if (faults.isNotEmpty()) return Classification.Malformed(faults)
-        return if (sceneExists(scene as String)) Classification.Valid else Classification.UnsupportedContent(scene)
+        val sceneId = scene as String
+        // The callback's contract is "answer, do not throw" (the production one is a map lookup). If it throws anyway
+        // the answer is unknown, which is neither Valid nor Unsupported and must not escape as a crash.
+        val exists = try { sceneExists(sceneId) } catch (e: Exception) { return Classification.Undetermined }
+        return if (exists) Classification.Valid else Classification.UnsupportedContent(sceneId)
     }
 
     private fun matches(value: Any, kind: FieldKind): Boolean = when (kind) {

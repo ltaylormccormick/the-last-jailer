@@ -22,6 +22,11 @@ calls a typed getter, so it cannot hit the `ClassCastException` a typed getter t
 (`IllegalStateException`, which is what Android does when the file failed to load), the result is **Unreadable**,
 never Missing. It performs no write (a test fails if the source contains any), no file access and no logging.
 
+**Failure contract.** "Never throws" covers every stored value of any type and a failing scene lookup: the
+`sceneExists` callback is expected to answer, not throw (production: a map lookup); if it throws anyway the slot is
+**Undetermined**, so a lookup fault can never make a real save look empty, valid or replaceable, and never escapes as a
+crash. An `Error` (such as out of memory) is not caught.
+
 ### Slot (and Back snapshot) states
 
 | State | Condition |
@@ -30,6 +35,7 @@ never Missing. It performs no write (a test fails if the source contains any), n
 | Valid | every stored field has the right type and the scene exists in this build. Absent individual fields are fine: older saves lack some and the loader defaults them |
 | Malformed | a stored field has the wrong type (Int vs Long, a String where a Set belongs, a Set of non-strings, ...); or other fields are present but `scene` is not; or `scene` is empty |
 | UnsupportedContent | structurally intact, but the scene id is not in this build |
+| Undetermined | structurally intact, but the scene lookup itself failed (the injected `sceneExists` threw), so existence is unknown. Never Missing or Valid; protected like UnsupportedContent |
 | Unreadable | whole-file level (`SaveReport.Unreadable`) |
 
 Malformed wins over UnsupportedContent. A fault records the key and the *type name* found, never the stored value
@@ -147,10 +153,10 @@ The live save has **no schema or version marker** (only the checkpoint files do)
 | Class | Tests | Covers |
 |---|---|---|
 | `StrictDoubleTest` | 10 | the double behaves like Android; the lenient fake does not; `CURRENT` characterisation of live code |
-| `SaveClassifierSlotTest` | 22 | layout pinned to the real writer, Missing, historical saves, wrong types (every field, several types), scene cases, independence, unreadable, read-only, fuzz (3,000 random files) |
+| `SaveClassifierSlotTest` | 26 | layout pinned to the real writer, Missing, historical saves, wrong types (every field, several types), scene cases, independence, unreadable, read-only, fuzz (3,000 random files) |
 | `SaveClassifierStartupTest` | 14 | marker classes, every startup decision, Back snapshot cases, exhaustive 6 x 4 x 4 marker/slot matrix |
 | `SaveClassifierEntitlementTest` | 6 | flag states, no inference from damage, key literals pinned to the repository |
 | `SaveGuardDormancyTest` | 6 | no production reference, one file, no write or file call, one Android import, no typed getter |
 
-Mutation check: 16 deliberate breaks of the classifier (type checks, scene rules, legacy inventory, marker handling,
-unreadable-as-empty, entitlement inference, prefix, value leakage, null handling, damaged-slot resume) are each caught.
+Mutation check: 20 deliberate breaks of the classifier (type checks, scene rules, legacy inventory, marker handling,
+unreadable-as-empty, entitlement inference, prefix, value leakage, null handling, damaged-slot resume, an escaping lookup failure) are each caught.
