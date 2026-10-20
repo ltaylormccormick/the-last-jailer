@@ -93,11 +93,11 @@ project's existing warnings-as-errors setting.
 | Class | Tests | Covers |
 |---|---|---|
 | `raw/RawPrefsShapeTest` | 19 | writer shapes, float/escape/large-map round trips (no false suspects), every suspect reason, truncation sweep, single-byte corruption sweep, depth bomb, no content in results |
-| `raw/RawFileAssessorTest` | 15 | absent/empty/valid/suspect, `.bak` cases, every cross-check difference, bit-level float compare, fresh-start property over all combinations |
-| `gate/SaveGateTest` | 23 | mode table, no side effects when denied, per-key policy, forbidden calls, swallowed denials, nested, two-thread atomicity, protected-slot preservation in serialised form with a negative control, exhaustive mode x intent x key sweep |
-| `quarantine/QuarantineStoreTest` | 46 | creation, dedupe, caps, budget, space, collisions, links and specials, torn markers (every prefix), flipped evidence, promotion, bounded repair, a fault at every operation x 6 fault kinds then relaunch, repair and cleanup crash matrices, randomized campaigns, positive-proof cleanup, delete-site invariants |
+| `raw/RawFileAssessorTest` | 16 | absent/empty/valid/suspect, `.bak` cases, every cross-check difference, bit-level float compare, fresh-start property over all combinations |
+| `gate/SaveGateTest` | 24 | mode table, no side effects when denied, per-key policy, forbidden calls, swallowed denials, nested, two-thread atomicity, protected-slot preservation in serialised form with a negative control, exhaustive mode x intent x key sweep |
+| `quarantine/QuarantineStoreTest` | 50 | creation, dedupe, caps, budget, space, collisions, links and specials, torn markers (every prefix), flipped evidence, promotion, bounded repair, a fault at every operation x 6 fault kinds then relaunch, repair and cleanup crash matrices, randomized campaigns, positive-proof cleanup, delete-site invariants |
 | `quarantine/JavaQuarantineFileOpsTest` | 8 | real filesystem: exclusivity, symlinks never followed, narrow delete, end to end store on a temp directory |
-| `quarantine/SnapshotFormatTest` | 6 | strict manifest parse, marker equality, SHA-256 vectors, no content in manifests |
+| `quarantine/SnapshotFormatTest` | 7 | strict manifest parse, marker equality, SHA-256 vectors, no content in manifests |
 | `SaveGuardDormancyTest` | 11 | no production reference, exact file allow-list, per-subpackage import and token rules (rewritten from Stage A's) |
 
 Test doubles: `SimQuarantineFs` (in-memory filesystem with a numbered fault: throw before/after the effect, crash
