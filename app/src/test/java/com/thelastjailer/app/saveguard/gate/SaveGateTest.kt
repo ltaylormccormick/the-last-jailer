@@ -291,6 +291,16 @@ class SaveGateTest {
         assertEquals(1600, prefs.writeCalls)
     }
 
+    @Test fun `the editor itself refuses to apply if the gate generation moved on, as a second line of defence`() {
+        val prefs = seeded()
+        val before = prefs.fingerprint()
+        val editor = GuardedEditor(prefs.edit(), WriteIntent(setOf(1)), emptySet()) { false }
+        editor.putInt("1.level", 99)
+        try { editor.applyOnce(); throw AssertionError("must refuse") } catch (e: WriteDeniedException) { assertEquals(DenyReason.GATE_CHANGED, e.reason) }
+        assertEquals(before, prefs.fingerprint())
+        assertEquals(0, prefs.writeCalls)
+    }
+
     @Test fun `current mode is observable and reflects the last set`() {
         val gate = SaveGate()
         assertTrue(gate.currentMode() is GateMode.Frozen)

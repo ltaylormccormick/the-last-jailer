@@ -71,6 +71,8 @@ class JavaQuarantineFileOpsTest {
         fail({ ops.deleteEmptyDirectory(f) })
         ops.deleteFile(f)
         ops.deleteFile(f) // already gone is fine
+        fail({ ops.deleteFile(d) })   // an EMPTY directory is still not deletable as a file
+        assertEquals(EntryKind.DIRECTORY, ops.kind(d))
         ops.deleteEmptyDirectory(d)
         assertEquals(EntryKind.MISSING, ops.kind(d))
     }

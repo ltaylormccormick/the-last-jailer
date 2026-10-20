@@ -34,6 +34,11 @@ class SnapshotFormatTest {
         assertNotNull(Manifest.parse(good.toByteArray()))
     }
 
+    @Test fun `the same evidence file listed twice is rejected`() {
+        val dup = Manifest.render(1, meta, listOf(ManifestFile("main.xml", 1, hash), ManifestFile("main.xml", 2, hash)))
+        assertNull(Manifest.parse(dup))
+    }
+
     @Test fun `a manifest with no files is rejected`() {
         val none = String(Manifest.render(1, meta, files)).lines().filterNot { it.startsWith("file ") }.joinToString("\n")
         assertNull(Manifest.parse(none.toByteArray()))

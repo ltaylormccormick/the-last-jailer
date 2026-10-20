@@ -112,7 +112,18 @@ Defects found and fixed by this testing, before review:
 
 ## Mutation checks
 
-See the report on the PR for the final table. MUTATION_PLACEHOLDER
+73 hand-written mutants (`mutate_b1.py`, kept outside the repo): raw shape 15, assessor 10, gate 15, store 27, format 3,
+file ops 3. Each is one deliberate bug injected into a copy of the source and run against the whole B1 suite.
+
+* First pass: 61 killed, 12 survived (2 more could not compile because of a test edit made mid-run and were re-run).
+* The survivors exposed weak or missing tests, not code bugs. Tests were added or strengthened for: the fresh-start
+  rule's own bak check (B16), a valid-but-empty non-canonical file (B24), the editor's generation check (G09), the
+  early evidence read-back (Q06), repair-copy verification (Q15), cleanup of a partial write (Q16), a directory that
+  becomes complete before cleanup deletes (Q22), link handling (Q26), stale-manifest adoption (Q27), directory delete
+  refusal (O03), duplicate manifest entries (F02).
+* Final: **70 of 73 killed, 3 survive and are equivalent mutants**: B22 (the type comparison in the cross-check is
+  redundant with the value comparison), Q17 (the verified-evidence flag is only set after the last point that can
+  throw), F03 (the final-newline check is redundant: dropping the last character always breaks the last hash).
 
 ## Deviations from the approved design
 

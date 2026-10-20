@@ -242,6 +242,8 @@ class QuarantineStoreTest {
         assertNotNull(f.nodes["/data/q/snap-0002/main.xml"])
         assertNotNull(f.nodes["/data/q/link-to-elsewhere"])
         assertEquals(emptyList<String>(), f.deleted)
+        assertTrue("no delete is even attempted on a link", f.log.none { (it.startsWith("rmdir") || it.startsWith("delete")) && it.contains("snap-0001") })
+        assertTrue("a link is never listed as if it were a directory", f.log.none { it == "list /data/q/snap-0001" })
         // a link as the evidence file of an otherwise matching incomplete dir is not a promotion candidate
         assertEquals(1, completeNames(f).size)
     }
@@ -330,6 +332,29 @@ class QuarantineStoreTest {
         assertNotNull(f.nodes["/data/q/snap-0001/notes.txt"])
     }
 
+    @Test fun `a well-formed manifest that describes different evidence is preserved and replaced when the directory is adopted`() {
+        val f = fs()
+        assertSecured(store(f).secure(src("older-content"), meta))
+        val staleManifest = f.bytesOf("/data/q/snap-0001/MANIFEST")!!
+        f.putFile("/data/q/snap-0001/main.xml", "payload".toByteArray())   // evidence no longer matches its manifest
+        assertEquals(emptyList<String>(), completeNames(f))
+        val r = assertSecured(store(f).secure(src("payload"), meta), SecureHow.PROMOTED)
+        assertEquals("snap-0001", r.name)
+        assertTrue(isComplete(f, "snap-0001"))
+        assertArrayEquals(staleManifest, f.bytesOf("/data/q/snap-0001/MANIFEST.invalid-1"))
+    }
+
+    @Test fun `a preserved copy that does not read back equal stops the repair before the original is removed`() {
+        val f = fs()
+        assertSecured(store(f).secure(src("payload"), meta))
+        f.putFile("/data/q/snap-0001/COMPLETE", "torn".toByteArray())
+        f.beforeOp = { op, path -> if (op == "read" && path.endsWith(".invalid-1")) f.putFile(path, "corrupted-copy".toByteArray()) }
+        val r = store(f).secure(src("payload"), meta)
+        assertTrue(describe(r), r is SecureResult.Failed)
+        assertArrayEquals("torn".toByteArray(), f.bytesOf("/data/q/snap-0001/COMPLETE"))
+        assertEquals(emptyList<String>(), f.deleted)
+    }
+
     @Test fun `repair gives up after a bounded number of preserved copies and never deletes the original`() {
         val f = fs()
         assertSecured(store(f).secure(src("payload"), meta))
@@ -409,6 +434,15 @@ class QuarantineStoreTest {
         }
     }
 
+    @Test fun `a half-written evidence file from this very call is removed, with its empty directory`() {
+        val f = fs()
+        f.beforeOp = { op, path -> if (op == "create" && path.endsWith("main.xml")) { f.faultAt = f.opCount + 1; f.fault = Fault.SHORT_WRITE_THROW } }
+        val r = store(f).secure(src("A".repeat(100)), meta)
+        assertTrue(describe(r), r is SecureResult.Failed && r.stage == FailStage.WRITE_EVIDENCE)
+        assertEquals(emptyList<String>(), snapNames(f))
+        assertEquals(listOf("/data/q/snap-0001/main.xml", "/data/q/snap-0001"), f.deleted)
+    }
+
     @Test fun `a short write is cleaned up only when it is this call's own unverified copy`() {
         val f = fs()
         f.arm(8, Fault.SHORT_WRITE_THROW) // lands on a create call in the sequence
@@ -437,8 +471,9 @@ class QuarantineStoreTest {
         val f = fs()
         f.beforeOp = { op, path -> if (op == "read" && path.endsWith("main.xml") && f.bytesOf(path) != null) f.putFile(path, "tampered".toByteArray()) }
         val r = store(f).secure(src("original-bytes"), meta)
-        assertTrue(describe(r), r is SecureResult.Failed)
+        assertTrue(describe(r), r is SecureResult.Failed && r.stage == FailStage.VERIFY_EVIDENCE)
         assertEquals(emptyList<String>(), completeNames(f))
+        assertTrue("no metadata is written over unverified evidence", f.log.none { it.startsWith("create") && (it.endsWith("MANIFEST") || it.endsWith("COMPLETE")) })
     }
 
     @Test fun `evidence flipped between the marker and the final check is caught`() {
@@ -575,6 +610,27 @@ class QuarantineStoreTest {
         f.mkdirs("/data/q/snap-0020"); f.putFile("/data/q/snap-0020/main.xml", "01".toByteArray())
         assertTrue(s.cleanupConfirmed(plan2) is CleanupResult.PlanChanged)
         assertNotNull(f.nodes["/data/q/snap-0010"])
+    }
+
+    @Test fun `a directory that becomes complete between the scan and the delete is not deleted`() {
+        val f = withComplete("0123456789ABCDEF")
+        f.mkdirs("/data/q/snap-0010"); f.putFile("/data/q/snap-0010/main.xml", "0123".toByteArray())
+        val s = store(f)
+        val plan = s.cleanupPreview()
+        assertEquals(listOf("snap-0010"), plan.names)
+        var lists = 0
+        f.beforeOp = { op, path ->
+            if (op == "list" && path == "/data/q/snap-0010" && ++lists == 2) {
+                val full = "0123456789ABCDEF".toByteArray()
+                val manifest = Manifest.render(10, meta, listOf(ManifestFile("main.xml", full.size.toLong(), sha(full))))
+                f.putFile("/data/q/snap-0010/main.xml", full)
+                f.putFile("/data/q/snap-0010/MANIFEST", manifest)
+                f.putFile("/data/q/snap-0010/COMPLETE", CompleteMarker.render(manifest))
+            }
+        }
+        assertTrue(s.cleanupConfirmed(plan) is CleanupResult.PlanChanged)
+        assertTrue(isComplete(f, "snap-0010"))
+        assertEquals(emptyList<String>(), f.deleted)
     }
 
     @Test fun `a fake plan naming a complete snapshot deletes nothing`() {

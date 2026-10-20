@@ -58,8 +58,14 @@ class RawFileAssessorTest {
     }
 
     @Test fun `a valid but empty non-canonical spelling is not trusted as fresh`() {
-        val bytes = "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n<!-- c --><map />".toByteArray()
-        assertFalse(assess(RawSource.Bytes(bytes), loaded = empty).freshStartEligible)
+        val bytes = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><map/>".toByteArray()
+        assertTrue("the shape check alone accepts it", RawPrefsShape.validate(bytes) is RawShapeResult.Valid)
+        assertFalse(RawPrefsShape.isCanonicalEmptyMap(bytes))
+        val a = assess(RawSource.Bytes(bytes), loaded = empty)
+        assertEquals(SuspectReason.BAD_STRUCTURE, a.reason)
+        assertFalse(a.freshStartEligible)
+        val commented = "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n<!-- c --><map />".toByteArray()
+        assertFalse(assess(RawSource.Bytes(commented), loaded = empty).freshStartEligible)
     }
 
     @Test fun `unreadable, oversized and unloadable sources are suspect with the right reason and snapshot ability`() {
