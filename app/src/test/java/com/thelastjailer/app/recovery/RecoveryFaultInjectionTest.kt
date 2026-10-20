@@ -87,7 +87,8 @@ class RecoveryFaultInjectionTest {
     fun `if even the cleanup fails, the stray temp file is ignored and the next write is correct`() {
         val fs = oneValid()
         fs.faults.add(SimFault(SimOp.WRITE, 1, FaultMode.SHORT_WRITE_THROW))
-        fs.faults.add(SimFault(SimOp.DELETE, 1, FaultMode.THROW))
+        // DELETE #1 is the store's clear-the-temp-name step before creating it; #2 is the cleanup after the failure.
+        fs.faults.add(SimFault(SimOp.DELETE, 2, FaultMode.THROW))
         val r = Rb.store(fs).put(req)
         assertTrue("still a definite failure", r is PutResult.Failed)
         assertTrue("the stray temp file remains", fs.exists("${Rb.ROOT}/slot_1/b.tmp"))

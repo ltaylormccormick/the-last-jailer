@@ -57,14 +57,14 @@ class JavaRecoveryFileOpsTest {
     fun `write sync and directory sync work on a normal directory`() {
         val d = tmp.newFolder("slot")
         val f = File(d, "x.tmp")
-        ops.writeFile(f, ByteArray(10) { 1 })
+        ops.createFileExclusive(f, ByteArray(10) { 1 })
         ops.syncFile(f)
         assertEquals(DirSync.SYNCED, ops.syncDirectory(d))
     }
 
     @Test
     fun `ensureDirectory reports creation only once and delete tolerates a missing file`() {
-        val d = File(tmp.root, "a/b")
+        val d = File(tmp.root, "b")
         assertTrue(ops.ensureDirectory(d))
         assertFalse(ops.ensureDirectory(d))
         ops.delete(File(d, "ghost"))

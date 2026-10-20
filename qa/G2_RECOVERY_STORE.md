@@ -5,7 +5,10 @@ has no UI and recovers nothing automatically. A passing G2 proves we can **store
 does **not** prove the game can recover a damaged save; that is what the later gates are for.
 
 Code: `app/src/main/java/com/thelastjailer/app/recovery/` (plain JVM, no Android imports).
-Tests: `app/src/test/java/com/thelastjailer/app/recovery/` (89 tests).
+Tests: `app/src/test/java/com/thelastjailer/app/recovery/` (112 tests).
+
+Hardening patch (after the adversarial review of 702f5f9): F1 lock identity, F2 temp-file and directory confinement,
+F3 multi-write tests, D1/D2 documentation. See "Hardening patch" below.
 
 ## Layout and format (version 1)
 
@@ -60,26 +63,60 @@ rename could have taken effect), `Uncertain` (the disk may have changed; carries
 bundle is visible). The store never assumes a failure left the disk as it was and never retries on its own. A caller
 that retries an uncertain write is safe: if the bundle landed, the retry is a `SkippedIdentical`.
 
-Write protocol: ensure directories (syncing parents of anything newly created), write temp, fsync temp, atomic rename
-over the target, fsync directory, read back and verify, rescan and confirm the other buffer is unchanged.
+Write protocol: ensure the root and slot directories (one level each, never ancestors, never through a symbolic link;
+syncing the parent of anything newly created), clear the temp name, create the temp file **exclusively without following
+links**, fsync it, atomic rename over the target, fsync the directory, read back and verify, rescan and confirm the other
+buffer is unchanged. The root's parent must already exist (in the app, `filesDir`); if it does not the write is `Failed`
+at PREPARE and nothing is created.
+
+Reads never follow links either: a symbolic link, directory or special file where a bundle should be is UNREADABLE, so the
+write is blocked rather than reading or replacing what is behind it.
 
 ## What is guaranteed where
 
 | Guarantee | JVM tests | Real Android device |
 |---|---|---|
-| I1 the sole known-good copy is never evicted | **proved** under the simulator's durability model, for all start states x every fault x 2,496 crash images | not proved |
-| I2 a FUTURE file is byte-identical afterwards | **proved** (same sweeps) | not proved |
+| I1 the sole known-good copy is never evicted | **proved** under the simulator's durability model, for all start states x every fault x 2,700 crash images (single write) and across chains of up to three writes and two crashes (about 41,000 more) | not proved |
+| I2 a FUTURE file is byte-identical afterwards | **proved** (same sweeps, chains included) | not proved |
 | I3 generations increase; equal-but-different is never resolved by guessing | **proved** | n/a (logic) |
-| I4 only the slot's four files are touched | **proved** | n/a (logic) |
+| I4 only the slot's four files are touched (plus the root and slot directories, one level each) | **proved** | n/a (logic) |
 | I5 `Stored` means verified | **proved** | readback proves the bytes the OS returns, not that they survive power loss |
 | fsync / rename atomicity / directory sync are durable | **modelled**, not shown | **UNVERIFIED** (G7) |
 | `FileChannel.force` on a directory works on every supported Android API and filesystem | n/a | **UNVERIFIED** (G7); a failure surfaces as `Uncertain`, never ignored |
+| Planted links / unexpected objects never redirect or are read through | **proved** on a real JVM filesystem with real symlinks | the same calls on Android's runtime are **UNVERIFIED** (G7) |
 | Auto Backup captures live prefs and bundles consistently | n/a | **UNVERIFIED** (G6) |
 
 The simulator (`SimFs`) keeps volatile and durable file contents and directory entries apart and resolves a crash
 every legal way (names as synced or all applied; data synced only, half written, or fully persisted), including
 a rename that persisted while the file data did not. A **negative control** (a naive in-place overwrite) is shown to
 lose the only good copy in the same simulator, so the sweeps cannot pass vacuously.
+
+### What I1-I5 do and do not cover (D2)
+
+They are statements about **a write started from a disk that was already durable**, plus the chained sequences the
+multi-write tests exercise (a faulted write then another write, a retry of an uncertain write, a crash then a faulted
+write then another write, two crashes in a row). They are **not** statements about every possible history on a real
+device, and they rest on the simulator's model of fsync / rename / directory sync. The model is adversarial but is a
+model: a phone's storage stack may differ, and a readback proves what the OS returns now, not what survives power
+loss. Other limits: one process only; a root that is itself a symlink is not a supported alias (writes fail closed);
+slot numbers of 10 digits or more are written but not listed (F4, deferred; production uses slots 1-10); the
+`fsync` is done on a second file descriptor, which Linux treats as flushing the file but Android has not been shown to
+(F5, device investigation).
+
+## Hardening patch (review findings F1, F2, F3, D1, D2)
+
+| Finding | Change | Evidence |
+|---|---|---|
+| F1 lock identity | The per-slot lock is keyed by the **canonical path** (`RecoveryFileOps.lockIdentity`, resolved on every call). Different spellings (relative, `..`, a symlink in an ancestor such as `/data/data` vs `/data/user/0`) share one lock. A root that is itself a symlink is not an alias: it fails closed. | 702f5f9: 20 of 300 rounds with two writers both "storing" one generation, 1,683 Uncertain. Patched: 0 of 300, 0 Uncertain. Control (same spelling) 0 on both. |
+| D1 | The KDoc and this note claimed one lock "shared by every store over the same directory". It was shared only for identically spelled roots. Both now state what is actually keyed and its limits (in-process only). | text |
+| F2 temp-file symlink | The temp file is created with `CREATE_NEW` + `NOFOLLOW_LINKS` (`createFileExclusive`): it fails if *anything* exists at the name, a link included. The store still deletes a leftover temp first, but the delete is not the protection. A directory squatting on the name fails closed as before. | 702f5f9: a link at `b.tmp` made the store overwrite an outside file (284 bytes). Patched: outside file untouched, write lands inside the slot. |
+| F2 reads | `read` refuses links, directories and special files (no-follow). A link where a bundle should be is UNREADABLE and blocks the write. | tests |
+| F2 directories | `ensureDirectory` uses `Files.createDirectory` (one level, parent must exist) and refuses a link where the directory should be. The store only ever asks for the root and the slot directory. | 702f5f9 created `no/such/parent/recovery` and followed a symlinked slot directory; patched fails closed and creates nothing. |
+| F3 | `RecoveryMultiWriteTest` (11 tests, listed below) and the simulator now models links, exclusive create and non-recursive mkdir. | sweeps |
+| D2 | Scope of I1-I5 and the limits of the durability model stated (section above and the store's KDoc). `RecoveryDormancyTest` carries a note that its exact file count and no-use rule change on purpose at G3. | text |
+
+Behaviour change to be aware of: the old code created the recovery root's missing ancestors; the new code does not. In
+the app the root's parent is `filesDir`, which exists.
 
 ## Size ceiling: provisional, not accepted
 
@@ -99,11 +136,21 @@ changed when G3 fixes the real payload.
 
 ## Test evidence
 
-89 tests: codec 21, selection table 3, store behaviour 30, fault injection 15 (469 scenarios), crash simulation 5
-(2,496 crash images), real-filesystem adapter and concurrency 10, dormancy 4, size measurement 1.
-Mutation check: 20 deliberate breaks of the safety rules (sole-copy rule, double read, missing fsync, missing
-parent-directory sync, wrong buffer, digest, readback, generation overflow, future detection, ambiguity, ...) are
-each caught by the suite.
+112 tests (89 + 23 new): codec 21, selection table 3, store behaviour 30, fault injection 15 (486 scenarios), crash
+simulation 5 (2,700 crash images), real-filesystem adapter and concurrency 10, dormancy 4, size measurement 1,
+**hardening on a real filesystem 12** (aliased-store concurrency, links at the temp name, dangling link, exclusive
+create, directory squatting, link as a bundle, missing parent, one-level mkdir, link as slot directory, link read),
+**multi-write 11** (fault then write 450 chains, uncertain then retry 105, crash then faulted write then write 24,060,
+double crash 17,235 images, planted link, squatting directory, link as a bundle, missing root parent, only the two
+directories created, alias waits for the lock, unrelated directories do not).
+
+Mutation check: 27 deliberate breaks (the original 20 safety rules, plus lock keyed by spelled path, temp name not
+cleared, non-exclusive temp create, recursive mkdir, link accepted as directory, reads following links, non-canonical
+lock identity in the adapter) are each caught by the suite.
+
+Old versus new (the review's original experiments, re-run against both): 702f5f9 reproduces E1 (outside file
+overwritten) and E3 (20 of 300 rounds); the patch does not. The store-level subset of the new real-filesystem tests
+also fails 6 of 8 against 702f5f9 and passes now.
 
 ## Open risks
 
@@ -115,3 +162,5 @@ each caught by the suite.
   directories) or `Uncertain` (afterwards). That is safe, but the feature would be unusable on those devices until a
   platform adapter handles it.
 * One writer per slot, in-process. A second process writing the same files is outside the contract.
+* F4: slot numbers of 10 digits or more are written but not listed by `slotsOnDisk` (deferred; production uses 1-10).
+* F5: the file is fsynced through a second descriptor, and `force` on a directory is unverified on Android (device matrix).

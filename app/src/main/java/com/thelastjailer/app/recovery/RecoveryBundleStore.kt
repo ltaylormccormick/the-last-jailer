@@ -20,20 +20,36 @@ import java.util.concurrent.ConcurrentHashMap
  *  * **I2 — a newer-format (FUTURE) file is never touched.** Not overwritten, deleted, renamed or rewritten.
  *  * **I3 — generations strictly increase** among VALID bundles; equal generations with different contents are
  *    never resolved by guessing.
- *  * **I4 — nothing outside the slot's two bundle files and their two temp files is created, changed or deleted.**
+ *  * **I4 — nothing outside the slot's two bundle files and their two temp files is created, changed or deleted**,
+ *    except the recovery root and the slot directory themselves, each created one level at a time if missing
+ *    (never an ancestor, never through a symbolic link). A planted link or other unexpected object at a temp or
+ *    bundle name is never read through or written through: the temp file is created exclusively, without following
+ *    links ([RecoveryFileOps.createFileExclusive]).
  *  * **I5 — "stored" means verified.** [PutResult.Stored] is returned only after the new file was read back from
  *    disk and fully re-verified, and the other buffer was found unchanged.
  *
+ * ## Scope of I1–I5 (read this before relying on them)
+ *
+ * They are proved for **one write at a time, started from a disk that is already durable**, and for sequences of
+ * writes and crashes under the simulator's model ([RecoveryMultiWriteTest]): in every sequence tried a known-good
+ * copy survives, the newest generation never goes backwards and FUTURE files stay byte-identical. They are NOT
+ * guarantees about a real device: the model assumes fsync, atomic rename and directory sync do what their names say,
+ * and a readback proves what the OS returns now, not what survives power loss. Equally outside the guarantee: another
+ * process writing the same files, a root that is itself a symbolic link (writes through it fail closed), and slot
+ * numbers of 10 digits or more (written but not listed by [slotsOnDisk]; production uses slots 1-10). Whether the
+ * real filesystem honours the model is the device-matrix question (G7).
+ *
  * Nothing here assumes a failed operation left the disk as it was. After any failure the store rescans both
  * buffers and reports what it found: [PutResult.Failed] only when the rescan proves nothing changed, otherwise
- * [PutResult.Uncertain]. The caller must never blindly retry an uncertain outcome; it should read [PutResult.post]
- * (or call [inspect]) first.
+ * [PutResult.Uncertain]. The caller should read [PutResult.post] (or call [inspect]) before deciding what to do after an
+ * uncertain outcome. Retrying the same request is safe against duplication: if the bundle already landed, the retry
+ * is a [PutResult.SkippedIdentical] (checked by `RecoveryMultiWriteTest`).
  *
  * What is proved where: the JVM tests prove all of the above against a *model* of a filesystem (including adversarial
  * crash images). They cannot prove real Android storage honours fsync and rename the way the model assumes; that
  * is a device question. See qa/G2_RECOVERY_STORE.md.
  *
- * One writer per slot at a time (an in-process lock shared by every store over the same directory). The app is a
+ * One writer per slot at a time (an in-process lock keyed by the canonical directory path, so stores reaching one directory through path aliases share it; see [lockFor]). The app is a
  * single process; a second process writing the same files is outside this contract.
  */
 class RecoveryBundleStore(
@@ -118,7 +134,11 @@ class RecoveryBundleStore(
             if (ops.ensureDirectory(dir)) allSynced = isSynced(ops.syncDirectory(root)) && allSynced
 
             stage = PutStage.WRITE_TEMP
-            ops.writeFile(tmp, bytes)
+            // A leftover temp file from an earlier crash is removed first (a symbolic link is removed itself, never
+            // followed). The delete alone is NOT the protection: createFileExclusive fails if anything at all is
+            // there, so a link planted after the delete still cannot redirect the write.
+            ops.delete(tmp)
+            ops.createFileExclusive(tmp, bytes)
             stage = PutStage.SYNC_TEMP
             ops.syncFile(tmp)
             stage = PutStage.RENAME
@@ -201,8 +221,15 @@ class RecoveryBundleStore(
 
     private fun slotDir(slot: Int): File = File(root, "slot_$slot")
 
+    /**
+     * The per-slot lock is keyed by the physical directory ([RecoveryFileOps.lockIdentity], the canonical path), so
+     * two stores that name the same directory differently (relative vs absolute, `..`, or a symbolic link in an
+     * ancestor such as `/data/data` vs `/data/user/0`) share it. Resolved on every call, never cached, so an alias
+     * created after construction is still seen. A root that is itself a symbolic link is not a supported alias:
+     * writes through it fail closed ([RecoveryFileOps.ensureDirectory] refuses it). The lock is in-process only.
+     */
     private fun lockFor(slot: Int): Any =
-        LOCKS.computeIfAbsent("${root.absoluteFile.normalize().path}#$slot") { Any() }
+        LOCKS.computeIfAbsent("${ops.lockIdentity(root)}#$slot") { Any() }
 
     private companion object {
         val SLOT_DIR = Regex("slot_([1-9][0-9]{0,8})")

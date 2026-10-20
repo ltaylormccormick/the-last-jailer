@@ -74,7 +74,7 @@ class RecoveryCrashSimulationTest {
         val fs = Rb.world().also { Rb.seed(it, Kind.VALID, Kind.ABSENT) }
         val b = FaultHarness.before(fs)
         // Naive: truncate-and-rewrite the only good bundle, then die before anything is synced.
-        fs.writeFile(java.io.File(Rb.A), RecoveryCodec.encode(
+        fs.overwriteInPlaceForTest(Rb.A, RecoveryCodec.encode(
             BundleMeta(1, 6, BundleId(ByteArray(16) { 55 }), 1, 1), req.payload))
         var lostSomewhere = false
         for (names in NameOutcome.values()) for (data in DataOutcome.values()) {

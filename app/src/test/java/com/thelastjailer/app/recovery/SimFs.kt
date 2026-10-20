@@ -58,7 +58,7 @@ enum class DataOutcome { SYNCED_ONLY, PARTIAL, ALL_PERSISTED }
  */
 class SimFs : RecoveryFileOps {
 
-    private class Node(var volatile: ByteArray?, var durable: ByteArray?, val isDir: Boolean)
+    private class Node(var volatile: ByteArray?, var durable: ByteArray?, val isDir: Boolean, val isLink: Boolean = false)
 
     private val vNames = LinkedHashMap<String, Node>()
     private var dNames = LinkedHashMap<String, Node>()
@@ -69,7 +69,11 @@ class SimFs : RecoveryFileOps {
     /** Called at the start of every operation with (op, nth). Lets a test change the disk behind the store's back. */
     var interference: ((SimOp, Int) -> Unit)? = null
 
-    private fun key(f: File) = f.path
+    private fun key(f: File): String {
+        var p = f.path
+        for ((alias, real) in aliases) if (p == alias || p.startsWith("$alias/")) p = real + p.substring(alias.length)
+        return p
+    }
     private fun parentKey(path: String) = File(path).parent
 
     private fun hit(op: SimOp): SimFault? {
@@ -96,6 +100,23 @@ class SimFs : RecoveryFileOps {
         dNames[path] = n
     }
 
+    /** An unexpected object (a symbolic link) planted at [path]. The store must never read or write through it. */
+    fun seedSymlink(path: String) {
+        val n = Node(ByteArray(0), ByteArray(0), false, isLink = true)
+        vNames[path] = n
+        dNames[path] = n
+    }
+
+    /** Test-only naive overwrite of an existing file's content, unsynced. The store itself never does this. */
+    fun overwriteInPlaceForTest(path: String, bytes: ByteArray) { vNames.getValue(path).volatile = bytes.copyOf() }
+
+    fun isLinkAt(path: String): Boolean = vNames[path]?.isLink == true
+    fun isDirAt(path: String): Boolean = vNames[path]?.isDir == true
+
+    /** Test hook: [alias] is another spelling of the directory [real] (a symbolic link in an ancestor). */
+    private val aliases = LinkedHashMap<String, String>()
+    fun addAlias(alias: String, real: String) { aliases[alias] = real }
+
     fun bytesOf(path: String): ByteArray? = vNames[path]?.takeIf { !it.isDir }?.volatile?.copyOf()
     fun exists(path: String): Boolean = vNames.containsKey(path)
     fun names(dir: String): List<String> =
@@ -114,7 +135,7 @@ class SimFs : RecoveryFileOps {
             if (f?.mode == FaultMode.CRASH_AFTER) throw SimulatedCrash()
             return FileRead.Missing
         }
-        if (node.isDir) throw IOException("not a regular file")
+        if (node.isDir || node.isLink) throw IOException("not a plain regular file")
         var bytes = node.volatile!!
         if (f?.mode == FaultMode.CORRUPT_READ && bytes.isNotEmpty()) {
             bytes = bytes.copyOf().also { it[it.size / 2] = (it[it.size / 2].toInt() xor 0x5A).toByte() }
@@ -128,29 +149,30 @@ class SimFs : RecoveryFileOps {
         val f = hit(SimOp.ENSURE_DIR)
         if (f?.mode == FaultMode.THROW) throw IOException("injected")
         if (f?.mode == FaultMode.CRASH_BEFORE) throw SimulatedCrash()
-        val created = !vNames.containsKey(key(dir))
+        val existing = vNames[key(dir)]
+        if (existing != null && !existing.isDir) throw IOException("not a real directory")
+        val created = existing == null
         if (created) {
-            // createDirectories: make missing ancestors too.
-            val chain = ArrayList<String>()
-            var p: String? = key(dir)
-            while (p != null && !vNames.containsKey(p)) { chain.add(p); p = parentKey(p) }
-            for (d in chain.reversed()) vNames[d] = Node(null, null, true)
+            // Like Files.createDirectory: the parent must already exist. Ancestors are never made on the way.
+            val parent = vNames[parentKey(key(dir)) ?: ""]
+            if (parent == null || !parent.isDir) throw IOException("parent directory missing")
+            vNames[key(dir)] = Node(null, null, true)
         }
         if (f?.mode == FaultMode.CRASH_AFTER) throw SimulatedCrash()
         if (f?.mode == FaultMode.THROW_AFTER_EFFECT) throw IOException("injected after effect")
         return created
     }
 
-    override fun writeFile(path: File, bytes: ByteArray) {
+    override fun createFileExclusive(path: File, bytes: ByteArray) {
         val f = hit(SimOp.WRITE)
         if (f?.mode == FaultMode.THROW) throw IOException("injected")
         if (f?.mode == FaultMode.CRASH_BEFORE) throw SimulatedCrash()
-        val parent = vNames[parentKey(key(path))]
+        val parent = vNames[parentKey(key(path)) ?: ""]
         if (parent == null || !parent.isDir) throw IOException("no such directory")
+        // O_CREAT | O_EXCL: anything at all already there (file, directory, symbolic link) is an error.
+        if (vNames.containsKey(key(path))) throw java.nio.file.FileAlreadyExistsException(key(path))
         val content = if (f?.mode == FaultMode.SHORT_WRITE_THROW) bytes.copyOf(bytes.size / 2) else bytes.copyOf()
-        val existing = vNames[key(path)]
-        if (existing != null && !existing.isDir) existing.volatile = content
-        else vNames[key(path)] = Node(content, null, false)
+        vNames[key(path)] = Node(content, null, false)
         if (f?.mode == FaultMode.SHORT_WRITE_THROW) throw IOException("injected short write")
         if (f?.mode == FaultMode.CRASH_AFTER) throw SimulatedCrash()
         if (f?.mode == FaultMode.THROW_AFTER_EFFECT) throw IOException("injected after effect")
@@ -161,6 +183,7 @@ class SimFs : RecoveryFileOps {
         if (f?.mode == FaultMode.THROW) throw IOException("injected")
         if (f?.mode == FaultMode.CRASH_BEFORE) throw SimulatedCrash()
         val node = vNames[key(path)] ?: throw IOException("no such file")
+        if (node.isLink || node.isDir) throw IOException("not a plain regular file")
         node.durable = node.volatile?.copyOf()
         if (f?.mode == FaultMode.CRASH_AFTER) throw SimulatedCrash()
         if (f?.mode == FaultMode.THROW_AFTER_EFFECT) throw IOException("injected after effect")
@@ -200,6 +223,8 @@ class SimFs : RecoveryFileOps {
         if (f?.mode == FaultMode.THROW_AFTER_EFFECT) throw IOException("injected after effect")
     }
 
+    override fun lockIdentity(dir: File): String = key(dir)
+
     override fun listNames(dir: File): List<String> {
         val f = hit(SimOp.LIST)
         if (f?.mode == FaultMode.THROW) throw IOException("injected")
@@ -223,6 +248,7 @@ class SimFs : RecoveryFileOps {
             val reachable = parent == null || parent in kept
             if (!reachable) continue
             if (node.isDir) { kept.add(path); image.seedDir(path); continue }
+            if (node.isLink) { image.seedSymlink(path); continue }
             val volatile = node.volatile!!
             val content = when (data) {
                 DataOutcome.SYNCED_ONLY -> node.durable ?: ByteArray(0)

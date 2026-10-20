@@ -38,6 +38,8 @@ class RecoveryDormancyTest {
     @Test
     fun `the recovery package has no Android dependency`() {
         val files = kotlinFiles(File(mainRoot, "recovery"))
+        // G2 dormancy boundary. At G3 (live integration) this exact count and the no-production-use rule above are
+        // expected to change on purpose, in the same reviewed change that adds the first caller.
         assertEquals(3, files.size)
         for (f in files) {
             val imports = f.readLines().filter { it.startsWith("import ") }
