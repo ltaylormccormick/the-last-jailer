@@ -32,6 +32,9 @@ sealed class SlotSaveRequest {
 
     /** The screen was out of date (see [requestSlotSave]); nothing was written. */
     object Stale : SlotSaveRequest()
+
+    /** The write was refused or failed; the game on screen is unchanged and no save is reported. */
+    class NotSaved(val state: GameState) : SlotSaveRequest()
 }
 
 /** What happened when the player confirmed. */
@@ -45,6 +48,9 @@ sealed class OverwriteResult {
 
     /** The request was already confirmed or cancelled. Nothing was written (again). */
     object AlreadyHandled : OverwriteResult()
+
+    /** The write was refused or failed; [state] is what is stored/on screen now, and no save is reported. */
+    class NotSaved(val state: GameState) : OverwriteResult()
 }
 
 enum class StaleReason {
@@ -106,8 +112,8 @@ fun SaveStore.requestSlotSave(
     // First of all: a tap carrying a screen that is behind the store (a queued tap after an earlier SAVE switched
     // the active slot) writes nothing, on every path. A game with no persisted active slot is always current.
     if (!screenIsCurrent(state)) return SlotSaveRequest.Stale
-    if (slot == state.activeSlot || !hasSave(slot)) return SlotSaveRequest.Saved(commitSlotSave(slot, state))
-    val destination = load(slot) ?: return SlotSaveRequest.Saved(commitSlotSave(slot, state))
+    if (slot == state.activeSlot || !hasSave(slot)) return commitSlotSaveResult(slot, state).asRequest()
+    val destination = load(slot) ?: return commitSlotSaveResult(slot, state).asRequest()
     return SlotSaveRequest.NeedsConfirmation(
         OverwriteRequest(
             sourceSlot = state.activeSlot,
@@ -143,8 +149,12 @@ fun SaveStore.confirmSlotOverwrite(request: OverwriteRequest, current: GameState
     if (!hasSave(request.destinationSlot) || slotSignature(request.destinationSlot) != request.destinationSignature) {
         return OverwriteResult.Stale(StaleReason.DESTINATION_CHANGED)
     }
-    return OverwriteResult.Saved(commitSlotSave(request.destinationSlot, current))
+    val result = commitSlotSaveResult(request.destinationSlot, current)
+    return if (result.status == CommitStatus.SAVED) OverwriteResult.Saved(result.state) else OverwriteResult.NotSaved(result.state)
 }
+
+private fun CommitResult.asRequest(): SlotSaveRequest =
+    if (status == CommitStatus.SAVED) SlotSaveRequest.Saved(state) else SlotSaveRequest.NotSaved(state)
 
 /** The persisted active slot, when there is one, is the slot the screen thinks it is playing on. */
 private fun SaveStore.screenIsCurrent(state: GameState): Boolean {

@@ -8,6 +8,10 @@ import com.thelastjailer.app.checkpoint.TimelineKeys
 import com.thelastjailer.app.checkpoint.TimelineWrite
 import com.thelastjailer.app.data.ItemCatalog
 import com.thelastjailer.app.data.StoryRepository
+import com.thelastjailer.app.saveguard.gate.GateMode
+import com.thelastjailer.app.saveguard.gate.GateOutcome
+import com.thelastjailer.app.saveguard.gate.SaveGate
+import com.thelastjailer.app.saveguard.gate.WriteIntent
 
 /**
  * Passive heal applied on an ordinary story-scene transition (see [applyChoice] and
@@ -201,7 +205,14 @@ fun GameState.levelAttackBonus(): Int = (level - 1) * 7 / 10
 fun GameState.levelDamageReduction(): Int = (level - 1) * 5 / 10
 
 /** Persists [GameState] across numbered save slots, plus which slot is currently active. */
-class SaveStore(private val prefs: android.content.SharedPreferences) {
+class SaveStore(
+    private val prefs: android.content.SharedPreferences,
+    /**
+     * Every write to the main save file passes through this gate (G2L B2). Production never passes one, so the
+     * gate is permanently OPEN: this refactor changes how writes are issued, not whether they are allowed.
+     */
+    private val gate: SaveGate = SaveGate(GateMode.Open)
+) {
     private val stateFields = listOf(
         "chapter", "scene", "courage", "honour", "health", "maxHealth", "gold", "level",
         "xp", "xpToNextLevel", "inventory", "trophies", "flags"
@@ -230,45 +241,85 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
         slot: Int,
         state: GameState,
         timeline: TimelineWrite = TimelineWrite.Invalidate,
-        clearBackSnapshot: Boolean = false
+        clearBackSnapshot: Boolean = false,
+        /** Also writes this state as the slot's Back snapshot, in the same batch (an ordinary story choice). */
+        backSnapshot: GameState? = null,
+        /** Checkpoint maintenance that must run ahead of the main apply. Runs only once every key was accepted. */
+        before: (() -> Unit)? = null,
+        /** Post-save checkpoint work. Runs only after the gate handed the batch to SharedPreferences. */
+        after: (() -> Unit)? = null,
+        /**
+         * Asked after [before]: a different timeline write if what [before] did changes the plan, else null. It
+         * restages the timeline keys and the stamp on the same editor, so the batch stays one batch.
+         */
+        retimeline: (() -> TimelineWrite?)? = null
+    ): CommitStatus {
+        var staged: android.content.SharedPreferences.Editor? = null
+        val stageAll = { editor: android.content.SharedPreferences.Editor, requested: TimelineWrite ->
+            val effective = if (requested === TimelineWrite.Keep && !stampValid(slot)) TimelineWrite.Invalidate else requested
+            val lineageText: String?
+            val arrivalsText: String?
+            when (effective) {
+                TimelineWrite.Keep -> {
+                    // Only reached when stampValid(slot) held, so each of these is a genuine string or absent.
+                    val stored = prefs.all
+                    lineageText = stored[TimelineKeys.lineage(slot)] as? String
+                    arrivalsText = stored[TimelineKeys.arrivals(slot)] as? String
+                }
+                TimelineWrite.Invalidate -> {
+                    lineageText = null
+                    arrivalsText = null
+                }
+                is TimelineWrite.Set -> {
+                    lineageText = effective.lineage
+                    arrivalsText = if (effective.ledger.isEmpty) null else effective.ledger.encode()
+                }
+            }
+            if (backSnapshot != null) writeState(previousPrefix(slot), backSnapshot, editor)
+            writeState(slot.toString(), state, editor).putInt("active_slot", slot)
+                .putString(TimelineKeys.stamp(slot), SlotStamp.of(slot, stampFields(stateValues(state)), lineageText, arrivalsText))
+            // The slot's one-step Back snapshot belongs to the game that was in the slot. When this write replaces
+            // that game with a different one, the snapshot must go in the SAME editor batch as the new state, so no
+            // crash can leave the new game next to the old game's snapshot.
+            if (clearBackSnapshot) removePreviousKeys(editor, slot)
+            when (effective) {
+                TimelineWrite.Keep -> Unit
+                TimelineWrite.Invalidate -> editor
+                    .remove(TimelineKeys.lineage(slot))
+                    .remove(TimelineKeys.arrivals(slot))
+                is TimelineWrite.Set -> {
+                    editor.putString(TimelineKeys.lineage(slot), effective.lineage)
+                    if (effective.ledger.isEmpty) editor.remove(TimelineKeys.arrivals(slot))
+                    else editor.putString(TimelineKeys.arrivals(slot), effective.ledger.encode())
+                }
+            }
+        }
+        val beforeHook: (() -> Unit)? = if (before == null && retimeline == null) null else {
+            {
+                before?.invoke()
+                val again = retimeline?.invoke()
+                val editor = staged
+                if (again != null && editor != null) stageAll(editor, again)
+            }
+        }
+        return gated(WriteIntent(setOf(slot), touchesActiveSlot = true), beforeHook, after) { editor ->
+            staged = editor
+            stageAll(editor, timeline)
+        }
+    }
+
+    /** One gated action: the status says whether the batch was handed over, refused or failed, or is unknown. */
+    private fun gated(
+        intent: WriteIntent,
+        before: (() -> Unit)? = null,
+        after: (() -> Unit)? = null,
+        stage: (android.content.SharedPreferences.Editor) -> Unit
+    ): CommitStatus = when (
+        gate.run(intent, { prefs.edit() }, before, after?.let { hook -> { _: Unit -> hook() } }, null) { editor -> stage(editor) }
     ) {
-        val effective = if (timeline === TimelineWrite.Keep && !stampValid(slot)) TimelineWrite.Invalidate else timeline
-        val lineageText: String?
-        val arrivalsText: String?
-        when (effective) {
-            TimelineWrite.Keep -> {
-                // Only reached when stampValid(slot) held, so each of these is a genuine string or absent.
-                val stored = prefs.all
-                lineageText = stored[TimelineKeys.lineage(slot)] as? String
-                arrivalsText = stored[TimelineKeys.arrivals(slot)] as? String
-            }
-            TimelineWrite.Invalidate -> {
-                lineageText = null
-                arrivalsText = null
-            }
-            is TimelineWrite.Set -> {
-                lineageText = effective.lineage
-                arrivalsText = if (effective.ledger.isEmpty) null else effective.ledger.encode()
-            }
-        }
-        val editor = writeState(slot.toString(), state, prefs.edit()).putInt("active_slot", slot)
-            .putString(TimelineKeys.stamp(slot), SlotStamp.of(slot, stampFields(stateValues(state)), lineageText, arrivalsText))
-        // The slot's one-step Back snapshot belongs to the game that was in the slot. When this write replaces
-        // that game with a different one, the snapshot must go in the SAME editor batch as the new state, so no
-        // crash can leave the new game next to the old game's snapshot.
-        if (clearBackSnapshot) removePreviousKeys(editor, slot)
-        when (effective) {
-            TimelineWrite.Keep -> Unit
-            TimelineWrite.Invalidate -> editor
-                .remove(TimelineKeys.lineage(slot))
-                .remove(TimelineKeys.arrivals(slot))
-            is TimelineWrite.Set -> {
-                editor.putString(TimelineKeys.lineage(slot), effective.lineage)
-                if (effective.ledger.isEmpty) editor.remove(TimelineKeys.arrivals(slot))
-                else editor.putString(TimelineKeys.arrivals(slot), effective.ledger.encode())
-            }
-        }
-        editor.apply()
+        is GateOutcome.Handed -> CommitStatus.SAVED
+        is GateOutcome.Denied, is GateOutcome.Failed -> CommitStatus.NOT_SAVED
+        is GateOutcome.Uncertain -> CommitStatus.UNCERTAIN
     }
 
     /**
@@ -343,19 +394,15 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
      * trophies. Only ordinary story choices create this checkpoint; combat and shop mutations clear
      * it so the back action cannot rewind a fight or duplicate purchases.
      */
-    fun savePreviousState(slot: Int, state: GameState) {
-        writeState(previousPrefix(slot), state, prefs.edit()).apply()
-    }
+    fun savePreviousState(slot: Int, state: GameState): CommitStatus =
+        gated(WriteIntent(setOf(slot))) { writeState(previousPrefix(slot), state, it) }
 
     fun loadPreviousState(slot: Int): GameState? = readState(previousPrefix(slot), slot)
 
     fun hasPreviousState(slot: Int): Boolean = prefs.contains("${previousPrefix(slot)}.scene")
 
-    fun clearPreviousState(slot: Int) {
-        val editor = prefs.edit()
-        removePreviousKeys(editor, slot)
-        editor.apply()
-    }
+    fun clearPreviousState(slot: Int): CommitStatus =
+        gated(WriteIntent(setOf(slot))) { removePreviousKeys(it, slot) }
 
     private fun removePreviousKeys(editor: android.content.SharedPreferences.Editor, slot: Int) {
         stateFields.forEach { field -> editor.remove("${previousPrefix(slot)}.$field") }
@@ -375,18 +422,22 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
         val live = load(slot)
         val previous = if (live == null) snapshot
         else snapshot.copy(trophies = mergeEarnedTrophies(snapshot.trophies, live.trophies))
-        // Back never changes which timeline the slot is on, so the ledger is left exactly as it is.
-        save(slot, previous, TimelineWrite.Keep)
-        clearPreviousState(slot)
-        return previous
+        // Back never changes which timeline the slot is on, so the ledger is left exactly as it is. The state and
+        // the consumed snapshot go in ONE batch: a failure leaves the snapshot in place, never a half-done Back.
+        return when (save(slot, previous, TimelineWrite.Keep, clearBackSnapshot = true)) {
+            CommitStatus.SAVED -> previous
+            CommitStatus.NOT_SAVED -> null
+            CommitStatus.UNCERTAIN -> load(slot) ?: previous
+        }
     }
 
     /** Resets one slot to a clean Chapter I state without affecting entitlements or other slots. */
     fun restart(slot: Int, timeline: TimelineWrite = TimelineWrite.Invalidate): GameState {
-        clearPreviousState(slot)
         val fresh = GameState(activeSlot = slot)
-        save(slot, fresh, timeline)
-        return fresh
+        return when (save(slot, fresh, timeline, clearBackSnapshot = true)) {
+            CommitStatus.SAVED -> fresh
+            CommitStatus.NOT_SAVED, CommitStatus.UNCERTAIN -> load(slot) ?: fresh
+        }
     }
 
     fun load(slot: Int): GameState? = readState(slot.toString(), slot)
@@ -482,7 +533,6 @@ class SaveStore(private val prefs: android.content.SharedPreferences) {
 
     fun currentActiveSlot(): Int? = prefs.getInt("active_slot", -1).takeIf { it > 0 }
 
-    fun setActiveSlot(slot: Int) {
-        prefs.edit().putInt("active_slot", slot).apply()
-    }
+    fun setActiveSlot(slot: Int): CommitStatus =
+        gated(WriteIntent(emptySet(), touchesActiveSlot = true)) { it.putInt("active_slot", slot) }
 }

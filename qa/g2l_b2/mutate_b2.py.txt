@@ -1,0 +1,65 @@
+import subprocess, shutil, os, sys
+S="/tmp/claude-0/-home-claude/c46d9023-2e32-5506-9302-b1eae9919fc2/scratchpad/g2"
+M="/home/claude/audit-repo/app/src/main/java/com/thelastjailer/app"
+CP="/opt/gradle-8.14.3/lib/junit-4.13.2.jar:/opt/gradle-8.14.3/lib/hamcrest-core-1.3.jar"
+CLASSES=open("/tmp/golden/mutset.txt").read().split()
+GS="GameState.kt"; SC="StateCommits.kt"; SO="SlotOverwrite.kt"
+muts=[
+ ("M01 default gate frozen",GS,"private val gate: SaveGate = SaveGate(GateMode.Open)","private val gate: SaveGate = SaveGate(GateMode.Frozen(com.thelastjailer.app.saveguard.gate.FreezeReason.NOT_STARTED))"),
+ ("M02 denied reported saved",GS,"is GateOutcome.Denied, is GateOutcome.Failed -> CommitStatus.NOT_SAVED","is GateOutcome.Denied -> CommitStatus.SAVED\n        is GateOutcome.Failed -> CommitStatus.NOT_SAVED"),
+ ("M03 failed reported saved",GS,"is GateOutcome.Denied, is GateOutcome.Failed -> CommitStatus.NOT_SAVED","is GateOutcome.Failed -> CommitStatus.SAVED\n        is GateOutcome.Denied -> CommitStatus.NOT_SAVED"),
+ ("M04 uncertain reported saved",GS,"is GateOutcome.Uncertain -> CommitStatus.UNCERTAIN","is GateOutcome.Uncertain -> CommitStatus.SAVED"),
+ ("M05 uncertain reported not saved",GS,"is GateOutcome.Uncertain -> CommitStatus.UNCERTAIN","is GateOutcome.Uncertain -> CommitStatus.NOT_SAVED"),
+ ("M06 intent slot wrong",GS,"return gated(WriteIntent(setOf(slot), touchesActiveSlot = true), beforeHook, after)","return gated(WriteIntent(setOf(slot + 1), touchesActiveSlot = true), beforeHook, after)"),
+ ("M07 after hook dropped in gated",GS,"after?.let { hook -> { _: Unit -> hook() } }, null)","null, null)"),
+ ("M08 before hook dropped in gated",GS,"gate.run(intent, { prefs.edit() }, before, ","gate.run(intent, { prefs.edit() }, null, "),
+ ("M09 after runs as before",GS,"gate.run(intent, { prefs.edit() }, before, after?.let { hook -> { _: Unit -> hook() } }, null)","gate.run(intent, { prefs.edit() }, after, null, null)"),
+ ("M10 retimeline restage removed",GS,"if (again != null && editor != null) stageAll(editor, again)",""),
+ ("M11 Keep downgrade removed",GS,"val effective = if (requested === TimelineWrite.Keep && !stampValid(slot)) TimelineWrite.Invalidate else requested","val effective = requested"),
+ ("M12 back snapshot not written",GS,"if (backSnapshot != null) writeState(previousPrefix(slot), backSnapshot, editor)",""),
+ ("M13 clearBack ignored",GS,"if (clearBackSnapshot) removePreviousKeys(editor, slot)",""),
+ ("M14 active slot intent missing for setActiveSlot",GS,"gated(WriteIntent(emptySet(), touchesActiveSlot = true))","gated(WriteIntent(emptySet(), touchesActiveSlot = false))"),
+ ("M15 restore pretends on refused",GS,"CommitStatus.NOT_SAVED -> null\n            CommitStatus.UNCERTAIN -> load(slot) ?: previous","CommitStatus.NOT_SAVED -> previous\n            CommitStatus.UNCERTAIN -> load(slot) ?: previous"),
+ ("M16 restore uncertain returns previous",GS,"CommitStatus.UNCERTAIN -> load(slot) ?: previous","CommitStatus.UNCERTAIN -> previous"),
+ ("M17 restart pretends on refused",GS,"CommitStatus.NOT_SAVED, CommitStatus.UNCERTAIN -> load(slot) ?: fresh","CommitStatus.NOT_SAVED -> fresh\n            CommitStatus.UNCERTAIN -> load(slot) ?: fresh"),
+ ("M18 restart does not clear back",GS,"return when (save(slot, fresh, timeline, clearBackSnapshot = true)) {","return when (save(slot, fresh, timeline, clearBackSnapshot = false)) {"),
+ ("M19 restore keeps back snapshot",GS,"save(slot, previous, TimelineWrite.Keep, clearBackSnapshot = true)","save(slot, previous, TimelineWrite.Keep, clearBackSnapshot = false)"),
+ ("M20 savePrevious intent slot wrong",GS,"fun savePreviousState(slot: Int, state: GameState): CommitStatus =\n        gated(WriteIntent(setOf(slot)))","fun savePreviousState(slot: Int, state: GameState): CommitStatus =\n        gated(WriteIntent(setOf(slot + 1)))"),
+ ("M21 refused transition returns next",SC,"        CommitStatus.NOT_SAVED -> CommitResult(state, status)\n        CommitStatus.UNCERTAIN -> CommitResult(load(slot) ?: state, status)\n    }\n}\n","        CommitStatus.NOT_SAVED -> CommitResult(next, status)\n        CommitStatus.UNCERTAIN -> CommitResult(load(slot) ?: state, status)\n    }\n}\n"),
+ ("M22 uncertain transition returns next",SC,"CommitStatus.UNCERTAIN -> CommitResult(load(slot) ?: state, status)\n    }\n}\n","CommitStatus.UNCERTAIN -> CommitResult(next, status)\n    }\n}\n"),
+ ("M23 beforeCommit dropped",SC,"before = if (recorder != null) ({ recorder.beforeCommit(state.activeSlot, state, readTimeline(state.activeSlot)) }) else null,","before = null,"),
+ ("M24 afterSave dropped",SC,"after = if (recorder != null) ({ plan?.let { recorder.afterSave(slot, it) } }) else null,","after = null,"),
+ ("M25 replan never",SC,"if (recorder.isRecording(slot) != plannedWhileRecording) {","if (false) {"),
+ ("M26 replan always",SC,"if (recorder.isRecording(slot) != plannedWhileRecording) {","if (true) {"),
+ ("M27 choice has no back snapshot",SC,"commitTransition(state, state.applyChoice(choice), recorder, backSnapshot = state, clearBack = false)","commitTransition(state, state.applyChoice(choice), recorder, backSnapshot = null, clearBack = false)"),
+ ("M28 choice clears back",SC,"commitTransition(state, state.applyChoice(choice), recorder, backSnapshot = state, clearBack = false)","commitTransition(state, state.applyChoice(choice), recorder, backSnapshot = state, clearBack = true)"),
+ ("M29 combat keeps back",SC,"state.resolveCombat(encounter, outcome), recorder, backSnapshot = null, clearBack = true)","state.resolveCombat(encounter, outcome), recorder, backSnapshot = null, clearBack = false)"),
+ ("M30 purchase keeps back",SC,"state.purchaseItem(itemId, price), recorder, backSnapshot = null, clearBack = true)","state.purchaseItem(itemId, price), recorder, backSnapshot = null, clearBack = false)"),
+ ("M31 slot save timeline swapped",SC,"if (sameSlot) TimelineWrite.Keep else TimelineWrite.Invalidate","if (sameSlot) TimelineWrite.Invalidate else TimelineWrite.Keep"),
+ ("M32 slot save clearBack inverted",SC,"clearBackSnapshot = !sameSlot","clearBackSnapshot = sameSlot"),
+ ("M33 slot save refused returns moved",SC,"CommitStatus.NOT_SAVED -> CommitResult(state, status)\n        CommitStatus.UNCERTAIN -> CommitResult(load(state.activeSlot) ?: state, status)","CommitStatus.NOT_SAVED -> CommitResult(moved, status)\n        CommitStatus.UNCERTAIN -> CommitResult(load(state.activeSlot) ?: state, status)"),
+ ("M34 restart afterSave dropped",SC,"after = if (plan != null) ({ recorder.afterSave(slot, plan) }) else null","after = null"),
+ ("M35 restart keeps back",SC,"plan?.timeline ?: TimelineWrite.Invalidate, clearBackSnapshot = true,","plan?.timeline ?: TimelineWrite.Invalidate, clearBackSnapshot = false,"),
+ ("M36 restart refused returns fresh",SC,"CommitStatus.NOT_SAVED, CommitStatus.UNCERTAIN -> CommitResult(load(slot) ?: fresh, status)","CommitStatus.NOT_SAVED -> CommitResult(fresh, status)\n        CommitStatus.UNCERTAIN -> CommitResult(load(slot) ?: fresh, status)"),
+ ("M37 request not-saved reported saved",SO,"if (status == CommitStatus.SAVED) SlotSaveRequest.Saved(state) else SlotSaveRequest.NotSaved(state)","SlotSaveRequest.Saved(state)"),
+ ("M38 confirm not-saved reported saved",SO,"return if (result.status == CommitStatus.SAVED) OverwriteResult.Saved(result.state) else OverwriteResult.NotSaved(result.state)","return OverwriteResult.Saved(result.state)"),
+ ("M39 uncertain treated as saved in request",SO,"if (status == CommitStatus.SAVED) SlotSaveRequest.Saved(state) else","if (status != CommitStatus.NOT_SAVED) SlotSaveRequest.Saved(state) else"),
+ ("M40 plan timeline ignored",SC,"slot, next, plan?.timeline ?: TimelineWrite.Invalidate,","slot, next, TimelineWrite.Invalidate,"),
+]
+only=sys.argv[1:]
+surv=[]
+for name,rel,old,new in muts:
+    if only and not any(name.startswith(o) for o in only): continue
+    d=S+"/mutb2"; shutil.rmtree(d,ignore_errors=True); os.makedirs(d+"/cls"); os.makedirs(d+"/src")
+    p=d+"/src/"+rel
+    s=open(M+"/"+rel).read()
+    if old not in s: print("!! missing pattern",name); continue
+    open(p,"w").write(s.replace(old,new,1))
+    c=subprocess.run(["/tmp/kc/kotlinc/bin/kotlinc","-jvm-target","17","-nowarn","-Xfriend-paths="+S+"/appout3","-cp",S+"/appout3:/tmp/claude-0/android34.jar","-d",d+"/cls",p],capture_output=True,text=True)
+    if "error:" in c.stderr: print("COMPILE-ERR",name,[l for l in c.stderr.splitlines() if "error:" in l][:1]); continue
+    r=subprocess.run(["timeout","300","java","-cp",d+"/cls:"+S+"/rt_b2:"+CP+":"+S+"/appout3:/tmp/claude-0/android34.jar:/tmp/kc/kotlinc/lib/kotlin-stdlib.jar","org.junit.runner.JUnitCore"]+CLASSES,capture_output=True,text=True,cwd="/home/claude/audit-repo/app")
+    killed=("FAILURES!!!" in r.stdout) or ("OK (" not in r.stdout)
+    n=[l for l in r.stdout.splitlines() if l.startswith("Tests run")]
+    print(("KILLED  " if killed else "SURVIVED"),name,n[0] if n else "",flush=True)
+    if not killed: surv.append(name)
+print("survivors:",surv)
