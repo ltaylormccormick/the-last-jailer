@@ -60,24 +60,42 @@ Review of PR #133 (head 83fd50e) found that this replan restaged on the editor a
 
 - Everything that can read or throw (the replan, `stampValid`, the stored values, the stamp text) is computed first, away from the
   editor. If that throws, the batch keeps the plan it was staged with (a ledger entry without a record vouches for nothing).
-- The restage is then only `putString`/`remove` on this slot's own `lineage`, `arrivals` and `stamp` keys. These are the same
-  per-slot keys the gate already checked (the gate's policy is per slot prefix); a test records every key staged and asserts
-  they are `active_slot` or `1.*`.
 - The restage is explicit. Found while fixing: when the replan said "keep", the old restage left the keys staged by the first
   plan in place (stale ledger entry for the arrival chapter, stamp from the stored values, so the timeline was silently dropped,
   and the earlier test passed vacuously). It now writes the stored values back, so the result is what the old order produced
-  (verified byte-identical, new golden scenario `flipDuringArrival`; the previous head differed there).
-- The stamp is written last, so a restage cut short can only make the timeline untrusted, never wrong.
+  (verified byte-identical, golden scenario `flipDuringArrival`; head 83fd50e differed there).
+- The stamp is written last, as a second line of defence.
 - `Denied`/`Failed` never reach the replan; `Uncertain` after a replan leaves the checkpoint files untouched (tests).
 
-Residual limitation: the gate cannot veto the `apply()` if a restage `put` throws after `beforeCommit` ran (the gate swallows
-hook exceptions by design). That outcome is a saved state with an untrusted timeline, covered by a test.
+### Second review round (head 6041ac7): the restage could still half-apply
+
+Claim checked: "a restage is only plain editor calls, so it cannot fail" was wrong as a guarantee. `RestageBoundaryTest` fails
+one editor operation at every position of an arrival whose checkpoint step switches recording off. On 6041ac7: failures before
+the restage (positions 1-30 of 33) were clean (`NOT_SAVED`, nothing persisted, no apply); failures at the three restage
+positions (31 lineage, 32 arrivals, 33 stamp) gave status `SAVED`, `apply()` called once, and a PARTIAL map persisted (neither the
+intended batch nor the previous one). Cause: the gate swallows exceptions from its pre-apply hook by design and then applies.
+
+Correction (B2 only, `SaveGate` untouched): `SaveStore.gated` hands the gate a `DeferredBatchEditor`. It records staged operations
+in memory (last write per key wins, like a real editor) and replays them onto the real editor inside `apply()`, immediately before
+the real `apply()`. The restage is therefore a map replacement. Any failure of a real editor call happens during the replay,
+before the real `apply()` is reached, so nothing is persisted and the gate reports `Uncertain`. Same ops, same final map (golden
+comparison identical), still one `edit()` and one real `apply()` per action.
+
+After the correction every failing position (1-30 of 30; last-write-wins dedups three) gives `UNCERTAIN`, `apply()` never
+called, persisted map identical to before, checkpoint files untouched.
+
+Behavioural nuance: a real-editor failure used to be `Failed`/`NOT_SAVED` (hooks never ran); it is now `Uncertain` (the
+`beforeCommit` maintenance of the old state has run, `afterSave` has not, nothing is persisted). The shown state is what is
+stored, so nothing advances on screen. These failures do not occur on normal devices.
+
+Residual limitation: the gate still cannot veto an `apply()` after a hook failure; B2 avoids needing that by making the hook
+infallible. If B3 changes hook semantics this should be revisited.
 
 ## Verification (local JVM harness; Gradle/Android SDK not available in the workspace)
 
 - Main sources (all non-UI) compile with `-Werror` (kotlinc 2.0.21). UI files (`SaveScreen.kt`, `MainActivity.kt`) are not
   compilable locally (Compose); they are covered by the Android CI build.
-- Existing tests before and after: 1008 passing before adding B2 tests; 1035 after (27 new in `SaveStoreGateIntegrationTest`).
+- Existing tests before and after: 1008 passing before adding B2 tests; 1038 after (30 new in `SaveStoreGateIntegrationTest`).
   Five test classes that need Compose/BuildConfig/R (`ApplicationIdTest`, `Batch1SafetyFoundationsTest`, `CombatEngineTest`,
   `CombatConditionTest`, `ReleasePolishTest`) are not run locally and are left to CI.
 - Pre/post equivalence: `qa/g2l_b2/B2Golden.kt.txt` (a driver, not part of the build) runs 27 scenarios, with and without a
@@ -85,11 +103,11 @@ hook exceptions by design). That outcome is a saved state with an untrusted time
   Start Again, Start Again after arrivals, the six Chapter 30 loops, recording disabled, and a newer-format checkpoint file
   appearing mid-session. It dumps the exact live preferences map and the three checkpoint files after each step. Run against
   main `a8d8a62` and against this branch: byte-identical output (937 lines).
-- Mutation testing of the integration (`qa/g2l_b2/mutate_b2.py.txt`): 44 mutants over `GameState.kt`, `StateCommits.kt`,
+- Mutation testing of the integration (`qa/g2l_b2/mutate_b2.py.txt`): 49 mutants over `GameState.kt`, `StateCommits.kt`,
   `SlotOverwrite.kt` (outcome mapping, hook placement/order, intent, Back snapshot rules, timeline rules, refused/uncertain
   display state, replan, slot-save request mapping), run against the fast tests (about 620). First pass: 34 killed, 6 survived (restore
   uncertain display, Start Again refused display x2, purchase keeps Back, replan never, uncertain slot save reported saved).
-  Tests were added for each; second pass and the re-run after the review fix: 44/44 killed, no survivors, no equivalents claimed. (B1 gate mutants G01-G18 are
+  Tests were added for each; second pass and the re-run after the review fix: 49/49 killed, no survivors, no equivalents claimed. (B1 gate mutants G01-G18 are
   unchanged and were not re-run; `SaveGate.kt` is untouched.)
 - `SaveGuardDormancyTest` now allows only the four gate types (`SaveGate`, `GateMode`, `GateOutcome`, `WriteIntent`) in
   `GameState.kt`; raw assessment, quarantine, classifier and startup decisions remain unreferenced by production code.
