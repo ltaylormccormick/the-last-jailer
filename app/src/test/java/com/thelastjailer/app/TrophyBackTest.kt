@@ -77,8 +77,14 @@ class TrophyBackTest {
     fun `every choice in the story that awards a trophy keeps it through Back`() {
         val sites = StoryRepository.chapters.flatMap { StoryRepository.nodesInChapter(it.id) }
             .flatMap { node -> node.choices.filter { it.consequences.unlockTrophy != null }.map { node to it } }
-        assertEquals("the twelve story-choice trophy sites", 12, sites.size)
-        assertEquals(setOf("Friend of Stonebeard", "Blood and Silver", "The Last Jailer", "The Watch Goes On"),
+        // R1 (ending ledger) deliberately adds six sites: one distinct trophy on each ending's arrival choice. The
+        // loop below then proves that every one of them survives Back, which is what makes the trophy the durable
+        // record of ending discovery.
+        assertEquals("the eighteen story-choice trophy sites", 18, sites.size)
+        assertEquals(setOf("Friend of Stonebeard", "Blood and Silver", "The Last Jailer", "The Watch Goes On",
+            "Ending: Dark Aid, Ilsevet Captured", "Ending: Dark Aid, Ilsevet Shown Mercy",
+            "Ending: Dark Aid, Ilsevet's Fate Deferred", "Ending: Unaided, Ilsevet Captured",
+            "Ending: Unaided, Ilsevet Shown Mercy", "Ending: Unaided, Ilsevet's Fate Deferred"),
             sites.map { it.second.consequences.unlockTrophy }.toSet())
 
         for ((node, choice) in sites) {
