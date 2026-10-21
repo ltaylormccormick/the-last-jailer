@@ -14,7 +14,7 @@ muts=[
  ("M07 after hook dropped in gated",GS,"after?.let { hook -> { _: Unit -> hook() } }, null)","null, null)"),
  ("M08 before hook dropped in gated",GS,"gate.run(intent, { prefs.edit() }, before, ","gate.run(intent, { prefs.edit() }, null, "),
  ("M09 after runs as before",GS,"gate.run(intent, { prefs.edit() }, before, after?.let { hook -> { _: Unit -> hook() } }, null)","gate.run(intent, { prefs.edit() }, after, null, null)"),
- ("M10 retimeline restage removed",GS,"if (again != null && editor != null) stageAll(editor, again)",""),
+ ("M10 retimeline restage removed",GS,"if (again != null && editor != null) applyTimeline(editor, computeOps(again), true)",""),
  ("M11 Keep downgrade removed",GS,"val effective = if (requested === TimelineWrite.Keep && !stampValid(slot)) TimelineWrite.Invalidate else requested","val effective = requested"),
  ("M12 back snapshot not written",GS,"if (backSnapshot != null) writeState(previousPrefix(slot), backSnapshot, editor)",""),
  ("M13 clearBack ignored",GS,"if (clearBackSnapshot) removePreviousKeys(editor, slot)",""),
@@ -44,6 +44,10 @@ muts=[
  ("M37 request not-saved reported saved",SO,"if (status == CommitStatus.SAVED) SlotSaveRequest.Saved(state) else SlotSaveRequest.NotSaved(state)","SlotSaveRequest.Saved(state)"),
  ("M38 confirm not-saved reported saved",SO,"return if (result.status == CommitStatus.SAVED) OverwriteResult.Saved(result.state) else OverwriteResult.NotSaved(result.state)","return OverwriteResult.Saved(result.state)"),
  ("M39 uncertain treated as saved in request",SO,"if (status == CommitStatus.SAVED) SlotSaveRequest.Saved(state) else","if (status != CommitStatus.NOT_SAVED) SlotSaveRequest.Saved(state) else"),
+ ("M41 restage not explicit",GS,"applyTimeline(editor, computeOps(again), true)","applyTimeline(editor, computeOps(again), false)"),
+ ("M42 restage stamp dropped",GS,"            editor.putString(TimelineKeys.stamp(slot), ops.stamp)\n","            if (explicit) Unit else editor.putString(TimelineKeys.stamp(slot), ops.stamp)\n"),
+ ("M43 restage keeps stale arrivals",GS,"                if (ops.arrivalsText != null) editor.putString(TimelineKeys.arrivals(slot), ops.arrivalsText)\n                else editor.remove(TimelineKeys.arrivals(slot))","                if (ops.arrivalsText != null) editor.putString(TimelineKeys.arrivals(slot), ops.arrivalsText)"),
+ ("M44 restage runs on denied path before",GS,"                before?.invoke()\n                val again","                val again"),
  ("M40 plan timeline ignored",SC,"slot, next, plan?.timeline ?: TimelineWrite.Invalidate,","slot, next, TimelineWrite.Invalidate,"),
 ]
 only=sys.argv[1:]

@@ -54,27 +54,42 @@ a timeline) is now contained by the gate as `Failed`/`NOT_SAVED` instead of prop
 Unchanged: `beforeCommit` (maintenance of the old state) -> main `apply()` -> `afterSave`. One difference in how the
 plan is computed: the old code ran `beforeCommit` and then planned the arrival; the gate must know the batch before it runs
 `beforeCommit`, so the plan is now made first and re-checked after `beforeCommit`. `beforeCommit` can switch recording off for
-a slot (newer-format checkpoint file found); if `isRecording` changed, the arrival is replanned and the timeline keys and
-stamp are restaged on the same editor, which gives the plan the old order produced.
-Covered by a golden scenario and a dedicated test, and by mutants M10, M25, M26.
+a slot (newer-format checkpoint file found). If `isRecording` changed, the arrival is replanned.
+
+Review of PR #133 (head 83fd50e) found that this replan restaged on the editor after the gate's pre-apply check. Corrected:
+
+- Everything that can read or throw (the replan, `stampValid`, the stored values, the stamp text) is computed first, away from the
+  editor. If that throws, the batch keeps the plan it was staged with (a ledger entry without a record vouches for nothing).
+- The restage is then only `putString`/`remove` on this slot's own `lineage`, `arrivals` and `stamp` keys. These are the same
+  per-slot keys the gate already checked (the gate's policy is per slot prefix); a test records every key staged and asserts
+  they are `active_slot` or `1.*`.
+- The restage is explicit. Found while fixing: when the replan said "keep", the old restage left the keys staged by the first
+  plan in place (stale ledger entry for the arrival chapter, stamp from the stored values, so the timeline was silently dropped,
+  and the earlier test passed vacuously). It now writes the stored values back, so the result is what the old order produced
+  (verified byte-identical, new golden scenario `flipDuringArrival`; the previous head differed there).
+- The stamp is written last, so a restage cut short can only make the timeline untrusted, never wrong.
+- `Denied`/`Failed` never reach the replan; `Uncertain` after a replan leaves the checkpoint files untouched (tests).
+
+Residual limitation: the gate cannot veto the `apply()` if a restage `put` throws after `beforeCommit` ran (the gate swallows
+hook exceptions by design). That outcome is a saved state with an untrusted timeline, covered by a test.
 
 ## Verification (local JVM harness; Gradle/Android SDK not available in the workspace)
 
 - Main sources (all non-UI) compile with `-Werror` (kotlinc 2.0.21). UI files (`SaveScreen.kt`, `MainActivity.kt`) are not
   compilable locally (Compose); they are covered by the Android CI build.
-- Existing tests before and after: 1008 passing before adding B2 tests; 1030 after (22 new in `SaveStoreGateIntegrationTest`).
+- Existing tests before and after: 1008 passing before adding B2 tests; 1035 after (27 new in `SaveStoreGateIntegrationTest`).
   Five test classes that need Compose/BuildConfig/R (`ApplicationIdTest`, `Batch1SafetyFoundationsTest`, `CombatEngineTest`,
   `CombatConditionTest`, `ReleasePolishTest`) are not run locally and are left to CI.
-- Pre/post equivalence: `qa/g2l_b2/B2Golden.kt.txt` (a driver, not part of the build) runs 26 scenarios, with and without a
+- Pre/post equivalence: `qa/g2l_b2/B2Golden.kt.txt` (a driver, not part of the build) runs 27 scenarios, with and without a
   recorder: arrivals to Chapter 6, same-chapter choice, Back, combat, purchase, save onto same/other slot, active slot,
   Start Again, Start Again after arrivals, the six Chapter 30 loops, recording disabled, and a newer-format checkpoint file
   appearing mid-session. It dumps the exact live preferences map and the three checkpoint files after each step. Run against
-  main `a8d8a62` and against this branch: byte-identical output (897 lines).
-- Mutation testing of the integration (`qa/g2l_b2/mutate_b2.py.txt`): 40 mutants over `GameState.kt`, `StateCommits.kt`,
+  main `a8d8a62` and against this branch: byte-identical output (937 lines).
+- Mutation testing of the integration (`qa/g2l_b2/mutate_b2.py.txt`): 44 mutants over `GameState.kt`, `StateCommits.kt`,
   `SlotOverwrite.kt` (outcome mapping, hook placement/order, intent, Back snapshot rules, timeline rules, refused/uncertain
-  display state, replan, slot-save request mapping), run against 619 fast tests. First pass: 34 killed, 6 survived (restore
+  display state, replan, slot-save request mapping), run against the fast tests (about 620). First pass: 34 killed, 6 survived (restore
   uncertain display, Start Again refused display x2, purchase keeps Back, replan never, uncertain slot save reported saved).
-  Tests were added for each; second pass: 40/40 killed, no survivors, no equivalents claimed. (B1 gate mutants G01-G18 are
+  Tests were added for each; second pass and the re-run after the review fix: 44/44 killed, no survivors, no equivalents claimed. (B1 gate mutants G01-G18 are
   unchanged and were not re-run; `SaveGate.kt` is untouched.)
 - `SaveGuardDormancyTest` now allows only the four gate types (`SaveGate`, `GateMode`, `GateOutcome`, `WriteIntent`) in
   `GameState.kt`; raw assessment, quarantine, classifier and startup decisions remain unreferenced by production code.

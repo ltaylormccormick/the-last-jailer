@@ -61,6 +61,18 @@ fun main() {
         re.saves.commitChoice(re.saves.load(1)!!, Story.crossing(5).second, re.recorder)
         dump("flipOffThenArrive", re, out)
     }
+
+    run {
+        counter = 0
+        val device = SimulatedDevice()
+        val r0 = Rig(device, hooks = ArrivalRecorder.Hooks(newLineage = { String.format("%016x", (counter++).toLong() + 0xabc000L) }))
+        device.armFault(Cp.file(1), 1, CommitFault.FALSE_UNCHANGED)
+        r0.arrive(4)
+        device.writeDisk(Cp.file(1), mapOf("h.version" to CHECKPOINT_FORMAT_VERSION + 1, "h.slot" to 1, "h.lineage" to Cp.L1, "c05.future" to "data", "c05.crc" to 7L))
+        val (node, choice) = Story.crossing(5)
+        r0.saves.commitChoice(Story.stateAt(node, 1, "a"), choice, r0.recorder)
+        dump("flipDuringArrival", r0, out)
+    }
     println(out)
 }
 private var counter = 0

@@ -255,7 +255,10 @@ class SaveStore(
         retimeline: (() -> TimelineWrite?)? = null
     ): CommitStatus {
         var staged: android.content.SharedPreferences.Editor? = null
-        val stageAll = { editor: android.content.SharedPreferences.Editor, requested: TimelineWrite ->
+        // What the batch will say about the slot's timeline. Computing it reads the preferences and may throw, so it is
+        // always done BEFORE any editor call that depends on it.
+        class TimelineOps(val effective: TimelineWrite, val lineageText: String?, val arrivalsText: String?, val stamp: String)
+        val computeOps = { requested: TimelineWrite ->
             val effective = if (requested === TimelineWrite.Keep && !stampValid(slot)) TimelineWrite.Invalidate else requested
             val lineageText: String?
             val arrivalsText: String?
@@ -275,36 +278,50 @@ class SaveStore(
                     arrivalsText = if (effective.ledger.isEmpty) null else effective.ledger.encode()
                 }
             }
+            TimelineOps(
+                effective, lineageText, arrivalsText,
+                SlotStamp.of(slot, stampFields(stateValues(state)), lineageText, arrivalsText)
+            )
+        }
+        // Only editor calls on this slot's own keys, nothing that reads or computes, so it cannot fail for a reason of its own.
+        // [explicit] is the replan: keys already staged by the first plan must be overwritten with what the new plan says,
+        // so even Keep writes the stored values (or removals) back instead of "leaving them alone".
+        val applyTimeline = { editor: android.content.SharedPreferences.Editor, ops: TimelineOps, explicit: Boolean ->
+            if (ops.effective === TimelineWrite.Keep && !explicit) {
+                // nothing: the stored keys stay exactly as they are
+            } else {
+                if (ops.lineageText != null) editor.putString(TimelineKeys.lineage(slot), ops.lineageText)
+                else editor.remove(TimelineKeys.lineage(slot))
+                if (ops.arrivalsText != null) editor.putString(TimelineKeys.arrivals(slot), ops.arrivalsText)
+                else editor.remove(TimelineKeys.arrivals(slot))
+            }
+            // Last, so that if anything stopped part way the stamp would not match the keys and the timeline would simply
+            // not be trusted (history may be lost, never wrong).
+            editor.putString(TimelineKeys.stamp(slot), ops.stamp)
+        }
+        val stageAll = { editor: android.content.SharedPreferences.Editor, ops: TimelineOps ->
             if (backSnapshot != null) writeState(previousPrefix(slot), backSnapshot, editor)
             writeState(slot.toString(), state, editor).putInt("active_slot", slot)
-                .putString(TimelineKeys.stamp(slot), SlotStamp.of(slot, stampFields(stateValues(state)), lineageText, arrivalsText))
             // The slot's one-step Back snapshot belongs to the game that was in the slot. When this write replaces
             // that game with a different one, the snapshot must go in the SAME editor batch as the new state, so no
             // crash can leave the new game next to the old game's snapshot.
             if (clearBackSnapshot) removePreviousKeys(editor, slot)
-            when (effective) {
-                TimelineWrite.Keep -> Unit
-                TimelineWrite.Invalidate -> editor
-                    .remove(TimelineKeys.lineage(slot))
-                    .remove(TimelineKeys.arrivals(slot))
-                is TimelineWrite.Set -> {
-                    editor.putString(TimelineKeys.lineage(slot), effective.lineage)
-                    if (effective.ledger.isEmpty) editor.remove(TimelineKeys.arrivals(slot))
-                    else editor.putString(TimelineKeys.arrivals(slot), effective.ledger.encode())
-                }
-            }
+            applyTimeline(editor, ops, false)
         }
+        // The pre-apply replan (see [retimeline]): everything that can throw happens first, away from the editor. If the
+        // replan or its computation throws, the batch simply keeps the plan it was staged with. The keys it rewrites
+        // (this slot's lineage, arrivals and stamp) were already covered by the gate's check of this slot's keys.
         val beforeHook: (() -> Unit)? = if (before == null && retimeline == null) null else {
             {
                 before?.invoke()
                 val again = retimeline?.invoke()
                 val editor = staged
-                if (again != null && editor != null) stageAll(editor, again)
+                if (again != null && editor != null) applyTimeline(editor, computeOps(again), true)
             }
         }
         return gated(WriteIntent(setOf(slot), touchesActiveSlot = true), beforeHook, after) { editor ->
             staged = editor
-            stageAll(editor, timeline)
+            stageAll(editor, computeOps(timeline))
         }
     }
 

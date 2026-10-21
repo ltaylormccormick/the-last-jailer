@@ -41,6 +41,8 @@ class SaveStoreGateIntegrationTest {
         var editCalls = 0
         var failEdit = false
         var failApply = false
+        var failPutKey: ((String) -> Boolean)? = null
+        val keysStaged = ArrayList<String>()
         val log = ArrayList<String>()
 
         override fun edit(): SharedPreferences.Editor {
@@ -50,13 +52,17 @@ class SaveStoreGateIntegrationTest {
         }
 
         private inner class Ed(private val real: SharedPreferences.Editor) : SharedPreferences.Editor {
-            override fun putString(key: String?, value: String?) = also { real.putString(key, value) }
+            private fun note(key: String?) {
+                keysStaged += key.orEmpty()
+                if (key != null && failPutKey?.invoke(key) == true) throw IllegalStateException("put failed")
+            }
+            override fun putString(key: String?, value: String?) = also { note(key); real.putString(key, value) }
             override fun putStringSet(key: String?, values: MutableSet<String>?) = also { real.putStringSet(key, values) }
-            override fun putInt(key: String?, value: Int) = also { real.putInt(key, value) }
+            override fun putInt(key: String?, value: Int) = also { note(key); real.putInt(key, value) }
             override fun putLong(key: String?, value: Long) = also { real.putLong(key, value) }
             override fun putFloat(key: String?, value: Float) = also { real.putFloat(key, value) }
             override fun putBoolean(key: String?, value: Boolean) = also { real.putBoolean(key, value) }
-            override fun remove(key: String?) = also { real.remove(key) }
+            override fun remove(key: String?) = also { note(key); real.remove(key) }
             override fun clear() = also { real.clear() }
             override fun commit(): Boolean = throw AssertionError("commit() must never be used")
             override fun apply() {
@@ -68,12 +74,12 @@ class SaveStoreGateIntegrationTest {
         }
     }
 
-    private class Env(gate: SaveGate = SaveGate(GateMode.Open)) {
+    private class Env(gate: SaveGate = SaveGate(GateMode.Open), hooks: ArrivalRecorder.Hooks = ArrivalRecorder.Hooks()) {
         val device = SimulatedDevice()
         val prefs = FaultPrefs(device.prefs(Story.LIVE))
         val store = SaveStore(prefs, gate)
         val plain = SaveStore(device.prefs(Story.LIVE)) // an ungated twin, only to seed state
-        val recorder = ArrivalRecorder(Cp.store(device), Cp.rules, true, { _, _ -> }, ArrivalRecorder.Hooks())
+        val recorder = ArrivalRecorder(Cp.store(device), Cp.rules, true, { _, _ -> }, hooks)
         fun ckptFiles(): Map<String, Map<String, Any?>> = (1..3).associate { Cp.file(it) to device.disk(Cp.file(it)) }
         fun live(): Map<String, Any?> = device.disk(Story.LIVE)
     }
@@ -199,7 +205,9 @@ class SaveStoreGateIntegrationTest {
         val r = rig.saves.commitChoiceResult(Story.stateAt(node, 1, "a"), choice, rig.recorder)
         assertEquals(CommitStatus.SAVED, r.status)
         assertTrue(rig.recorder!!.isDisabledForSlot(1))
-        assertNull("no ledger entry for the arrival chapter", rig.timeline(1)?.ledger?.digestFor(6))
+        val tl = rig.timeline(1)
+        assertNotNull("the replanned batch must leave a timeline the stamp vouches for", tl)
+        assertNull("no ledger entry for the arrival chapter", tl!!.ledger.digestFor(6))
     }
 
     @Test
@@ -441,5 +449,96 @@ class SaveStoreGateIntegrationTest {
         val s = Story.stateAt(staying.first, 1, "a")
         env.store.save(1, s, TimelineWrite.Invalidate, retimeline = { null })
         assertNull(env.live()["1.lineage"])
+    }
+
+    // ---- the pre-apply replan (review finding on PR #133) --------------------------------------------------------------
+
+    private fun newerFile(env: Env) = env.device.writeDisk(
+        Cp.file(1),
+        mapOf("h.version" to com.thelastjailer.app.checkpoint.CHECKPOINT_FORMAT_VERSION + 1, "h.slot" to 1, "h.lineage" to Cp.L1, "c05.future" to "data", "c05.crc" to 7L)
+    )
+
+    /** Arrival into chapter 5 whose checkpoint write fails (a record is pending), then the file turns out to be newer. */
+    private fun pendingThenNewer(env: Env) {
+        env.device.armFault(Cp.file(1), 1, com.thelastjailer.app.checkpoint.CommitFault.FALSE_UNCHANGED)
+        val (n4, c4) = Story.crossing(4)
+        assertEquals(CommitStatus.SAVED, env.store.commitChoiceResult(Story.stateAt(n4, 1, "a"), c4, env.recorder).status)
+        newerFile(env)
+        env.prefs.keysStaged.clear()
+    }
+
+    @Test
+    fun `the replan after the checkpoint step only touches this slot's own keys`() {
+        val env = Env()
+        pendingThenNewer(env)
+        val (node, choice) = Story.crossing(5)
+        val r = env.store.commitChoiceResult(Story.stateAt(node, 1, "a"), choice, env.recorder)
+        assertEquals(CommitStatus.SAVED, r.status)
+        assertTrue(env.recorder.isDisabledForSlot(1))
+        assertTrue("keys: ${env.prefs.keysStaged}", env.prefs.keysStaged.isNotEmpty())
+        for (k in env.prefs.keysStaged) assertTrue("unexpected key staged: $k", k == "active_slot" || k.startsWith("1."))
+        assertEquals("one apply", 2, env.prefs.applyAttempts) // the pending arrival above + this action
+    }
+
+    @Test
+    fun `a failure while restaging after the checkpoint step cannot leave a timeline that is trusted wrongly`() {
+        val env = Env()
+        pendingThenNewer(env)
+        val newer = env.device.disk(Cp.file(1))
+        var lineagePuts = 0
+        // the first put of the lineage is the original staging; the second is the restage after the checkpoint step
+        env.prefs.failPutKey = { k -> k.endsWith(".lineage") && ++lineagePuts == 2 }
+        val (node, choice) = Story.crossing(5)
+        val r = env.store.commitChoiceResult(Story.stateAt(node, 1, "a"), choice, env.recorder)
+        assertEquals("the restage was reached", 2, lineagePuts)
+        assertEquals("the save still goes through", CommitStatus.SAVED, r.status)
+        assertEquals(r.state, env.store.load(1))
+        // a timeline is either absent or vouched for by its stamp: reading it never throws and never invents history
+        val tl = env.store.readTimeline(1)
+        assertTrue(tl == null || tl.lineage.isNotEmpty())
+        assertEquals("checkpoint file untouched", newer, env.device.disk(Cp.file(1)))
+        assertTrue(env.recorder.isDisabledForSlot(1))
+    }
+
+    @Test
+    fun `a replan that throws leaves a consistent batch`() {
+        var explode = false
+        val env = Env(hooks = ArrivalRecorder.Hooks(buildRecord = { st, ch, l ->
+            if (explode) error("boom")
+            com.thelastjailer.app.checkpoint.CheckpointRecord.fromState(st, ch, l)
+        }))
+        pendingThenNewer(env)
+        explode = true
+        val (node, choice) = Story.crossing(5)
+        val r = env.store.commitChoiceResult(Story.stateAt(node, 1, "a"), choice, env.recorder)
+        assertEquals(CommitStatus.SAVED, r.status)
+        assertEquals(r.state, env.store.load(1))
+        // whatever was staged, a timeline is either absent or vouched for by its stamp
+        env.store.readTimeline(1)
+    }
+
+    @Test
+    fun `apply failing after the replan is uncertain and does no post-save checkpoint work`() {
+        val env = Env()
+        pendingThenNewer(env)
+        val newer = env.device.disk(Cp.file(1))
+        env.prefs.failApply = true
+        val (node, choice) = Story.crossing(5)
+        val start = Story.stateAt(node, 1, "a")
+        val r = env.store.commitChoiceResult(start, choice, env.recorder)
+        assertEquals(CommitStatus.UNCERTAIN, r.status)
+        assertEquals(env.plain.load(1) ?: start, r.state)
+        assertEquals(newer, env.device.disk(Cp.file(1)))
+    }
+
+    @Test
+    fun `a denied action never reaches the replan`() {
+        val env = Env(frozen())
+        env.prefs.log.clear()
+        var replanned = false
+        val s = Story.stateAt(staying.first, 1, "a")
+        env.store.save(1, s, before = { replanned = true }, retimeline = { replanned = true; null })
+        assertTrue(!replanned)
+        assertEquals(emptyList<String>(), env.prefs.keysStaged.filter { true })
     }
 }
