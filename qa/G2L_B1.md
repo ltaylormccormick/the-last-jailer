@@ -45,9 +45,13 @@ trailing bytes, unknown tags). Reason codes only; nothing returned or thrown con
 
 ## Write gate
 
-One logical game action is one lock acquisition and one editor batch: permission check, optional `before` side effect
-(only if permitted), staging of every key through `GuardedEditor`, a single `apply()`, optional `after` side effect
-(only if applied). The mode cannot change while the lock is held. A denied action builds no editor and runs no side
+One logical game action is one lock acquisition and one editor batch: mode check, editor creation, staging of every
+key through `GuardedEditor` (puts are only buffered), a pre-apply verification, the optional `before` side effect, a
+single `apply()`, the optional `after` side effect (only if applied). Because `before` runs only after every key was
+accepted, `Denied` and `Failed` always mean that neither the preferences nor any `before` side effect (checkpoint
+maintenance) happened; only `Handed` and `Uncertain` mean `before` ran. `WriteIntent` copies its slot set on
+construction, so a caller mutating its own set later, even inside the stage function, cannot change what an in-flight
+action may touch. The mode cannot change while the lock is held. A denied action builds no editor and runs no side
 effect. `GuardedEditor` checks each key against the action's `WriteIntent` and the protected slots; `clear()`,
 `commit()` and a caller's `apply()` are forbidden; a swallowed denial still denies the whole action.
 

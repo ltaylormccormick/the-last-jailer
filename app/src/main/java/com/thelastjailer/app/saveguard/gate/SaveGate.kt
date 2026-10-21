@@ -9,8 +9,13 @@ import java.util.concurrent.locks.ReentrantLock
 //  * ONE logical game action = ONE lock acquisition = ONE editor batch. Permission check, editor creation, every
 //    staged key and the single apply() all happen inside the same lock scope, and the gate's mode cannot change
 //    while the lock is held, so "allowed, then forbidden before apply()" is impossible by construction.
-//  * A denied action builds no editor and runs no side effect: not even the optional `before` hook (the checkpoint
-//    maintenance that runs ahead of a save today).
+//  * Order inside the lock: mode check, editor creation, STAGING of every key, a pre-apply verification, then the
+//    optional `before` hook, then the single apply(), then the optional `after` hook. Staging only buffers puts on
+//    the editor, so a denied or failed action has not run `before`: `Denied` and `Failed` therefore always mean that
+//    neither the preferences nor any `before` side effect (the checkpoint maintenance that runs ahead of a save
+//    today) happened. Only `Uncertain` (apply() itself threw) and `Handed` mean `before` ran.
+//  * The action's `WriteIntent` is copied when it is built, so a caller mutating its own set afterwards (even from
+//    inside the stage function) cannot change what an in-flight action may touch.
 //  * Outcomes are explicit. HANDED means "the gate allowed it and apply() was called", NOT "the disk has it":
 //    SharedPreferences.apply() gives no result and can lose the write on process death. UNCERTAIN means apply()
 //    itself threw, so memory may or may not have changed; the caller must re-read instead of trusting its own state.
@@ -37,7 +42,10 @@ enum class FreezeReason {
 enum class DenyReason { FROZEN, PROTECTED_SLOT, FORBIDDEN_KEY, FORBIDDEN_CALL, NESTED, GATE_CHANGED, INTENT_MISMATCH }
 
 /** What a logical action declares up front. The editor refuses any key outside it. */
-class WriteIntent(val slots: Set<Int>, val touchesActiveSlot: Boolean = false)
+class WriteIntent(slots: Set<Int>, val touchesActiveSlot: Boolean = false) {
+    /** An immutable copy taken at construction. */
+    val slots: Set<Int> = java.util.Collections.unmodifiableSet(HashSet(slots))
+}
 
 class WriteDeniedException(val reason: DenyReason) : RuntimeException(reason.name)
 
@@ -45,10 +53,10 @@ sealed class GateOutcome<out T> {
     /** Allowed and handed to SharedPreferences. Not a durability claim. */
     class Handed<T>(val value: T, val sideEffectFailures: Int) : GateOutcome<T>()
 
-    /** Nothing was written, no side effect ran. */
+    /** Nothing was written and neither `before` nor `after` ran (the check happens before any side effect). */
     class Denied(val reason: DenyReason) : GateOutcome<Nothing>()
 
-    /** Staging failed before apply(): nothing was applied. */
+    /** Staging failed: nothing was applied and neither `before` nor `after` ran. */
     class Failed(val cause: Exception) : GateOutcome<Nothing>()
 
     /** apply() itself threw: the in-memory map may or may not have changed. */
@@ -103,9 +111,6 @@ class SaveGate(initial: GateMode = GateMode.Frozen(FreezeReason.NOT_STARTED)) {
                 is GateMode.Open -> emptySet()
             }
             var sideEffectFailures = 0
-            if (before != null) {
-                try { before() } catch (e: Exception) { sideEffectFailures++ }
-            }
             val real = try { newEditor() } catch (e: Exception) { return GateOutcome.Failed(e) }
             val editor = GuardedEditor(real, intent, protectedSlots) { generation == startGeneration }
             val value = try {
@@ -116,6 +121,15 @@ class SaveGate(initial: GateMode = GateMode.Frozen(FreezeReason.NOT_STARTED)) {
             } catch (e: Exception) {
                 editor.close()
                 return GateOutcome.Failed(e)
+            }
+            try {
+                editor.verifyStillPermitted()
+            } catch (e: WriteDeniedException) {
+                return GateOutcome.Denied(e.reason)
+            }
+            // Only now, with every key accepted, may a side effect happen.
+            if (before != null) {
+                try { before() } catch (e: Exception) { sideEffectFailures++ }
             }
             try {
                 editor.applyOnce()
@@ -187,6 +201,13 @@ class GuardedEditor internal constructor(
     override fun clear(): SharedPreferences.Editor { violation = DenyReason.FORBIDDEN_CALL; throw WriteDeniedException(DenyReason.FORBIDDEN_CALL) }
     override fun commit(): Boolean { violation = DenyReason.FORBIDDEN_CALL; throw WriteDeniedException(DenyReason.FORBIDDEN_CALL) }
     override fun apply() { violation = DenyReason.FORBIDDEN_CALL; throw WriteDeniedException(DenyReason.FORBIDDEN_CALL) }
+
+    /** Throws if anything staged or called so far was forbidden, or the gate moved on; changes nothing. */
+    internal fun verifyStillPermitted() {
+        if (applied || closed) throw WriteDeniedException(DenyReason.FORBIDDEN_CALL)
+        violation?.let { throw WriteDeniedException(it) }
+        if (!stillCurrent()) throw WriteDeniedException(DenyReason.GATE_CHANGED)
+    }
 
     internal fun applyOnce() {
         if (applied || closed) throw WriteDeniedException(DenyReason.FORBIDDEN_CALL)

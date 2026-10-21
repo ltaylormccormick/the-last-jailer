@@ -214,9 +214,87 @@ class SaveGateTest {
         val o = open().write(prefs, before = { log += "before"; throw RuntimeException("x") }, after = { log += "after"; throw RuntimeException("y") }) {
             log += "stage"; it.putInt("1.level", 4)
         }
-        assertEquals(listOf("before", "stage", "after"), log)
+        assertEquals(listOf("stage", "before", "after"), log)
         assertEquals(2, (o as GateOutcome.Handed).sideEffectFailures)
         assertEquals(4, prefs.getInt("1.level", 0))
+    }
+
+    @Test fun `a denial during staging never runs the before hook, so Denied means no side effect happened`() {
+        val checkpoint = StrictFakeSharedPreferences()   // stands in for the separate checkpoint file
+        val denials: List<(GuardedEditor) -> Unit> = listOf(
+            { e -> e.putInt("1.level", 1); e.putInt("3.level", 1) },                                  // slot outside the intent
+            { e -> e.putInt("1.level", 1); e.putInt("jailer_entitlement", 1) },                       // foreign key
+            { e -> e.putInt("1.level", 1); try { e.clear() } catch (x: WriteDeniedException) { } },   // swallowed forbidden call
+            { e -> e.putInt("1.level", 1); try { e.putInt("3.level", 1) } catch (x: WriteDeniedException) { } } // swallowed denial
+        )
+        for (d in denials) {
+            val prefs = seeded()
+            val before = prefs.fingerprint()
+            val o = open().write(prefs, before = { checkpoint.edit().putInt("ckpt", 1).apply() }, after = { checkpoint.edit().putInt("after", 1).apply() }) { e -> d(e) }
+            assertTrue(o is GateOutcome.Denied)
+            assertEquals("the checkpoint file was not touched", 0, checkpoint.writeCalls)
+            assertEquals(before, prefs.fingerprint())
+        }
+        // a failure while staging is the same
+        val o = open().write(seeded(), before = { checkpoint.edit().putInt("ckpt", 1).apply() }) { it.putInt("1.level", 5); throw IllegalStateException("boom") }
+        assertTrue(o is GateOutcome.Failed)
+        assertEquals(0, checkpoint.writeCalls)
+        // and the allowed path does run it exactly once, before the preferences are applied
+        val prefs = seeded()
+        var levelSeenByBefore = -1
+        val ok = open().write(prefs, before = { levelSeenByBefore = prefs.getInt("1.level", -1); checkpoint.edit().putInt("ckpt", 1).apply() }) { it.putInt("1.level", 9) }
+        assertTrue(ok is GateOutcome.Handed)
+        assertEquals(1, checkpoint.writeCalls)
+        assertEquals("before ran ahead of the apply", 1, levelSeenByBefore)
+    }
+
+    @Test fun `when apply itself throws the before hook has run and the outcome says Uncertain`() {
+        var beforeRan = false
+        val broken = object : SharedPreferences.Editor {
+            override fun putString(k: String?, v: String?) = this
+            override fun putStringSet(k: String?, v: MutableSet<String>?) = this
+            override fun putInt(k: String?, v: Int) = this
+            override fun putLong(k: String?, v: Long) = this
+            override fun putFloat(k: String?, v: Float) = this
+            override fun putBoolean(k: String?, v: Boolean) = this
+            override fun remove(k: String?) = this
+            override fun clear() = this
+            override fun commit(): Boolean = true
+            override fun apply() { throw RuntimeException("disk") }
+        }
+        val o = open().run(WriteIntent(setOf(1)), { broken }, { beforeRan = true }, null, null) { it.putInt("1.level", 1) }
+        assertTrue(o is GateOutcome.Uncertain)
+        assertTrue(beforeRan)
+    }
+
+    @Test fun `mutating the callers set after building the intent cannot widen the action`() {
+        val mine = mutableSetOf(1)
+        val intent = WriteIntent(mine)
+        mine.add(3)
+        val prefs = seeded()
+        val before = prefs.fingerprint()
+        val o = open().run(intent, { prefs.edit() }, null, null, null) { it.putInt("3.level", 99) }
+        assertEquals(DenyReason.INTENT_MISMATCH, (o as GateOutcome.Denied).reason)
+        assertEquals(before, prefs.fingerprint())
+        assertEquals(setOf(1), intent.slots)
+    }
+
+    @Test fun `mutating the callers set from inside the stage function cannot widen or narrow the action`() {
+        val mine = mutableSetOf(1)
+        val prefs = seeded()
+        val o = open().run(WriteIntent(mine), { prefs.edit() }, null, null, null) { e ->
+            mine.add(3); mine.remove(1)
+            e.putInt("1.level", 7)                                   // still allowed
+            try { e.putInt("3.level", 99) } catch (x: WriteDeniedException) { }  // still not
+        }
+        assertTrue(o is GateOutcome.Denied)
+        assertEquals(1, prefs.getInt("1.level", 0))
+    }
+
+    @Test fun `the intent's slot set cannot be modified through the intent`() {
+        val intent = WriteIntent(setOf(1))
+        try { (intent.slots as MutableSet<Int>).add(3); throw AssertionError("must be read-only") } catch (e: UnsupportedOperationException) { }
+        assertEquals(setOf(1), intent.slots)
     }
 
     @Test fun `after does not run when the action is denied or fails`() {
@@ -299,6 +377,11 @@ class SaveGateTest {
         try { editor.applyOnce(); throw AssertionError("must refuse") } catch (e: WriteDeniedException) { assertEquals(DenyReason.GATE_CHANGED, e.reason) }
         assertEquals(before, prefs.fingerprint())
         assertEquals(0, prefs.writeCalls)
+    }
+
+    @Test fun `the pre-apply verification itself refuses when the gate generation moved on`() {
+        val editor = GuardedEditor(seeded().edit(), WriteIntent(setOf(1)), emptySet()) { false }
+        try { editor.verifyStillPermitted(); throw AssertionError("must refuse") } catch (e: WriteDeniedException) { assertEquals(DenyReason.GATE_CHANGED, e.reason) }
     }
 
     @Test fun `current mode is observable and reflects the last set`() {
