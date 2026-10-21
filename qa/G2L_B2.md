@@ -95,7 +95,7 @@ infallible. If B3 changes hook semantics this should be revisited.
 
 - Main sources (all non-UI) compile with `-Werror` (kotlinc 2.0.21). UI files (`SaveScreen.kt`, `MainActivity.kt`) are not
   compilable locally (Compose); they are covered by the Android CI build.
-- Existing tests before and after: 1008 passing before adding B2 tests; 1038 after (30 new in `SaveStoreGateIntegrationTest`).
+- Existing tests before and after: 1008 passing before adding B2 tests; 1038 after (30 new: 28 in `SaveStoreGateIntegrationTest`, 2 in `RestageBoundaryTest`).
   Five test classes that need Compose/BuildConfig/R (`ApplicationIdTest`, `Batch1SafetyFoundationsTest`, `CombatEngineTest`,
   `CombatConditionTest`, `ReleasePolishTest`) are not run locally and are left to CI.
 - Pre/post equivalence: `qa/g2l_b2/B2Golden.kt.txt` (a driver, not part of the build) runs 27 scenarios, with and without a
