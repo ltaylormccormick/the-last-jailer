@@ -314,17 +314,29 @@ val chapter30Nodes: List<StoryNode> = listOf(
             Choice(
                 label = "Rest, for now.",
                 nextNodeId = "the_watch_continues_dark_aid_captured",
-                requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid", "captured_ilsevet"))
+                requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid", "captured_ilsevet")),
+                consequences = Consequences(
+                    setFlags = setOf("ledger_end_1"),
+                    unlockTrophy = "Ending: Dark Aid, Ilsevet Captured"
+                )
             ),
             Choice(
                 label = "Rest, for now.",
                 nextNodeId = "the_watch_continues_dark_aid_mercy",
-                requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid", "showed_ilsevet_mercy"))
+                requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid", "showed_ilsevet_mercy")),
+                consequences = Consequences(
+                    setFlags = setOf("ledger_end_2"),
+                    unlockTrophy = "Ending: Dark Aid, Ilsevet Shown Mercy"
+                )
             ),
             Choice(
                 label = "Rest, for now.",
                 nextNodeId = "the_watch_continues_dark_aid_deferred",
-                requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid", "deferred_ilsevets_fate"))
+                requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid", "deferred_ilsevets_fate")),
+                consequences = Consequences(
+                    setFlags = setOf("ledger_end_3"),
+                    unlockTrophy = "Ending: Dark Aid, Ilsevet's Fate Deferred"
+                )
             ),
             Choice(
                 label = "Rest, for now.",
@@ -332,6 +344,10 @@ val chapter30Nodes: List<StoryNode> = listOf(
                 requirements = ChoiceRequirement(
                     requiredFlags = setOf("captured_ilsevet"),
                     forbiddenFlags = setOf("accepted_dark_aid")
+                ),
+                consequences = Consequences(
+                    setFlags = setOf("ledger_end_4"),
+                    unlockTrophy = "Ending: Unaided, Ilsevet Captured"
                 )
             ),
             Choice(
@@ -340,6 +356,10 @@ val chapter30Nodes: List<StoryNode> = listOf(
                 requirements = ChoiceRequirement(
                     requiredFlags = setOf("showed_ilsevet_mercy"),
                     forbiddenFlags = setOf("accepted_dark_aid")
+                ),
+                consequences = Consequences(
+                    setFlags = setOf("ledger_end_5"),
+                    unlockTrophy = "Ending: Unaided, Ilsevet Shown Mercy"
                 )
             ),
             Choice(
@@ -348,6 +368,10 @@ val chapter30Nodes: List<StoryNode> = listOf(
                 requirements = ChoiceRequirement(
                     requiredFlags = setOf("deferred_ilsevets_fate"),
                     forbiddenFlags = setOf("accepted_dark_aid")
+                ),
+                consequences = Consequences(
+                    setFlags = setOf("ledger_end_6"),
+                    unlockTrophy = "Ending: Unaided, Ilsevet's Fate Deferred"
                 )
             )
         )
