@@ -481,23 +481,32 @@ class SaveStoreGateIntegrationTest {
     }
 
     @Test
-    fun `a failure while restaging after the checkpoint step cannot leave a timeline that is trusted wrongly`() {
+    fun `the restage replaces staged entries in memory so the real editor sees each timeline key once`() {
         val env = Env()
         pendingThenNewer(env)
-        val newer = env.device.disk(Cp.file(1))
         var lineagePuts = 0
-        // the first put of the lineage is the original staging; the second is the restage after the checkpoint step
-        env.prefs.failPutKey = { k -> k.endsWith(".lineage") && ++lineagePuts == 2 }
+        env.prefs.failPutKey = { k -> if (k.endsWith(".lineage")) lineagePuts++; false }
         val (node, choice) = Story.crossing(5)
         val r = env.store.commitChoiceResult(Story.stateAt(node, 1, "a"), choice, env.recorder)
-        assertEquals("the restage was reached", 2, lineagePuts)
-        assertEquals("the save still goes through", CommitStatus.SAVED, r.status)
-        assertEquals(r.state, env.store.load(1))
-        // a timeline is either absent or vouched for by its stamp: reading it never throws and never invents history
-        val tl = env.store.readTimeline(1)
-        assertTrue(tl == null || tl.lineage.isNotEmpty())
-        assertEquals("checkpoint file untouched", newer, env.device.disk(Cp.file(1)))
+        assertEquals(CommitStatus.SAVED, r.status)
+        assertEquals("one put per key on the real editor", 1, lineagePuts)
         assertTrue(env.recorder.isDisabledForSlot(1))
+    }
+
+    @Test
+    fun `a failing real editor call during the replay persists nothing and is reported uncertain`() {
+        val env = Env()
+        pendingThenNewer(env)
+        val liveBefore = env.live()
+        val newer = env.device.disk(Cp.file(1))
+        env.prefs.failPutKey = { k -> k.endsWith(".lineage") }
+        val (node, choice) = Story.crossing(5)
+        val start = Story.stateAt(node, 1, "a")
+        val r = env.store.commitChoiceResult(start, choice, env.recorder)
+        assertEquals(CommitStatus.UNCERTAIN, r.status)
+        assertEquals(liveBefore, env.live())
+        assertEquals(env.plain.load(1), r.state)
+        assertEquals("no post-save checkpoint work", newer, env.device.disk(Cp.file(1)))
     }
 
     @Test

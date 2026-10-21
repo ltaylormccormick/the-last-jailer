@@ -283,9 +283,12 @@ class SaveStore(
                 SlotStamp.of(slot, stampFields(stateValues(state)), lineageText, arrivalsText)
             )
         }
-        // Only editor calls on this slot's own keys, nothing that reads or computes, so it cannot fail for a reason of its own.
-        // [explicit] is the replan: keys already staged by the first plan must be overwritten with what the new plan says,
-        // so even Keep writes the stored values (or removals) back instead of "leaving them alone".
+        // The editor handed to the gate is a [DeferredBatchEditor]: it only remembers the staged operations in memory and
+        // replays them onto the real editor inside apply(). So this restage is a plain in-memory replacement of this slot's
+        // own lineage, arrivals and stamp entries; it cannot half-apply. Anything that can fail on the real editor happens
+        // during the replay, before the real apply(), and then nothing is persisted (the gate reports Uncertain).
+        // [explicit] is the replan: entries already staged by the first plan must be overwritten with what the new plan
+        // says, so even Keep writes the stored values (or removals) back instead of "leaving them alone".
         val applyTimeline = { editor: android.content.SharedPreferences.Editor, ops: TimelineOps, explicit: Boolean ->
             if (ops.effective === TimelineWrite.Keep && !explicit) {
                 // nothing: the stored keys stay exactly as they are
@@ -295,8 +298,8 @@ class SaveStore(
                 if (ops.arrivalsText != null) editor.putString(TimelineKeys.arrivals(slot), ops.arrivalsText)
                 else editor.remove(TimelineKeys.arrivals(slot))
             }
-            // Last, so that if anything stopped part way the stamp would not match the keys and the timeline would simply
-            // not be trusted (history may be lost, never wrong).
+            // Last, as a second line of defence: a batch cut short would leave a stamp that does not match the keys, so the
+            // timeline would simply not be trusted (history may be lost, never wrong).
             editor.putString(TimelineKeys.stamp(slot), ops.stamp)
         }
         val stageAll = { editor: android.content.SharedPreferences.Editor, ops: TimelineOps ->
@@ -332,7 +335,7 @@ class SaveStore(
         after: (() -> Unit)? = null,
         stage: (android.content.SharedPreferences.Editor) -> Unit
     ): CommitStatus = when (
-        gate.run(intent, { prefs.edit() }, before, after?.let { hook -> { _: Unit -> hook() } }, null) { editor -> stage(editor) }
+        gate.run(intent, { DeferredBatchEditor(prefs.edit()) }, before, after?.let { hook -> { _: Unit -> hook() } }, null) { editor -> stage(editor) }
     ) {
         is GateOutcome.Handed -> CommitStatus.SAVED
         is GateOutcome.Denied, is GateOutcome.Failed -> CommitStatus.NOT_SAVED
@@ -552,4 +555,52 @@ class SaveStore(
 
     fun setActiveSlot(slot: Int): CommitStatus =
         gated(WriteIntent(emptySet(), touchesActiveSlot = true)) { it.putInt("active_slot", slot) }
+}
+
+/**
+ * Collects the staged operations in memory (last write per key wins, exactly like a real `SharedPreferences.Editor`) and
+ * replays them onto the real editor only inside [apply], immediately before the real `apply()`.
+ *
+ * Why: the gate runs its pre-apply hook after it has checked the staged keys, and swallows exceptions from that hook. If a
+ * restage from that hook wrote to the real editor and one call threw, a half-staged batch would still be applied. With this
+ * editor the restage is a map replacement, and any failure of the real editor happens during the replay, before the real
+ * `apply()` is reached, so nothing is persisted. The result is `Uncertain` from the gate, never a partial save.
+ */
+private class DeferredBatchEditor(private val real: android.content.SharedPreferences.Editor) :
+    android.content.SharedPreferences.Editor {
+    private val ops = LinkedHashMap<String, Any>()
+
+    private fun record(key: String?, value: Any): android.content.SharedPreferences.Editor {
+        if (key != null) ops[key] = value
+        return this
+    }
+
+    override fun putString(key: String?, value: String?) = if (value == null) remove(key) else record(key, value)
+    override fun putStringSet(key: String?, values: MutableSet<String>?) =
+        if (values == null) remove(key) else record(key, LinkedHashSet(values))
+    override fun putInt(key: String?, value: Int) = record(key, value)
+    override fun putLong(key: String?, value: Long) = record(key, value)
+    override fun putFloat(key: String?, value: Float) = record(key, value)
+    override fun putBoolean(key: String?, value: Boolean) = record(key, value)
+    override fun remove(key: String?) = record(key, Removed)
+    override fun clear(): android.content.SharedPreferences.Editor = throw UnsupportedOperationException("clear() is never used")
+    override fun commit(): Boolean = throw UnsupportedOperationException("commit() is never used")
+
+    override fun apply() {
+        for ((key, value) in ops) {
+            when (value) {
+                Removed -> real.remove(key)
+                is String -> real.putString(key, value)
+                is Int -> real.putInt(key, value)
+                is Long -> real.putLong(key, value)
+                is Float -> real.putFloat(key, value)
+                is Boolean -> real.putBoolean(key, value)
+                is Set<*> -> real.putStringSet(key, value.filterIsInstance<String>().toMutableSet())
+                else -> throw IllegalStateException("unsupported staged value")
+            }
+        }
+        real.apply()
+    }
+
+    private object Removed
 }
