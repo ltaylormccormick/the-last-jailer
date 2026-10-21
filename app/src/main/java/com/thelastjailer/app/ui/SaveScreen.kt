@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.thelastjailer.app.CommitStatus
 import com.thelastjailer.app.GameState
 import com.thelastjailer.app.SaveStore
 import com.thelastjailer.app.checkpoint.ArrivalRecorder
@@ -31,6 +32,8 @@ import com.thelastjailer.app.confirmSlotOverwrite
 import com.thelastjailer.app.requestSlotSave
 import com.thelastjailer.app.data.EntitlementRepository
 import com.thelastjailer.app.data.StoryRepository
+
+private const val NOT_SAVED_MESSAGE = "Could not save. Please check your save slots and try again."
 
 /**
  * Lets the player pick or create the slot they're actively playing on. Autosaves during play
@@ -67,6 +70,7 @@ fun SaveScreen(
                             is OverwriteResult.Saved -> onStateChange(result.state)
                             is OverwriteResult.Stale -> { notice = result.message }
                             OverwriteResult.AlreadyHandled -> Unit
+                            is OverwriteResult.NotSaved -> { notice = NOT_SAVED_MESSAGE }
                         }
                     }
                 ) { Text(request.confirmLabel) }
@@ -168,14 +172,18 @@ fun SaveScreen(
                                 is SlotSaveRequest.Saved -> onStateChange(result.state)
                                 is SlotSaveRequest.NeedsConfirmation -> { pendingOverwrite = result.request }
                                 SlotSaveRequest.Stale -> { notice = STALE_MESSAGE }
+                                is SlotSaveRequest.NotSaved -> { notice = NOT_SAVED_MESSAGE }
                             }
                         }) { Text("SAVE") }
                         OutlinedButton(
                             enabled = saved != null,
                             onClick = {
                                 saved?.let {
-                                    store.setActiveSlot(slot)
-                                    onStateChange(it)
+                                    if (store.setActiveSlot(slot) == CommitStatus.SAVED) {
+                                        onStateChange(it)
+                                    } else {
+                                        notice = NOT_SAVED_MESSAGE
+                                    }
                                 }
                             }
                         ) { Text("LOAD") }

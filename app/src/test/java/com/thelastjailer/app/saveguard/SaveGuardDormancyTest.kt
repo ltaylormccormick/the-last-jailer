@@ -9,7 +9,7 @@ import org.junit.Test
 /**
  * Stages A and B1 are dormant by contract: nothing in the shipped app calls any of this. These tests read the source
  * tree (Gradle runs unit tests with the module directory as the working directory) and fail closed if they cannot
- * find it. Stage B2 (wiring) will change the first two tests on purpose, in its own reviewed change.
+ * find it. B2 wired only the write gate (GameState.kt); the gate stays permanently open.
  */
 class SaveGuardDormancyTest {
 
@@ -44,10 +44,25 @@ class SaveGuardDormancyTest {
             "SaveClassifier", "SaveReport", "StartupDecision", "SaveLayout", "RawPrefsShape", "RawFileAssessor", "RawCrossCheck", "SaveGate",
             "GuardedEditor", "GateMode", "WriteIntent", "QuarantineStore", "QuarantineFileOps", "JavaQuarantineFileOps", "SnapshotMeta", "SourceFiles"
         )
+        // B2: only GameState.kt (SaveStore) may use the write gate - SaveGate, GateMode, GateOutcome, WriteIntent.
+        // Everything else stays dormant: raw assessment, quarantine, the classifier, startup decisions.
+        val gateNames = setOf("SaveGate", "GuardedEditor", "GateMode", "WriteIntent")
         val offenders = kotlinFiles(mainRoot).filter { !it.canonicalPath.startsWith(guardCanonical.path + File.separator) }
             .filter { f ->
                 val text = f.readText()
-                text.contains("thelastjailer.app.saveguard") || names.any { text.contains(it) }
+                if (f.name == "GameState.kt") {
+                    val imports = f.readLines().filter { it.startsWith("import com.thelastjailer.app.saveguard") }
+                    val allowedImports = setOf(
+                        "import com.thelastjailer.app.saveguard.gate.GateMode",
+                        "import com.thelastjailer.app.saveguard.gate.GateOutcome",
+                        "import com.thelastjailer.app.saveguard.gate.SaveGate",
+                        "import com.thelastjailer.app.saveguard.gate.WriteIntent"
+                    )
+                    imports.any { it !in allowedImports } || text.contains("saveguard.raw") || text.contains("saveguard.quarantine") ||
+                        (names.filter { it !in gateNames }).any { text.contains(it) }
+                } else {
+                    text.contains("thelastjailer.app.saveguard") || names.any { text.contains(it) }
+                }
             }
         assertEquals("these files use the dormant components: ${offenders.map { it.name }}", emptyList<File>(), offenders)
     }
