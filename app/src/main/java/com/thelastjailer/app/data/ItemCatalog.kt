@@ -226,5 +226,30 @@ object ItemCatalog {
      */
     fun isUniqueEquipment(id: String): Boolean = items[id]?.combatEffect != null
 
+    /**
+     * Story keepsakes a telling hands out exactly once. Every grant site of each id is an
+     * alternative branch of one decision (audited: no route grants the same one twice in a single
+     * telling), so the only way to receive a second copy is to replay the story, which used to
+     * duplicate them. [withGrantedItems] skips a grant when one is already carried. Opt-in on
+     * purpose: a new item stays repeatable until it is classified here or in [repeatableByDesign].
+     */
+    val carriedOnceStoryItems: Set<String> = setOf(
+        "archivists_final_page", "archivists_frame_notes", "ashen_signet",
+        "broken_grasp_of_the_whole", "cinder_marshal_missive", "duskmere_keepers_journal",
+        "dwarven_token", "emberlow_wardens_token", "fenmoor_ward_shard",
+        "greymoor_wardens_ledger", "halvards_warden_chain", "ilsevets_blade", "jailers_brand",
+        "kestrels_locket", "ordruns_broken_blade", "promise_of_the_six", "record_of_ashwell",
+        "rubbing_of_halvards_mark", "scraped_wax_disc", "shard_of_the_first_ward",
+        "shard_of_the_seventh_door", "sigil_of_the_unbroken_vigil", "splinter_of_the_whole",
+        "stonebeard_lantern", "tarnished_guard_token", "thread_of_the_sundering",
+        "torn_sanctum_plans", "twisted_frame_component", "voss_seal", "warden_sigil"
+    )
+
+    /** Items that are deliberately repeatable: consumables the story and shops may hand out again. */
+    val repeatableByDesign: Set<String> = setOf("healing_draught")
+
+    /** True for anything a save should hold at most one of when granted by the story. */
+    fun isCarriedOnce(id: String): Boolean = isUniqueEquipment(id) || id in carriedOnceStoryItems
+
     fun resolve(ids: List<String>): List<Item> = ids.mapNotNull { items[it] }
 }
