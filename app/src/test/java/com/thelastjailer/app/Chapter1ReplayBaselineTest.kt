@@ -94,11 +94,13 @@ class Chapter1ReplayBaselineTest {
     }
 
     @Test
-    fun `replay no longer stacks a second buckler - token and draught duplication remain a separate ticket`() {
+    fun `replay no longer stacks a second buckler or story keepsake - draught duplication is by design`() {
         val s = Chapter1Paths.follow(replay(finished()), "OPEN THE DOOR", "", "", "Keep", "", "Call out", "Help him", "Take the buckler")
-        assertEquals(2, s.inventory.count { it == "dwarven_token" })
-        // Unique combat equipment is protected (Batch 1); keepsakes and consumables still repeat.
+        // R3 (deliberate update, was 2): dwarven_token is an audited carried-once story keepsake, so a replayed
+        // grant no longer adds a second copy. Unique combat equipment has been protected since Batch 1.
+        assertEquals(1, s.inventory.count { it == "dwarven_token" })
         assertEquals(1, s.inventory.count { it == "sturdy_buckler" })
+        // healing_draught is repeatable by design and still stacks.
         assertEquals(2, s.inventory.count { it == "healing_draught" })
     }
 
