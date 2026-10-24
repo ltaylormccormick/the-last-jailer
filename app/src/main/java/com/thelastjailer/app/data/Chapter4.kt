@@ -7,6 +7,15 @@ import com.thelastjailer.app.StatType
 import com.thelastjailer.app.StoryNode
 
 /**
+ * Family C4: the flags that record how this telling answered the second offer from behind the gate
+ * (`what_the_prisoner_offers_again`). Each choice there clears both, then sets its own, so a replay
+ * that answers differently never carries the earlier answer. Chapter V and the six Chapter XXX
+ * endings read `accepted_dark_aid`, so it must describe this telling only. This runs when a choice
+ * is taken, never when a scene is entered or loaded.
+ */
+val DARK_AID_FAMILY: Set<String> = setOf("accepted_dark_aid", "refused_dark_aid_again")
+
+/**
  * Chapter IV — The Ashen Vanguard.
  *
  * Voss's promise from Chapter III comes due: the Ashen Order returns to the black door in force,
@@ -139,6 +148,7 @@ val chapter4Nodes: List<StoryNode> = listOf(
                 nextNodeId = "the_cost_aided",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 2),
+                    clearFlags = DARK_AID_FAMILY,
                     setFlags = setOf("accepted_dark_aid")
                 )
             ),
@@ -148,6 +158,7 @@ val chapter4Nodes: List<StoryNode> = listOf(
                 requirements = ChoiceRequirement(minStats = mapOf(StatType.HONOUR to 2)),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
+                    clearFlags = DARK_AID_FAMILY,
                     setFlags = setOf("refused_dark_aid_again")
                 )
             )
