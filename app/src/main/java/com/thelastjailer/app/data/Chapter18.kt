@@ -7,6 +7,15 @@ import com.thelastjailer.app.StatType
 import com.thelastjailer.app.StoryNode
 
 /**
+ * Family C18: the flags that record what this telling decided about a defeated Ilsevet. Each choice
+ * at `what_kaelen_chooses_trusted` and `what_kaelen_chooses_guarded` clears all three, then sets its
+ * own, so a replay that decides differently never holds two answers at once. Chapter XXIII and the
+ * six Chapter XXX endings read these flags, so they must describe this telling only. This runs when
+ * a choice is taken, never when a scene is entered or loaded.
+ */
+val ILSEVET_FATE_FAMILY: Set<String> = setOf("captured_ilsevet", "showed_ilsevet_mercy", "deferred_ilsevets_fate")
+
+/**
  * Chapter XVIII — No More Between Us.
  *
  * The first direct duel between Kaelen and Ilsevet. With the frame destroyed or disrupted in XVII
@@ -230,6 +239,7 @@ val chapter18Nodes: List<StoryNode> = listOf(
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     grantItemIds = listOf("ilsevets_blade"),
+                    clearFlags = ILSEVET_FATE_FAMILY,
                     setFlags = setOf("captured_ilsevet")
                 )
             ),
@@ -240,6 +250,7 @@ val chapter18Nodes: List<StoryNode> = listOf(
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     grantItemIds = listOf("ilsevets_blade"),
+                    clearFlags = ILSEVET_FATE_FAMILY,
                     setFlags = setOf("showed_ilsevet_mercy")
                 )
             ),
@@ -248,6 +259,7 @@ val chapter18Nodes: List<StoryNode> = listOf(
                 nextNodeId = "chapter18_end",
                 consequences = Consequences(
                     grantItemIds = listOf("ilsevets_blade"),
+                    clearFlags = ILSEVET_FATE_FAMILY,
                     setFlags = setOf("deferred_ilsevets_fate")
                 )
             )
@@ -275,6 +287,7 @@ val chapter18Nodes: List<StoryNode> = listOf(
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     grantItemIds = listOf("ilsevets_blade"),
+                    clearFlags = ILSEVET_FATE_FAMILY,
                     setFlags = setOf("captured_ilsevet")
                 )
             ),
@@ -285,6 +298,7 @@ val chapter18Nodes: List<StoryNode> = listOf(
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     grantItemIds = listOf("ilsevets_blade"),
+                    clearFlags = ILSEVET_FATE_FAMILY,
                     setFlags = setOf("showed_ilsevet_mercy")
                 )
             ),
@@ -293,6 +307,7 @@ val chapter18Nodes: List<StoryNode> = listOf(
                 nextNodeId = "chapter18_end",
                 consequences = Consequences(
                     grantItemIds = listOf("ilsevets_blade"),
+                    clearFlags = ILSEVET_FATE_FAMILY,
                     setFlags = setOf("deferred_ilsevets_fate")
                 )
             )
