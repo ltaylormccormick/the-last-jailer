@@ -7,6 +7,16 @@ import com.thelastjailer.app.StatType
 import com.thelastjailer.app.StoryNode
 
 /**
+ * Family C5: the flags that record how this telling answered the Marshal's envoy at the black door.
+ * Each answer clears all three, then sets its own, so a replay that answers differently never carries
+ * the earlier answer. Chapter VII reads all three as dialogue options with Voss, and the Journal groups
+ * them as one moment, so they must describe this telling only. This runs when a choice is taken, never
+ * when a scene is entered or loaded.
+ */
+val ENVOY_REPLY_FAMILY: Set<String> =
+    setOf("refused_envoy", "heard_envoy_offer", "confronted_envoy_with_prisoners_words")
+
+/**
  * Chapter V — What the Marshal Wants.
  *
  * Follows through on the Cinder Marshal thread Chapter IV left hanging. Where Voss represented the
@@ -88,13 +98,17 @@ val chapter5Nodes: List<StoryNode> = listOf(
                 nextNodeId = "the_envoys_mask_slips_refused",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
+                    clearFlags = ENVOY_REPLY_FAMILY,
                     setFlags = setOf("refused_envoy")
                 )
             ),
             Choice(
                 label = "\"Keep talking. I'm listening.\"",
                 nextNodeId = "the_envoys_mask_slips_heard",
-                consequences = Consequences(setFlags = setOf("heard_envoy_offer"))
+                consequences = Consequences(
+                    clearFlags = ENVOY_REPLY_FAMILY,
+                    setFlags = setOf("heard_envoy_offer")
+                )
             ),
             Choice(
                 label = "\"The thing behind that gate already told me what it wants. Did the Marshal send you to finish what it started?\"",
@@ -102,6 +116,7 @@ val chapter5Nodes: List<StoryNode> = listOf(
                 requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid")),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
+                    clearFlags = ENVOY_REPLY_FAMILY,
                     setFlags = setOf("confronted_envoy_with_prisoners_words")
                 )
             )
@@ -137,13 +152,17 @@ val chapter5Nodes: List<StoryNode> = listOf(
                 nextNodeId = "the_envoys_mask_slips_refused",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
+                    clearFlags = ENVOY_REPLY_FAMILY,
                     setFlags = setOf("refused_envoy")
                 )
             ),
             Choice(
                 label = "\"Keep talking. I'm listening.\"",
                 nextNodeId = "the_envoys_mask_slips_heard",
-                consequences = Consequences(setFlags = setOf("heard_envoy_offer"))
+                consequences = Consequences(
+                    clearFlags = ENVOY_REPLY_FAMILY,
+                    setFlags = setOf("heard_envoy_offer")
+                )
             ),
             Choice(
                 label = "\"The thing behind that gate already told me what it wants. Did the Marshal send you to finish what it started?\"",
@@ -151,6 +170,7 @@ val chapter5Nodes: List<StoryNode> = listOf(
                 requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid")),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
+                    clearFlags = ENVOY_REPLY_FAMILY,
                     setFlags = setOf("confronted_envoy_with_prisoners_words")
                 )
             )
