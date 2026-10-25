@@ -89,15 +89,16 @@ internal fun GameState.withSceneChapter(): GameState {
 }
 
 /**
- * Adds [grants] to the inventory, but never a second copy of unique equipment (an item with a
- * combat effect). Equipment bonuses are summed over everything carried, so a repeated grant - a
- * replayed chapter, or a second route to the same reward - used to stack a duplicate buckler or
- * sword. Consumables and keepsakes are untouched.
+ * Adds [grants] to the inventory, but never a second copy of an item carried once: unique
+ * equipment (an item with a combat effect, whose bonuses would silently stack) or one of the
+ * audited story keepsakes in [ItemCatalog.carriedOnceStoryItems] (a replayed telling used to hand
+ * out a second locket or missive). Consumables are untouched, and an inventory that already holds
+ * duplicates is left as saved; it simply stops gaining more.
  */
 internal fun List<String>.withGrantedItems(grants: List<String>): List<String> {
     var result = this
     grants.forEach { id ->
-        if (!(ItemCatalog.isUniqueEquipment(id) && id in result)) result = result + id
+        if (!(ItemCatalog.isCarriedOnce(id) && id in result)) result = result + id
     }
     return result
 }
