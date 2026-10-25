@@ -197,7 +197,7 @@ val chapter5Nodes: List<StoryNode> = listOf(
             exactly this word.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Stand your ground.", nextNodeId = "the_marshals_warning")
+            Choice(label = "Stand your ground.", nextNodeId = "the_escort_closes")
         )
     ),
     StoryNode(
@@ -220,7 +220,7 @@ val chapter5Nodes: List<StoryNode> = listOf(
             exactly this word.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Stand your ground.", nextNodeId = "the_marshals_warning")
+            Choice(label = "Stand your ground.", nextNodeId = "the_escort_closes")
         )
     ),
     StoryNode(
@@ -244,7 +244,34 @@ val chapter5Nodes: List<StoryNode> = listOf(
             exactly this word.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Stand your ground.", nextNodeId = "the_marshals_warning")
+            Choice(label = "Stand your ground.", nextNodeId = "the_escort_closes")
+        )
+    ),
+    StoryNode(
+        id = "the_escort_closes",
+        chapterId = "chapter_5",
+        title = "The Escort Closes",
+        illustrationId = "envoy_reveals_guard",
+        narrativeText = """
+            They do not rush. The shapes along the treeline walk out in a long curve, each a
+            measured pace from the next, and the curve closes around the black door the way
+            a hand closes on something it means to keep. Nobody speaks. A palm lifts at one
+            end of the line and every one of them stops at once, a clean dozen paces out, as
+            if a cord had drawn tight.
+
+            None of them looks at Kaelen's sword. They watch his hands, the branded palm
+            most of all. Halvard comes up beside him, chain wound once round his fist, like
+            a man who never trusted a quiet morning. Behind them the ruined road stays open,
+            the one side the circle leaves unclosed, and that is no oversight. It is meant
+            to be seen.
+
+            Then the line opens in one place, exactly as wide as a man.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Watch the gap.",
+                nextNodeId = "the_marshals_warning"
+            )
         )
     ),
     StoryNode(
@@ -254,9 +281,10 @@ val chapter5Nodes: List<StoryNode> = listOf(
         illustrationId = "cinder_adept_ambush",
         narrativeText = """
             One of them steps forward alone, cinder-grey robes over something harder underneath, a
-            mark on the back of each hand that isn't the Ashen Order's sigil at all. Whatever the
-            Cinder Marshal branded onto this one, it wasn't mercy, and it shows in the way he
-            moves, like a blade that's already decided how the fight ends.
+            mark on the back of each hand that isn't the Ashen Order's sigil at all, and a plain
+            band of grey iron on one finger. Whatever the Cinder Marshal branded onto this one, it
+            wasn't mercy, and it shows in the way he moves, like a blade that's already decided
+            how the fight ends.
 
             "The Marshal did warn me you might refuse," the adept says, almost fondly, and comes
             on fast.
@@ -295,8 +323,9 @@ val chapter5Nodes: List<StoryNode> = listOf(
         narrativeText = """
             The adept goes down hard, and whatever nerve held the rest of the escort together goes
             with them: they scatter back down the ruined road faster than they arrived, boots
-            slipping on wet stone. The envoy himself never drew a blade. He's already gone, horse
-            and all, by the time Kaelen gets his breath back.
+            slipping on wet stone, all but two, who fall back in good order as if told to. The
+            envoy himself never drew a blade. He's already gone, horse and all, by the time
+            Kaelen gets his breath back.
 
             Halvard took a graze along the ribs holding the line beside him, not enough to fell
             him, more than enough to slow him down for a week he doesn't have to spare. Someone
