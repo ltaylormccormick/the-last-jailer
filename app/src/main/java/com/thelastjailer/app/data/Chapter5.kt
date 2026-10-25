@@ -119,6 +119,10 @@ val chapter5Nodes: List<StoryNode> = listOf(
                     clearFlags = ENVOY_REPLY_FAMILY,
                     setFlags = setOf("confronted_envoy_with_prisoners_words")
                 )
+            ),
+            Choice(
+                label = "\"Say what the Marshal actually wants with the brand.\"",
+                nextNodeId = "the_envoy_explains_alone"
             )
         )
     ),
@@ -145,6 +149,109 @@ val chapter5Nodes: List<StoryNode> = listOf(
             binding actually does, starting with yours. Cooperate, and Stonebeard's kin get the
             Order's protection instead of its blade. Refuse, and Voss's failure becomes someone
             else's problem to fix. Permanently."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "\"Whatever the Marshal wants with the brand, the answer is no.\"",
+                nextNodeId = "the_envoys_mask_slips_refused",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    clearFlags = ENVOY_REPLY_FAMILY,
+                    setFlags = setOf("refused_envoy")
+                )
+            ),
+            Choice(
+                label = "\"Keep talking. I'm listening.\"",
+                nextNodeId = "the_envoys_mask_slips_heard",
+                consequences = Consequences(
+                    clearFlags = ENVOY_REPLY_FAMILY,
+                    setFlags = setOf("heard_envoy_offer")
+                )
+            ),
+            Choice(
+                label = "\"The thing behind that gate already told me what it wants. Did the Marshal send you to finish what it started?\"",
+                nextNodeId = "the_envoys_mask_slips_confronted",
+                requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid")),
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.COURAGE to 1),
+                    clearFlags = ENVOY_REPLY_FAMILY,
+                    setFlags = setOf("confronted_envoy_with_prisoners_words")
+                )
+            ),
+            Choice(
+                label = "\"Say what the Marshal actually wants with the brand.\"",
+                nextNodeId = "the_envoy_explains_with_halvard"
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_envoy_explains_alone",
+        chapterId = "chapter_5",
+        title = "What the Marshal Asks",
+        illustrationId = "cinder_envoy",
+        narrativeText = """
+            The envoy takes the question like a page he had hoped to be spared. "The Marshal
+            won't take it," the envoy says, each word set down with care and a breath late.
+            "I was told a taken brand is a broken one. That the hand must answer when it is
+            offered. I don't know what that means." He stops there, the way a man stops at
+            the edge of a map.
+
+            Then he looks at the way Kaelen still holds his shoulders. "King's Guard. Your
+            Guard held the outside of these gates once, and the kingdom forgot why. Who ever
+            thanked you for it? What does this brand keep that the cloak never did?" His
+            eyes slide past Kaelen to the treeline, and come back. "Why your hand, and why
+            now, I was not told." Somewhere in the last few minutes the birds have stopped.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "\"Whatever the Marshal wants with the brand, the answer is no.\"",
+                nextNodeId = "the_envoys_mask_slips_refused",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    clearFlags = ENVOY_REPLY_FAMILY,
+                    setFlags = setOf("refused_envoy")
+                )
+            ),
+            Choice(
+                label = "\"Keep talking. I'm listening.\"",
+                nextNodeId = "the_envoys_mask_slips_heard",
+                consequences = Consequences(
+                    clearFlags = ENVOY_REPLY_FAMILY,
+                    setFlags = setOf("heard_envoy_offer")
+                )
+            ),
+            Choice(
+                label = "\"The thing behind that gate already told me what it wants. Did the Marshal send you to finish what it started?\"",
+                nextNodeId = "the_envoys_mask_slips_confronted",
+                requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid")),
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.COURAGE to 1),
+                    clearFlags = ENVOY_REPLY_FAMILY,
+                    setFlags = setOf("confronted_envoy_with_prisoners_words")
+                )
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_envoy_explains_with_halvard",
+        chapterId = "chapter_5",
+        title = "What the Marshal Asks",
+        illustrationId = "cinder_envoy",
+        narrativeText = """
+            The envoy answers Kaelen, but his eyes keep going to Halvard. "The Marshal knows
+            what it costs when a gate fails," the envoy says, each word a breath late. "That
+            is how I was told to put it. How the Marshal knows, I wasn't told." Then, to the
+            old dwarf, softer, as if he has been waiting for leave to say it: "Warden, six
+            centuries on one post. There is a bed waiting, and someone else to stand your
+            door. No one would call it desertion."
+
+            Halvard doesn't answer at once. His hand has found the stone beside him, and
+            Kaelen sees how much of him it is holding up. "The bed sounds like something I
+            gave up asking for a long time ago," Halvard says. "But anyone who has held a
+            gate knows what it costs when one fails. That's not a reason, that's the job,
+            and a watch isn't mine to put down because I'm tired." He tips his head toward
+            the trees. "You've looked at that treeline four times. Whatever you're waiting
+            on can wait for his answer."
         """.trimIndent(),
         choices = listOf(
             Choice(

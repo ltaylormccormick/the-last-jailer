@@ -61,7 +61,10 @@ class Chapter5EnvoyReplyResetTest {
     @Test
     fun `all six answers clear the family and set only their own flag`() {
         offerNodes.forEach { nodeId ->
-            val choices = StoryRepository.node(nodeId).choices
+            // The answers are the choices that carry an envoy reply flag. Other choices on these scenes (the
+            // optional press about the brand) carry none, and must not touch the family at all.
+            val all = StoryRepository.node(nodeId).choices
+            val choices = all.filter { c -> c.consequences.setFlags.any { it in family } }
             assertEquals(nodeId, 3, choices.size)
             choices.forEach { c ->
                 assertEquals("$nodeId: ${c.label}", family, c.consequences.clearFlags)
@@ -69,6 +72,9 @@ class Chapter5EnvoyReplyResetTest {
                 assertTrue("$nodeId: ${c.label}", c.consequences.setFlags.single() in family)
             }
             assertEquals(nodeId, family, choices.flatMap { it.consequences.setFlags }.toSet())
+            all.filterNot { it in choices }.forEach { c ->
+                assertTrue("$nodeId: ${c.label}", c.consequences.setFlags.isEmpty() && c.consequences.clearFlags.isEmpty())
+            }
         }
     }
 
