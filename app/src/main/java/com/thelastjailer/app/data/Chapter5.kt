@@ -306,7 +306,7 @@ val chapter5Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "\"Chase the envoy down before he reaches word of this to anyone.\"",
-                nextNodeId = "what_the_missive_says",
+                nextNodeId = "the_chase_to_the_ford",
                 requirements = ChoiceRequirement(minStats = mapOf(StatType.COURAGE to 4)),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
@@ -316,7 +316,7 @@ val chapter5Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "\"Get Halvard back down to the Hold first. The envoy can wait.\"",
-                nextNodeId = "what_the_missive_says",
+                nextNodeId = "halvard_by_the_door",
                 requirements = ChoiceRequirement(minStats = mapOf(StatType.HONOUR to 3)),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
@@ -326,11 +326,155 @@ val chapter5Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "Let him go, and see what he left behind.",
-                nextNodeId = "what_the_missive_says",
+                nextNodeId = "what_the_ground_says",
                 consequences = Consequences(
                     grantItemIds = listOf("cinder_marshal_missive"),
                     setFlags = setOf("searched_the_ground")
                 )
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_chase_to_the_ford",
+        chapterId = "chapter_5",
+        title = "After the Envoy",
+        illustrationId = "road_away_from_tree",
+        narrativeText = """
+            Kaelen drags the dispatch case out of the mud without breaking stride and runs.
+            The churned road shows where the envoy's horse went: down the hill toward the
+            stream crossing, at a pace no animal can keep up for long.
+
+            Two of the escort did not scatter with the rest. They have planted themselves
+            where the road pinches between rock and trees, blades out, in no hurry at all: a
+            rearguard, and a patient one. Beyond them the envoy is a hunched shape on a
+            hard-driven horse. To the left the pines drop away down a slope of loose shale
+            that cuts the bend in half. It would put Kaelen at the crossing before the
+            horse, and it would take something out of him on the way down.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Cut through the pines. Steep and loose underfoot, but it reaches the crossing before he does.",
+                nextNodeId = "the_ford_caught",
+                consequences = Consequences(statDeltas = mapOf(StatType.HEALTH to -10))
+            ),
+            Choice(
+                label = "Stay on the road and break the rearguard. Surer footing, but he will be across before you arrive.",
+                nextNodeId = "the_ford_lost"
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_ford_caught",
+        chapterId = "chapter_5",
+        title = "At the Crossing",
+        illustrationId = "cinder_envoy",
+        narrativeText = """
+            The shale throws Kaelen down the slope rather than letting him down it. A stone
+            turns under his boot and he goes the last stretch on his side, left forearm
+            scraped raw and the breath knocked out of him. He fetches up against a root
+            above the crossing.
+
+            The envoy's horse is already in the water, and the stones Kaelen brought down
+            rattle around its legs. Kaelen lurches in and catches the bridle, but his left
+            hand has gone numb and will not close, and the envoy, white to the lips, can see
+            it.
+
+            "Let go," the envoy says. "Nobody is coming back for me, not the Marshal or
+            anyone else." The horse rears, the leather tears out of Kaelen's grip, and he
+            goes down in the stream as the envoy clatters up the bank. No one runs down a
+            horse on foot with a hand that will not close. The rearguard reach the top of
+            the slope, see the envoy across, and stop: they were told to hold the road until
+            he was over. Kaelen hauls himself out and goes back to Halvard, alone at the
+            door, the case still on his back, feeling returning to his hand as a hot ache.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Open the dispatch case.",
+                nextNodeId = "what_the_missive_says"
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_ford_lost",
+        chapterId = "chapter_5",
+        title = "The Rearguard",
+        illustrationId = "envoy_reveals_guard",
+        narrativeText = """
+            The road is kinder to his feet and crueller to his time. The rearguard fight
+            like people told exactly how long to hold: close, patient, yielding a step only
+            when they must, and never once trying to kill him. Kaelen takes a cut across the
+            sleeve and breaks the first of them at last with a shoulder to the chest.
+
+            By then the hoofbeats below have faded from the crossing to nothing. The two let
+            go of him as if a rope had been cut and vanish into the trees. The backs of
+            their hands carry the same dull scar as the adept's. Whatever the Marshal sends
+            against the Hold, it seems to send it all branded alike.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Turn back. Open the dispatch case.",
+                nextNodeId = "what_the_missive_says"
+            )
+        )
+    ),
+    StoryNode(
+        id = "halvard_by_the_door",
+        chapterId = "chapter_5",
+        title = "Halvard, Bound Up",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            Halvard says he can walk, and manages it as far as the first stair before he
+            agrees to lean. Kaelen gets him to the bench in the lower passage and cuts the
+            shirt from the graze: a long, shallow furrow along the ribs, ugly and clean.
+            "I've been cut by better," Halvard says, "and outlived most of them. Stop
+            looking at it as if it owes you something."
+
+            He holds out a hand for the dispatch case anyway and spends longer on the mark
+            pressed into the leather over the clasp than on his own wound. "A hand around a
+            flame. We scratched a sign like that over watch-posts, if I remember it right.
+            The hand was open, though, and this one is shut. I wouldn't hang a theory on a
+            stamp."
+
+            Far above, iron rings once against the patched gate, and again, and stops.
+            Kaelen is on his feet before he thinks. "Let it knock," Halvard says, already
+            closing his eyes. "They won't come down tonight, and the rain will have the road
+            by morning whether you stand in it or not." He is asleep before the silence has
+            finished settling.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Let him rest, and open the dispatch case.",
+                nextNodeId = "what_the_missive_says"
+            )
+        )
+    ),
+    StoryNode(
+        id = "what_the_ground_says",
+        chapterId = "chapter_5",
+        title = "What the Ground Says",
+        illustrationId = "aftermath_of_betrayal",
+        narrativeText = """
+            The envoy is long gone, and Kaelen kneels where the adept fell, because a fight
+            always leaves something behind.
+
+            The ring comes first: an officer's band of grey iron on the left hand, the Ashen
+            Order's stamp scored out of it with a blade and a smaller mark struck over the
+            scoring, a closed hand around a flame. It will not come off the finger without a
+            knife, and he is unwilling to use one. The backs of both hands carry the same
+            dull scar he saw before the fight.
+
+            The ground tells him the rest. The grass under the pines is pressed flat in a
+            dozen places, and there is not one scrap of fire-black among them. They came in
+            file, in the dark, and lay waiting without a spark to warm them.
+
+            When he stands, something at the far edge of the pines is standing too: a
+            figure, perfectly still, watching him the way a clerk watches a ledger. Kaelen
+            takes a single step toward it and it is simply gone.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Open the dispatch case.",
+                nextNodeId = "what_the_missive_says"
             )
         )
     ),
