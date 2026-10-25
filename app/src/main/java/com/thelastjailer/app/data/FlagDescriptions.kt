@@ -229,6 +229,14 @@ object FlagDescriptions {
     val hidden: Map<String, HiddenReason> = mapOf(
         // BOOKKEEPING
         "lost_to_ashen_vanguard" to HiddenReason.BOOKKEEPING,
+        // R1 ending ledger: set when the player arrives at each of the six endings (see chapter30_end). Ordinary,
+        // reversible story state; the per-ending trophy, not this flag, is the durable record of discovery.
+        "ledger_end_1" to HiddenReason.BOOKKEEPING,
+        "ledger_end_2" to HiddenReason.BOOKKEEPING,
+        "ledger_end_3" to HiddenReason.BOOKKEEPING,
+        "ledger_end_4" to HiddenReason.BOOKKEEPING,
+        "ledger_end_5" to HiddenReason.BOOKKEEPING,
+        "ledger_end_6" to HiddenReason.BOOKKEEPING,
         "lost_to_cinder_adept" to HiddenReason.BOOKKEEPING,
         "lost_to_cinder_castellan" to HiddenReason.BOOKKEEPING,
         "lost_to_cinder_extraction_leader" to HiddenReason.BOOKKEEPING,
