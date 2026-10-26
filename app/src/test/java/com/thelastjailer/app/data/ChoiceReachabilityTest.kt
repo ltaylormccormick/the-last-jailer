@@ -282,18 +282,24 @@ class ChoiceReachabilityTest {
 
     // ---------- the real story ----------
 
-    private val nodes = StoryRepository.chapters.flatMap { StoryRepository.nodesInChapter(it.id) }
+    private val nodes get() = RealStoryReachability.nodes
+    private val combatTargetsOf: (StoryNode) -> List<String> get() = RealStoryReachability.combatTargetsOf
 
-    private val realAnalyzer = ChoiceReachabilityAnalyzer(
-            nodes = nodes,
-            combatTargets = { n ->
-                n.combatEncounterId?.let { CombatRepository.encounter(it) }
-                    ?.let { listOfNotNull(it.victoryNodeId, it.defeatNodeId ?: it.victoryNodeId) }
-                    ?: emptyList()
-            }
-        )
-
-    private val verdicts: List<ChoiceReachabilityAnalyzer.Verdict> by lazy { realAnalyzer.analyse() }
+    /**
+     * How the real story is judged. Once Chapter IX began to read the decisions of Chapters VII and VIII, the number of
+     * states an exact search has to hold at once outgrew the machine it runs on: a hub there stands over a product of about
+     * twenty independent earlier choices. So three things are done, each exact for what it claims:
+     *  1. A sample of random walks of the real transitions witnesses most gated choices outright. A witness is a proof of life.
+     *  2. Every gated choice no walk witnessed is put to the exact search, one node at a time, confined to the nodes that can
+     *     still reach it ([ChoiceReachabilityAnalyzer] `focus`). It answers ALIVE, DEAD, or INCONCLUSIVE if its budget runs out.
+     *  3. Chapters 1 to 6, which the exact search has always been able to hold, are still judged by the exact search in full.
+     */
+    private val sampled: Set<Pair<String, Int>> get() = RealStoryReachability.sampled
+    private val gated: List<Triple<StoryNode, Int, Choice>> get() = RealStoryReachability.gated
+    private val verdicts: List<ChoiceReachabilityAnalyzer.Verdict> get() = RealStoryReachability.verdicts
+    private val exactStates: Int get() = RealStoryReachability.exactStates
+    private val exactRuns: Int get() = RealStoryReachability.exactRuns
+    private val largestExactRun: Int get() = RealStoryReachability.largestExactRun
 
     /**
      * Choices known to be dead, as (nodeId, label). Empty since C1-1 removed the two unreachable
@@ -307,6 +313,16 @@ class ChoiceReachabilityTest {
     )
 
     @Test
+    fun `random walks witness nearly every gated choice so the exact search is left only the rare ones`() {
+        verdicts
+        assertTrue(
+            "Only ${sampled.size} of ${gated.size} gated choices were witnessed by ${SAMPLED_WALKS} walks; the exact search " +
+                "would be asked about too many. Add walks or look at what changed.",
+            sampled.size >= gated.size * 9 / 10
+        )
+    }
+
+    @Test
     fun `the analysis of the real story completes without hitting its state budget`() {
         val inconclusive = verdicts.filter { it.status == Status.INCONCLUSIVE }
         assertTrue(
@@ -317,13 +333,26 @@ class ChoiceReachabilityTest {
     }
 
     @Test
-    fun `the real analysis keeps comfortable headroom under its state budget`() {
+    fun `the exact searches keep comfortable headroom under their state budget`() {
         verdicts // force the run
         assertTrue(
-            "Explored ${realAnalyzer.statesExplored} states; the budget is 1,500,000; keep this check well under it. If this is " +
-                "approaching it, tighten the state abstraction before the story grows further.",
-            realAnalyzer.statesExplored < 1_000_000
+            "The exact searches explored $exactStates states in $exactRuns runs (largest $largestExactRun); each run's budget is " +
+                "$FOCUSED_BUDGET. Keep the largest well under it; if it is approaching it, add walks or tighten the abstraction.",
+            largestExactRun < FOCUSED_BUDGET / 2
         )
+    }
+
+    @Test
+    fun `the exact search still judges every gated choice in Chapters 1 to 6 and finds only the known dead one`() {
+        val prefix = nodes.filter { (it.chapterId.removePrefix("chapter_").toIntOrNull() ?: 99) <= 6 }
+        val analyzer = ChoiceReachabilityAnalyzer(prefix, combatTargetsOf)
+        val result = analyzer.analyse()
+        assertTrue("Inconclusive: ${result.filter { it.status == Status.INCONCLUSIVE }.map { it.nodeId }}",
+            result.none { it.status == Status.INCONCLUSIVE })
+        val dead = result.filter { it.status == Status.DEAD }.map { it.nodeId to it.choice.label }.toSet()
+        assertEquals(knownDead, dead)
+        assertTrue("Explored ${analyzer.statesExplored} states of a 1,500,000 budget", analyzer.statesExplored < 1_000_000)
+        println("REACH exact search over Chapters 1 to 6 explored ${analyzer.statesExplored} states for ${result.size} gated choices")
     }
 
     @Test
@@ -363,5 +392,68 @@ class ChoiceReachabilityTest {
     fun `the real story only gates on Courage, Honour and Gold`() {
         val analyzer = ChoiceReachabilityAnalyzer(nodes)
         assertEquals(emptySet<StatType>(), analyzer.reportsUnsupportedGates())
+    }
+
+    private companion object {
+        const val SAMPLED_WALKS = 25_000
+        const val FOCUSED_BUDGET = 600_000
+    }
+}
+
+/**
+ * The judgement of the real story, computed once for the whole test class (JUnit builds a new instance for every test, and
+ * the sampled walks take half a minute). See the comment on [ChoiceReachabilityTest] for what the three parts are.
+ */
+private object RealStoryReachability {
+    val nodes: List<StoryNode> = StoryRepository.chapters.flatMap { StoryRepository.nodesInChapter(it.id) }
+
+    val combatTargetsOf: (StoryNode) -> List<String> = { n ->
+        n.combatEncounterId?.let { CombatRepository.encounter(it) }
+            ?.let { listOfNotNull(it.victoryNodeId, it.defeatNodeId ?: it.victoryNodeId) }
+            ?: emptyList()
+    }
+
+    private const val SAMPLED_WALKS = 25_000
+    private const val FOCUSED_BUDGET = 600_000
+
+    val gated: List<Triple<StoryNode, Int, Choice>> = nodes.flatMap { n ->
+        n.choices.mapIndexedNotNull { i, c -> if (c.requirements != null) Triple(n, i, c) else null }
+    }
+
+    var exactStates = 0
+        private set
+    var exactRuns = 0
+        private set
+    var largestExactRun = 0
+        private set
+
+    val sampled: Set<Pair<String, Int>> by lazy {
+        GatedChoiceSampler(nodes, combat = { n -> n.combatEncounterId?.let { CombatRepository.encounter(it) } })
+            .also { sampler = it }
+            .satisfied(walks = SAMPLED_WALKS, seed = 0x5EED5L)
+    }
+    private var sampler: GatedChoiceSampler? = null
+
+    val verdicts: List<ChoiceReachabilityAnalyzer.Verdict> by lazy {
+        val witnessed = sampled
+        val unproven = gated.filter { (n, i, _) -> (n.id to i) !in witnessed }
+        val exact = HashMap<Pair<String, Int>, ChoiceReachabilityAnalyzer.Verdict>()
+        unproven.map { it.first }.distinctBy { it.id }.forEach { node ->
+            val analyzer = ChoiceReachabilityAnalyzer(nodes, combatTargetsOf, maxStates = FOCUSED_BUDGET, focus = setOf(node.id))
+            val result = analyzer.analyse()
+            exactRuns++
+            exactStates += analyzer.statesExplored
+            largestExactRun = maxOf(largestExactRun, analyzer.statesExplored)
+            node.choices.forEachIndexed { i, c ->
+                result.firstOrNull { it.nodeId == node.id && it.choice === c }?.let { exact[node.id to i] = it }
+            }
+        }
+        println("REACH sampled ${witnessed.size} of ${gated.size} gated choices in ${sampler?.stepsTaken} steps; " +
+            "${unproven.size} unproven at ${unproven.map { it.first.id }.distinct().size} nodes went to $exactRuns exact runs " +
+            "($exactStates states, largest $largestExactRun)")
+        gated.map { (n, i, c) ->
+            if ((n.id to i) in witnessed) ChoiceReachabilityAnalyzer.Verdict(n.id, c, ChoiceReachabilityAnalyzer.Status.ALIVE, "a sampled walk stood in a satisfying state")
+            else exact[n.id to i] ?: ChoiceReachabilityAnalyzer.Verdict(n.id, c, ChoiceReachabilityAnalyzer.Status.INCONCLUSIVE, "the exact search gave no verdict")
+        }
     }
 }

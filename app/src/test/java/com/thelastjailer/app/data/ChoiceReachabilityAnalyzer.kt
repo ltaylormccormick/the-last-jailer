@@ -30,6 +30,11 @@ import com.thelastjailer.app.applyChoice
  *
  * Replay edges (anything routed back to [startNodeId] after the game has begun) are excluded: they
  * reset nothing and would let flags from a finished run make first-playthrough choices look alive.
+ *
+ * With [focus] set, the question is asked only of the gated choices at those nodes, and the search is confined to nodes
+ * from which one of them can still be reached. That is exact for those choices: a state at any other node can never stand
+ * in a focus node, so dropping it changes no verdict about them. It also lets the liveness projection ignore every flag
+ * that is read only beyond the focus nodes, which is what keeps a deep question affordable.
  */
 class ChoiceReachabilityAnalyzer(
     private val nodes: List<StoryNode>,
@@ -37,7 +42,9 @@ class ChoiceReachabilityAnalyzer(
     private val combatTargets: (StoryNode) -> List<String> = { emptyList() },
     private val startNodeId: String = "fallen_knight",
     private val startState: GameState = GameState(sceneId = startNodeId),
-    private val maxStates: Int = 1_500_000
+    private val maxStates: Int = 1_500_000,
+    /** Node ids whose gated choices are to be judged; null judges every gated choice in the story. */
+    private val focus: Set<String>? = null
 ) {
     enum class Status { ALIVE, DEAD, INCONCLUSIVE }
 
@@ -57,9 +64,28 @@ class ChoiceReachabilityAnalyzer(
 
     fun reportsUnsupportedGates(): Set<StatType> = unsupportedStats
 
-    private fun edges(node: StoryNode): List<Pair<Choice?, String>> =
+    private fun allEdges(node: StoryNode): List<Pair<Choice?, String>> =
         if (node.combatEncounterId != null) combatTargets(node).map { null to it }
         else node.choices.map { it to it.nextNodeId }.filter { (_, to) -> to != startNodeId }
+
+    /** The nodes from which a focus node can be reached (itself included); null when there is no focus. */
+    private val canReachFocus: Set<String>? by lazy {
+        if (focus == null) return@lazy null
+        val back = HashMap<String, MutableList<String>>()
+        for (n in nodes) allEdges(n).forEach { (_, to) -> back.getOrPut(to) { ArrayList() } += n.id }
+        val seen = HashSet<String>()
+        val stack = ArrayDeque<String>()
+        focus.filter { it in byId }.forEach { stack.add(it) }
+        while (stack.isNotEmpty()) {
+            val id = stack.removeLast()
+            if (!seen.add(id)) continue
+            back[id]?.forEach { stack.add(it) }
+        }
+        seen
+    }
+
+    private fun edges(node: StoryNode): List<Pair<Choice?, String>> =
+        allEdges(node).let { all -> canReachFocus?.let { keep -> all.filter { (_, to) -> to in keep } } ?: all }
 
     private val flagsRead: Map<String, Set<String>> = nodes.associate { n ->
         n.id to n.choices.flatMap {
@@ -89,6 +115,7 @@ class ChoiceReachabilityAnalyzer(
             while (stack.isNotEmpty()) {
                 val id = stack.removeLast()
                 if (!seen.add(id)) continue
+                if (canReachFocus?.contains(id) == false) continue
                 flags += flagsRead[id].orEmpty()
                 c = c || readsCourage[id] == true
                 h = h || readsHonour[id] == true
@@ -153,7 +180,15 @@ class ChoiceReachabilityAnalyzer(
         postorder.asReversed().withIndex().associate { (i, id) -> id to i }
     }
 
-    private class Pending(val state: GameState, val key: FlagKey, val point: Triple<Int, Int, Int>, val rank: Int, val seq: Long)
+    /**
+     * A queued state is its key (the node and the flags that can still matter, shared with the frontier) plus its three
+     * stats. Everything else a [GameState] carries (health, items, trophies, flags nothing ahead reads) can never decide a
+     * gate, so it is not kept; this is what lets the queue hold hundreds of thousands of states.
+     */
+    private class Pending(val key: FlagKey, val courage: Int, val honour: Int, val gold: Int, val point: Triple<Int, Int, Int>, val rank: Int, val seq: Long)
+
+    private fun rebuild(p: Pending): GameState =
+        startState.copy(sceneId = p.key.node, courage = p.courage, honour = p.honour, gold = p.gold, flags = p.key.flags)
 
     /** Runs the search once and returns one verdict per gated choice. */
     fun analyse(): List<Verdict> {
@@ -167,13 +202,14 @@ class ChoiceReachabilityAnalyzer(
 
         fun enqueue(state: GameState) {
             if (overflow) return
+            if (canReachFocus?.contains(state.sceneId) == false) return // it can never stand in a focus node
             val key = flagKeyOf(state)
             val points = frontier.getOrPut(key) { ArrayList(2) }
             val p = statsOf(state)
             if (points.any { it.first >= p.first && it.second >= p.second && it.third >= p.third }) return // dominated
             points.removeAll { it.first <= p.first && it.second <= p.second && it.third <= p.third }
             points += p
-            queue.add(Pending(state, key, p, rank[state.sceneId] ?: Int.MAX_VALUE, seq++))
+            queue.add(Pending(key, state.courage, state.honour, state.gold, p, rank[state.sceneId] ?: Int.MAX_VALUE, seq++))
             if (expanded + queue.size > maxStates) overflow = true
         }
         enqueue(startState)
@@ -183,7 +219,7 @@ class ChoiceReachabilityAnalyzer(
             // A state that a later arrival dominated has left the frontier; whatever it could do, its dominator can do.
             if (frontier[pending.key]?.contains(pending.point) != true) continue
             expanded++
-            val state = pending.state
+            val state = rebuild(pending)
             val node = byId[state.sceneId] ?: continue
             visitedNodes += node.id
             if (node.combatEncounterId != null) {
@@ -199,7 +235,7 @@ class ChoiceReachabilityAnalyzer(
         }
 
         statesExplored = expanded
-        return nodes.flatMap { node ->
+        return nodes.filter { focus == null || it.id in focus }.flatMap { node ->
             node.choices.mapIndexedNotNull { index, choice ->
                 val req = choice.requirements ?: return@mapIndexedNotNull null
                 val gatesUnsupported = req.minStats.keys.any { it in unsupportedStats }

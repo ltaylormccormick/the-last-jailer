@@ -87,6 +87,45 @@ class ChoiceReachabilityDifferentialTest {
     }
 
     @Test
+    fun `a focused analysis gives the same verdicts as the full analysis for the nodes it is asked about`() {
+        var compared = 0
+        repeat(1000) { seed ->
+            val nodes = randomStory(seed.toLong())
+            val full = ChoiceReachabilityAnalyzer(
+                nodes = nodes, startNodeId = "n0", startState = GameState(sceneId = "n0"), maxStates = 5_000_000
+            ).analyse()
+            val pick = Random(seed * 31L + 7)
+            val focus = nodes.filter { pick.nextInt(3) == 0 }.map { it.id }.toSet().ifEmpty { setOf(nodes.last().id) }
+            val part = ChoiceReachabilityAnalyzer(
+                nodes = nodes, startNodeId = "n0", startState = GameState(sceneId = "n0"), maxStates = 5_000_000, focus = focus
+            ).analyse()
+            assertEquals("seed $seed: a focused run judges exactly the gated choices at its focus", full.count { it.nodeId in focus }, part.size)
+            part.forEach { v ->
+                val whole = full.single { it.nodeId == v.nodeId && it.choice === v.choice }
+                assertEquals("seed $seed ${v.nodeId} (focus $focus)", whole.status, v.status)
+                compared++
+            }
+        }
+        assertTrue("enough focused verdicts to mean something: $compared", compared > 1000)
+    }
+
+    @Test
+    fun `a sampled walk only ever witnesses a choice the unpruned search also finds alive, and finds most of them`() {
+        var total = 0
+        var found = 0
+        repeat(500) { seed ->
+            val nodes = randomStory(seed.toLong())
+            val expected = exhaustiveAlive(nodes)
+            val witnessed = GatedChoiceSampler(nodes, startNodeId = "n0", startState = GameState(sceneId = "n0"))
+                .satisfied(walks = 400, seed = seed.toLong())
+            assertTrue("seed $seed: witnessed ${witnessed - expected}, which the unpruned search says is dead", expected.containsAll(witnessed))
+            total += expected.size
+            found += witnessed.size
+        }
+        assertTrue("the sampler found $found of $total live gated choices", total > 500 && found >= total * 9 / 10)
+    }
+
+    @Test
     fun `the analyzer agrees with an unpruned exhaustive search on random stories`() {
         var gated = 0
         var aliveCount = 0
