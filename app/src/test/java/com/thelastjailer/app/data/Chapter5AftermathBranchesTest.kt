@@ -112,7 +112,7 @@ class Chapter5AftermathBranchesTest {
         assertEquals(setOf("lost_to_cinder_adept"), getUp.consequences.setFlags)
         val reading = node(missive).choices.single()
         assertEquals("Bring this to Halvard.", reading.label)
-        assertEquals("chapter5_end", reading.nextNodeId)
+        assertEquals("halvard_asks", reading.nextNodeId) // the conversation with Halvard comes before the end scene
         assertEquals("the_choice_of_roads", node("chapter5_end").choices.single().nextNodeId)
     }
 
@@ -200,7 +200,13 @@ class Chapter5AftermathBranchesTest {
         assertTrue("fewer routes than branches: ${landed.size}", landed.size >= 4) // pines, road, Halvard, ground
         landed.forEachIndexed { i, s ->
             assertEquals("route ${i + 1}", 1, s.inventory.count { it == missiveItem })
-            val end = s.applyChoice(node(missive).choices.single()).applyChoice(node("chapter5_end").choices.single())
+            // Past the missive: the conversation with Halvard (here, the ungated choice), then the end scene.
+            val atHub = s.applyChoice(node(missive).choices.single())
+            assertEquals("route ${i + 1}", "halvard_asks", atHub.sceneId)
+            val afterTail = atHub.applyChoice(node("halvard_asks").choices.last())
+            val atEnd = afterTail.applyChoice(node(afterTail.sceneId).choices.single())
+            assertEquals("route ${i + 1}", "chapter5_end", atEnd.sceneId)
+            val end = atEnd.applyChoice(node("chapter5_end").choices.single())
             assertEquals("the_choice_of_roads", end.sceneId)
             assertEquals("route ${i + 1} after the chapter", 1, end.inventory.count { it == missiveItem })
         }

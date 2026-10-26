@@ -17,6 +17,15 @@ val ENVOY_REPLY_FAMILY: Set<String> =
     setOf("refused_envoy", "heard_envoy_offer", "confronted_envoy_with_prisoners_words")
 
 /**
+ * Family C5b: the flags that record what this telling told Halvard about the envoy's offer. Each of the
+ * four choices after the missive clears both, then sets its own, so a replay that decides differently
+ * never carries the earlier decision, and the Journal groups them as one moment. This runs when a choice
+ * is taken, never when a scene is entered or loaded.
+ */
+val HALVARD_ACCOUNT_FAMILY: Set<String> =
+    setOf("told_halvard_the_truth", "kept_the_offer_from_halvard")
+
+/**
  * Chapter V — What the Marshal Wants.
  *
  * Follows through on the Cinder Marshal thread Chapter IV left hanging. Where Voss represented the
@@ -629,9 +638,140 @@ val chapter5Nodes: List<StoryNode> = listOf(
             running as thin as Halvard. Voss's siege wasn't a punishment, reading it now. It was a
             rehearsal, for unmaking every ward like this one at once and seeing what answers when
             they fall together instead of one at a time.
+
+            Beneath the signature stand four short lines. Offer first. If refused, show the
+            cost. Do not spend the bearer. Do not recover the envoy. Kaelen reads the last
+            line twice. The envoy was never meant to ride home.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Bring this to Halvard.", nextNodeId = "chapter5_end")
+            Choice(label = "Bring this to Halvard.", nextNodeId = "halvard_asks")
+        )
+    ),
+    StoryNode(
+        id = "halvard_asks",
+        chapterId = "chapter_5",
+        title = "What Halvard Asks",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            Halvard is resting with one hand pressed to his ribs, and if he was asleep he
+            has the grace not to say so. He doesn't ask for the page. He studies Kaelen's
+            hands the way a warden studies stone he suspects of a crack.
+
+            "Whatever he said at that door," Halvard says, "that isn't what he was for. What
+            was he really there for?"
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Tell him the whole of it: the offer, and that you said no.",
+                nextNodeId = "halvard_hears_the_refusal",
+                requirements = ChoiceRequirement(requiredFlags = setOf("refused_envoy")),
+                consequences = Consequences(
+                    clearFlags = HALVARD_ACCOUNT_FAMILY,
+                    setFlags = setOf("told_halvard_the_truth")
+                )
+            ),
+            Choice(
+                label = "Tell him you listened, and that some of it landed.",
+                nextNodeId = "halvard_hears_the_listening",
+                requirements = ChoiceRequirement(requiredFlags = setOf("heard_envoy_offer")),
+                consequences = Consequences(
+                    clearFlags = HALVARD_ACCOUNT_FAMILY,
+                    setFlags = setOf("told_halvard_the_truth")
+                )
+            ),
+            Choice(
+                label = "Tell him what the prisoner said, and that it said it first.",
+                nextNodeId = "halvard_hears_the_prisoners_words",
+                requirements = ChoiceRequirement(requiredFlags = setOf("confronted_envoy_with_prisoners_words")),
+                consequences = Consequences(
+                    clearFlags = HALVARD_ACCOUNT_FAMILY,
+                    setFlags = setOf("told_halvard_the_truth")
+                )
+            ),
+            Choice(
+                label = "Give him the page and say nothing of the offer.",
+                nextNodeId = "halvard_gets_only_the_page",
+                consequences = Consequences(
+                    clearFlags = HALVARD_ACCOUNT_FAMILY,
+                    setFlags = setOf("kept_the_offer_from_halvard")
+                )
+            )
+        )
+    ),
+    StoryNode(
+        id = "halvard_hears_the_refusal",
+        chapterId = "chapter_5",
+        title = "What Halvard Hears",
+        illustrationId = "warden_chamber",
+        narrativeText = """
+            Kaelen says it plainly: the offer, the hand it was aimed at, and how refusing
+            felt less like winning than putting something off. Halvard listens with his eyes
+            closed. "A no is mostly a delay," he says. "They'll ask again, and kinder.
+            Better you have someone at your shoulder when they do." He holds out his hand
+            for the page.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Give him the page.",
+                nextNodeId = "chapter5_end"
+            )
+        )
+    ),
+    StoryNode(
+        id = "halvard_hears_the_listening",
+        chapterId = "chapter_5",
+        title = "What Halvard Hears",
+        illustrationId = "warden_chamber",
+        narrativeText = """
+            It costs more to say than the refusal would have: that the offer found something
+            in him. Halvard is quiet a while. "Some of it should land," he says at last.
+            "The wards are failing, and I've no quarrel with that arithmetic. It's what the
+            Marshal wants done about it I'd not forgive." He holds out his hand for the
+            page.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Give him the page.",
+                nextNodeId = "chapter5_end"
+            )
+        )
+    ),
+    StoryNode(
+        id = "halvard_hears_the_prisoners_words",
+        chapterId = "chapter_5",
+        title = "What Halvard Hears",
+        illustrationId = "warden_chamber",
+        narrativeText = """
+            Kaelen says the voice behind the gate named what the Marshal wanted before the
+            envoy ever reached the door. Halvard's face goes still, the way stone goes
+            still. "It speaks to you," he says. "How often?" He listens to the answer as
+            though it mattered more than the page. "Show me the palm. Then give me the
+            page."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Give him the page.",
+                nextNodeId = "chapter5_end"
+            )
+        )
+    ),
+    StoryNode(
+        id = "halvard_gets_only_the_page",
+        chapterId = "chapter_5",
+        title = "What Halvard Lets Lie",
+        illustrationId = "warden_chamber",
+        narrativeText = """
+            Kaelen holds out the page and keeps the rest. He tells himself it is mercy, for
+            a warden hurt and tired, and is not sure that is the whole of it. Halvard takes
+            the page, but his eyes stay on Kaelen's closed hand. "A hand kept shut," he
+            says. "I know the look. Tell me when it's yours to tell, and not a day after
+            it's mine to know."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Let him read.",
+                nextNodeId = "chapter5_end"
+            )
         )
     ),
     StoryNode(
@@ -644,7 +784,8 @@ val chapter5Nodes: List<StoryNode> = listOf(
             has lost the dry patience Kaelen has gotten used to. "Six wards," he says. "Six
             jailers, when the office was whole. I always assumed the others fell the way mine
             nearly did: one at a time, one door at a time, forgotten." He folds the page shut. "I
-            never considered someone might be counting."
+            never considered someone might be counting." He does not read the last lines aloud, and
+            Kaelen does not ask him to.
 
             Outside, the ruined road is empty again, rain filling in the tracks the escort left
             behind. It won't stay empty. Kaelen knows that now with a certainty that has nothing

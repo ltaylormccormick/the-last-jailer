@@ -23,8 +23,8 @@ import java.security.MessageDigest
  * is and is not (no combat, no flag, no item, no gate), that the two edits are insertions only, and that the
  * ring's altered markings stay a reward of the ground investigation alone.
  *
- * Later batches change a few of the pinned scenes on purpose (the missive and the end scene in Batch 4); the
- * batch that does so re-pins them in the same commit.
+ * Batch 4 re-pinned the missive and the end scene, which it changed on purpose, and pinned the scenes added
+ * since this test was written. A batch that changes a pinned scene re-pins it in the same commit.
  */
 class Chapter5EscortClosesTest {
 
@@ -167,7 +167,7 @@ class Chapter5EscortClosesTest {
         assertTrue(flat(node("the_chase_to_the_ford").narrativeText).contains("Two of the escort did not scatter"))
     }
 
-    /** SHA-256 of each scene's whitespace-collapsed prose as committed in Batch 1. */
+    /** SHA-256 of each scene's whitespace-collapsed prose, as of Batch 4. The warning, aftermath and escort scenes are checked above. */
     private val pinnedProse = mapOf(
         "the_marshals_envoy" to "0f3f152fc8ab4f5112e2862f0043f6248d2aa61f724a01717dd77f8dbea82877",
         "the_envoys_offer_alone" to "9df63bdbcd4e60009e4af24182744726ab69ee792636ab12ef7529ba695431ca",
@@ -176,18 +176,25 @@ class Chapter5EscortClosesTest {
         "the_envoys_mask_slips_heard" to "50b7a905c83b3228fde58076b473cc250d886c9e2f33480895932ae77bf52d4d",
         "the_envoys_mask_slips_confronted" to "5a72d1767471f04e21b63cf6a9f1fcb47d4e22c34ca79bdc337c0b5f6cc22e1b",
         "cinder_envoy_defeat" to "d76a7e411e64afb7c5102b4cafe69d9c5021e3f87f1070e96938b613aeb01856",
-        "what_the_missive_says" to "8b36d5f90893d3cf189a1a4685f278cfbb9871634a9aa4ebd140af7a8729f758",
-        "chapter5_end" to "674d4c67014faaabe5f5961a37d6a40fd8dca114e58dcbaadffc4fb71f073667",
+        "what_the_missive_says" to "f43c1ef60bad99bf794c6f445b5ee205513c2818be94010006d288f8aa84f3ff",
+        "chapter5_end" to "0acfa9cc1d4590fe989dec1a8d52634a1fbd8db1c02aedc478034538ed495298",
         "the_chase_to_the_ford" to "618c2f805b02215f90449f16e361a5ad52d10ab93dd451526ae929fb21c6dfeb",
         "the_ford_caught" to "af6054a523fe4aad2a679ba4247ce904e179637f6dd883d2f4690e19052eeff5",
         "the_ford_lost" to "3cb0b4b24a86a53272be566d8b9e90845ca6435f38a91c47745c010cc059b0b9",
         "halvard_by_the_door" to "a753d7ecdee7373925a98ab912c5e408d53db4e5944a2418d33b2084b8fcf48e",
-        "what_the_ground_says" to "19b88d79b419c6de69e75ecddbab4edac78977ea3745dd8b1256f87347008ef9"
+        "what_the_ground_says" to "19b88d79b419c6de69e75ecddbab4edac78977ea3745dd8b1256f87347008ef9",
+        "the_envoy_explains_alone" to "3d5f1ef284d4cb98113176a47be3bcc4397079e7cd8ec7c6bf7acb177cf8a210",
+        "the_envoy_explains_with_halvard" to "708fa4dc7c9e82d349599dc74c5fb2e362c47ca0445b9fdac38e08f30a66fee6",
+        "halvard_asks" to "6ed94d236b79e84b59554dd2824b11f01215c3cd313aee87c21db58ca1214e9d",
+        "halvard_hears_the_refusal" to "3f97046b26cc8b4580812ca4c3f0af058859ee21006144cd89c18d421910f7f8",
+        "halvard_hears_the_listening" to "e12fff93c4711fec83b50794bb1bf5a70c91958e5f1871f6519a5af6e5d6f952",
+        "halvard_hears_the_prisoners_words" to "74e100cb85f8232172231d2573d4e4073ff9e19ca2cd69523e545a09719b3ce8",
+        "halvard_gets_only_the_page" to "f3e48bced1927635464c0cbcd3b6d91900c2e5c3e30eee47fa04706acd3ae7e3"
     )
 
     @Test
-    fun `every other scene's prose is exactly what was committed in Batch 1`() {
-        assertEquals(14, pinnedProse.size)
+    fun `every other scene's prose is exactly as pinned`() {
+        assertEquals(21, pinnedProse.size)
         pinnedProse.forEach { (id, expected) -> assertEquals(id, expected, sha256(flat(node(id).narrativeText))) }
     }
 
