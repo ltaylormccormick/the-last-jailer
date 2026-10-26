@@ -657,12 +657,12 @@ val chapter5Nodes: List<StoryNode> = listOf(
             has the grace not to say so. He doesn't ask for the page. He studies Kaelen's
             hands the way a warden studies stone he suspects of a crack.
 
-            "Whatever he said at that door," Halvard says, "that isn't what he was for. What
-            was he really there for?"
+            "I'm not asking for his words," Halvard says. "A rider like that is only ever
+            the mouth. What did you make of what he put to you?"
         """.trimIndent(),
         choices = listOf(
             Choice(
-                label = "Tell him the whole of it: the offer, and that you said no.",
+                label = "Tell him how little your no felt like winning.",
                 nextNodeId = "halvard_hears_the_refusal",
                 requirements = ChoiceRequirement(requiredFlags = setOf("refused_envoy")),
                 consequences = Consequences(
@@ -689,7 +689,7 @@ val chapter5Nodes: List<StoryNode> = listOf(
                 )
             ),
             Choice(
-                label = "Give him the page and say nothing of the offer.",
+                label = "Give him the page and keep what you made of the offer to yourself.",
                 nextNodeId = "halvard_gets_only_the_page",
                 consequences = Consequences(
                     clearFlags = HALVARD_ACCOUNT_FAMILY,
@@ -704,11 +704,11 @@ val chapter5Nodes: List<StoryNode> = listOf(
         title = "What Halvard Hears",
         illustrationId = "warden_chamber",
         narrativeText = """
-            Kaelen says it plainly: the offer, the hand it was aimed at, and how refusing
-            felt less like winning than putting something off. Halvard listens with his eyes
-            closed. "A no is mostly a delay," he says. "They'll ask again, and kinder.
-            Better you have someone at your shoulder when they do." He holds out his hand
-            for the page.
+            Kaelen tells him what the offer was aimed at, and what he did not say at the
+            door: that refusing felt less like winning than putting something off. Halvard
+            listens with his eyes closed. "A no is mostly a delay," he says. "They'll ask
+            again, and kinder. Better you have someone at your shoulder when they do." He
+            holds out his hand for the page.
         """.trimIndent(),
         choices = listOf(
             Choice(
@@ -742,11 +742,11 @@ val chapter5Nodes: List<StoryNode> = listOf(
         title = "What Halvard Hears",
         illustrationId = "warden_chamber",
         narrativeText = """
-            Kaelen says the voice behind the gate named what the Marshal wanted before the
-            envoy ever reached the door. Halvard's face goes still, the way stone goes
-            still. "It speaks to you," he says. "How often?" He listens to the answer as
-            though it mattered more than the page. "Show me the palm. Then give me the
-            page."
+            Kaelen tells Halvard more of the voice behind the gate, and how it named what
+            the Marshal wanted before the envoy ever reached the door. Halvard's face goes
+            still, the way stone goes still. "So it speaks to you," he says. "How often?" He
+            listens to the answer as though it mattered more than the page. "Show me the
+            palm. Then give me the page."
         """.trimIndent(),
         choices = listOf(
             Choice(
@@ -761,11 +761,11 @@ val chapter5Nodes: List<StoryNode> = listOf(
         title = "What Halvard Lets Lie",
         illustrationId = "warden_chamber",
         narrativeText = """
-            Kaelen holds out the page and keeps the rest. He tells himself it is mercy, for
-            a warden hurt and tired, and is not sure that is the whole of it. Halvard takes
-            the page, but his eyes stay on Kaelen's closed hand. "A hand kept shut," he
-            says. "I know the look. Tell me when it's yours to tell, and not a day after
-            it's mine to know."
+            Kaelen holds out the page and keeps back what he made of the offer. He tells
+            himself it is mercy, for a warden hurt and tired, and is not sure that is the
+            whole of it. Halvard takes the page, but his eyes stay on Kaelen's closed hand.
+            "A hand kept shut," he says. "I know the look. Tell me when it's yours to tell,
+            and not a day after it's mine to know."
         """.trimIndent(),
         choices = listOf(
             Choice(

@@ -15,15 +15,16 @@ import org.junit.Test
 
 /**
  * Chapter 5, after the missive: the conversation with Halvard. The missive gains a short paragraph, the choice
- * "Bring this to Halvard." now leads to a hub where Halvard asks what the envoy was really there for, and the
- * player either tells the truth (in the form that fits how they answered the envoy) or keeps the offer back.
+ * "Bring this to Halvard." now leads to a hub where Halvard asks what the player made of the envoy's offer, and the
+ * player either tells him (in the form that fits how they answered the envoy) or keeps their own response back.
  * Four short tails lead on to the unchanged end scene.
  *
  * The decision is expressed through dialogue, two mutually exclusive flags and the Journal; it changes no stat.
- * These tests pin the routing and the gates, that every decision clears the whole account family and nothing
- * else, that replaying with a different decision leaves only the latest flag and the real Journal shows only
- * its entry, that the two insertions are insertions only, and that the conversation works after every
- * aftermath route and both outcomes of the fight.
+ * The wording has to hold whether Halvard stood at the parley or Kaelen met the envoy alone, so every walk and
+ * every replay below runs for both openings. These tests pin the routing and the gates, that every decision clears
+ * the whole account family and nothing else, that replaying with a different decision leaves only the latest flag
+ * and the real Journal shows only its entry, that the two insertions are insertions only, and that the
+ * conversation works after every aftermath route and both outcomes of the fight.
  */
 class Chapter5HalvardHubTest {
 
@@ -31,6 +32,11 @@ class Chapter5HalvardHubTest {
     private val hub = "halvard_asks"
     private val endScene = "chapter5_end"
     private val offerAlone = "the_envoys_offer_alone"
+    private val offerWithHalvard = "the_envoys_offer_with_halvard"
+
+    /** The two ways of meeting the envoy: the flag the first choice sets, and the offer scene it leads to. */
+    private val openingFlags = listOf("met_envoy_alone", "brought_halvard")
+    private val offerScene = mapOf("met_envoy_alone" to offerAlone, "brought_halvard" to offerWithHalvard)
 
     private val refused = "refused_envoy"
     private val heard = "heard_envoy_offer"
@@ -50,14 +56,23 @@ class Chapter5HalvardHubTest {
     private val concealTail = "halvard_gets_only_the_page"
     private val allTails = truthTail.values.toList() + concealTail
     private val truthLabel = mapOf(
-        refused to "Tell him the whole of it: the offer, and that you said no.",
+        refused to "Tell him how little your no felt like winning.",
         heard to "Tell him you listened, and that some of it landed.",
         confronted to "Tell him what the prisoner said, and that it said it first."
     )
-    private val concealLabel = "Give him the page and say nothing of the offer."
+    private val concealLabel = "Give him the page and keep what you made of the offer to yourself."
 
-    private val journalTold = "I told Halvard the whole of what the envoy wanted, and how I met it."
-    private val journalKept = "I gave Halvard the missive and kept the envoy's offer to myself."
+    private val journalTold = "I told Halvard what I made of the envoy's offer, holding nothing back."
+    private val journalKept = "I gave Halvard the missive and kept what I made of the envoy's offer to myself."
+
+    /**
+     * Phrases the first wording used that treated the offer as news Halvard had not heard, which is false for a player
+     * who brought him to the parley. They must not return in the hub, a tail, a label or the Journal.
+     */
+    private val staleWording = listOf(
+        "say nothing of the offer", "the whole of it: the offer", "Whatever he said at that door",
+        "the hand it was aimed at", "whole of what the envoy wanted", "kept the envoy's offer to myself", "keeps the rest"
+    )
     private val journalTopic = "the question of what to tell Halvard"
     private val envoyLine = mapOf(
         refused to "I told the envoy the Marshal's answer was no.",
@@ -206,16 +221,23 @@ class Chapter5HalvardHubTest {
 
     // ---- replay: only the latest decision, and the real Journal shows only its entry --------------------
 
-    private class Pick(val stance: String, val truth: Boolean) {
-        override fun toString() = "$stance/${if (truth) "truth" else "concealed"}"
+    private class Pick(val opening: String, val stance: String, val truth: Boolean) {
+        override fun toString() = "$opening/$stance/${if (truth) "truth" else "concealed"}"
     }
-    private val picks = stances.flatMap { s -> listOf(true, false).map { Pick(s, it) } }
+    private val picks = openingFlags.flatMap { o -> stances.flatMap { s -> listOf(true, false).map { Pick(o, s, it) } } }
 
-    private fun stanceChoice(flag: String): Choice = node(offerAlone).choices.single { flag in it.consequences.setFlags }
+    private fun stanceChoice(opening: String, flag: String): Choice =
+        node(offerScene.getValue(opening)).choices.single { flag in it.consequences.setFlags }
 
-    /** One telling's answer to the envoy and its decision at the hub; returns the states before and after the hub choice. */
+    /**
+     * One telling's way of meeting the envoy, answer to him and decision at the hub; returns the states before and after
+     * the hub choice. The opening flags are not a replay family (nothing reads them), so a replay may hold both.
+     */
     private fun decide(from: GameState, p: Pick): Pair<GameState, GameState> {
-        val answered = ReplayKit.jumpTo(from, offerAlone).applyChoice(stanceChoice(p.stance))
+        val opened = node("the_marshals_envoy").choices.single { p.opening in it.consequences.setFlags }
+        val atOffer = ReplayKit.jumpTo(from, "the_marshals_envoy").applyChoice(opened)
+        assertEquals(p.toString(), offerScene.getValue(p.opening), atOffer.sceneId)
+        val answered = atOffer.applyChoice(stanceChoice(p.opening, p.stance))
         val beforeHub = ReplayKit.jumpTo(answered, hub)
         val choice = visibleAtHub(beforeHub).single { c -> (if (p.truth) told else kept) in c.consequences.setFlags }
         return beforeHub to beforeHub.applyChoice(choice)
@@ -230,7 +252,7 @@ class Chapter5HalvardHubTest {
     @Test
     fun `replaying with a different decision leaves only the latest account flag, and the Journal shows only its entry`() {
         val unrelated = setOf("accepted_dark_aid", "halvard_died", "kept_the_token", "refused_the_prisoner", "lost_to_cinder_adept")
-        assertEquals(216, picks.size * picks.size * picks.size)
+        assertEquals(1_728, picks.size * picks.size * picks.size)
         picks.forEach { a -> picks.forEach { b -> picks.forEach { c ->
             var s = aided.copy(flags = unrelated)
             listOf(a, b, c).forEachIndexed { i, p ->
@@ -239,6 +261,7 @@ class Chapter5HalvardHubTest {
                 val expectedFlag = if (p.truth) told else kept
                 assertEquals(label, setOf(expectedFlag), held(after, account))
                 assertEquals(label, setOf(p.stance), held(after, stances.toSet()))
+                assertTrue(label, p.opening in after.flags)
                 // The real Journal: exactly this telling's entry, never the neutral "more than once" line.
                 assertEquals(label, listOf(if (p.truth) journalTold else journalKept), accountLines(after.flags))
                 assertEquals(label, listOf(envoyLine.getValue(p.stance)), FlagDescriptions.sections(after.flags).flatMap { it.lines }.filter { "envoy" in it && "Halvard" !in it })
@@ -255,6 +278,7 @@ class Chapter5HalvardHubTest {
         val e = FlagDescriptions.entries.associateBy { it.flag }
         assertEquals(journalTold, e.getValue(told).text)
         assertEquals(journalKept, e.getValue(kept).text)
+        account.forEach { f -> staleWording.forEach { w -> assertFalse("$f: stale '$w'", e.getValue(f).text.contains(w)) } }
         account.forEach { f ->
             assertEquals(JournalCategory.PEOPLE, e.getValue(f).category)
             assertEquals("halvard_account", e.getValue(f).group)
@@ -278,7 +302,7 @@ class Chapter5HalvardHubTest {
         val fork = listOf("the_ford_caught", "the_ford_lost", null, null)
         var checked = 0
         stances.forEach { stance ->
-            for (route in 0..3) for (victory in listOf(true, false)) for (truth in listOf(true, false)) {
+            for (opening in openingFlags) for (route in 0..3) for (victory in listOf(true, false)) for (truth in listOf(true, false)) {
                 var s = ReplayKit.jumpTo(aided, "the_marshals_envoy")
                 val path = ArrayList<String>()
                 var beforeHub: GameState? = null
@@ -290,8 +314,8 @@ class Chapter5HalvardHubTest {
                     if (n.combatEncounterId != null) { s = s.resolveCombat(encounter, CombatOutcome(victory, 0)); continue }
                     val visible = StoryRepository.visibleChoices(n, s)
                     val choice = when (n.id) {
-                        "the_marshals_envoy" -> visible.first { "met_envoy_alone" in it.consequences.setFlags }
-                        offerAlone, "the_envoys_offer_with_halvard" -> visible.first { stance in it.consequences.setFlags }
+                        "the_marshals_envoy" -> visible.first { opening in it.consequences.setFlags }
+                        offerAlone, offerWithHalvard -> visible.first { stance in it.consequences.setFlags }
                         "aftermath_of_betrayal" -> visible.first { routeFlag[route] in it.consequences.setFlags }
                         "the_chase_to_the_ford" -> visible.first { it.nextNodeId == fork[route] }
                         hub -> visible.single { (if (truth) told else kept) in it.consequences.setFlags }
@@ -301,7 +325,11 @@ class Chapter5HalvardHubTest {
                     s = s.applyChoice(choice)
                     if (n.id == hub) afterHub = s
                 }
-                val label = "$stance, route $route, victory=$victory, truth=$truth: $path"
+                val label = "$opening, $stance, route $route, victory=$victory, truth=$truth: $path"
+                // Each opening reaches its own offer scene, and the other opening's scene is never seen.
+                assertEquals(label, setOf(opening), held(s, openingFlags.toSet()))
+                assertEquals(label, 1, path.count { it == offerScene.getValue(opening) })
+                assertEquals(label, 0, path.count { it == offerScene.getValue(openingFlags.first { f -> f != opening }) })
                 assertEquals(label, 1, path.count { it == hub })
                 assertEquals(label, 1, path.count { it in allTails })
                 assertEquals(label, 1, path.count { it == endScene })
@@ -314,12 +342,14 @@ class Chapter5HalvardHubTest {
                 // scene transition (a point or more when wounded), and the decision itself never lowers it.
                 val b = beforeHub!!
                 val a = afterHub!!
+                // The same two choices are offered whichever way the envoy was met: the telling that fits, and the concealment.
+                assertEquals(label, setOf(truthLabel.getValue(stance), concealLabel), visibleAtHub(b).map { it.label }.toSet())
                 assertTrue(label, a.health >= b.health)
                 assertEquals(label, apartFromFlagsAndScene(b).copy(health = 0), apartFromFlagsAndScene(a).copy(health = 0))
                 checked++
             }
         }
-        assertEquals(48, checked)
+        assertEquals(96, checked)
     }
 
     // ---- prose rules and budgets ------------------------------------------------------------------------
@@ -337,6 +367,10 @@ class Chapter5HalvardHubTest {
         }.map { flat(it) } + listOf(addendum, endingSentence)
         val text = pieces.joinToString(" ")
         assertFalse("a dash used as punctuation", text.any { it == '—' || it == '–' })
+        // The conversation must hold whether or not Halvard stood at the parley, so it asks what the player made of the offer.
+        staleWording.forEach { assertFalse("stale wording '$it'", text.contains(it)) }
+        assertTrue(text.contains("What did you make of what he put to you?"))
+        assertTrue(text.contains("keeps back what he made of the offer"))
         assertFalse("a sentence fragment starting 'Not'", Regex("(^|[.!?\"] )Not ").containsMatchIn(text))
         assertNull("a reserved word: ${reserved.find(text)?.value}", reserved.find(text))
         pieces.forEach { piece ->

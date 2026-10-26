@@ -167,7 +167,7 @@ class Chapter5EscortClosesTest {
         assertTrue(flat(node("the_chase_to_the_ford").narrativeText).contains("Two of the escort did not scatter"))
     }
 
-    /** SHA-256 of each scene's whitespace-collapsed prose, as of Batch 4. The warning, aftermath and escort scenes are checked above. */
+    /** SHA-256 of each scene's whitespace-collapsed prose, as of Batch 4 and its Halvard hub wording fix. The warning, aftermath and escort scenes are checked above. */
     private val pinnedProse = mapOf(
         "the_marshals_envoy" to "0f3f152fc8ab4f5112e2862f0043f6248d2aa61f724a01717dd77f8dbea82877",
         "the_envoys_offer_alone" to "9df63bdbcd4e60009e4af24182744726ab69ee792636ab12ef7529ba695431ca",
@@ -185,11 +185,11 @@ class Chapter5EscortClosesTest {
         "what_the_ground_says" to "19b88d79b419c6de69e75ecddbab4edac78977ea3745dd8b1256f87347008ef9",
         "the_envoy_explains_alone" to "3d5f1ef284d4cb98113176a47be3bcc4397079e7cd8ec7c6bf7acb177cf8a210",
         "the_envoy_explains_with_halvard" to "708fa4dc7c9e82d349599dc74c5fb2e362c47ca0445b9fdac38e08f30a66fee6",
-        "halvard_asks" to "6ed94d236b79e84b59554dd2824b11f01215c3cd313aee87c21db58ca1214e9d",
-        "halvard_hears_the_refusal" to "3f97046b26cc8b4580812ca4c3f0af058859ee21006144cd89c18d421910f7f8",
+        "halvard_asks" to "eb9523027bf8778d3168c063898514aa394120c3be468eb07b6c634f28863b36",
+        "halvard_hears_the_refusal" to "a9af83de6cefe4e1e64e033343aaf8ad7713fc964291688ee05f6ec1195e8e07",
         "halvard_hears_the_listening" to "e12fff93c4711fec83b50794bb1bf5a70c91958e5f1871f6519a5af6e5d6f952",
-        "halvard_hears_the_prisoners_words" to "74e100cb85f8232172231d2573d4e4073ff9e19ca2cd69523e545a09719b3ce8",
-        "halvard_gets_only_the_page" to "f3e48bced1927635464c0cbcd3b6d91900c2e5c3e30eee47fa04706acd3ae7e3"
+        "halvard_hears_the_prisoners_words" to "b72d3b2b0dae6fa603b5553f74555819b3f629d27454ec7036b71b581ecfb60b",
+        "halvard_gets_only_the_page" to "d3c74f37faecea134607d70ac2fa1b29da685d965be4588f357aba3b1216c048"
     )
 
     @Test
