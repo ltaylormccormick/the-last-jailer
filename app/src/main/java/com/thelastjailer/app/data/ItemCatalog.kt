@@ -83,6 +83,11 @@ object ItemCatalog {
             description = "Warded in the same hand as a gate that failed anyway. An apology, carried the rest of the way for her."
         ),
         Item(
+            id = "ward_nails",
+            name = "Kestrel's Ward-Nails",
+            description = "The nails left over once three were driven into Greymoor's crack and left there: black iron, cold, scratched with a warden's marks. They were made to hold what cannot be bound."
+        ),
+        Item(
             id = "voss_seal",
             name = "Voss's Seal",
             description = "A signet ring bearing the Ashen Order's true mark, offered freely rather than seized. What it still opens, this far from anyone who answers to it, remains to be seen."

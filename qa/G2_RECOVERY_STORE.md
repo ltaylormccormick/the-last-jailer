@@ -134,6 +134,13 @@ About 17x headroom for state + Back + trophies. **Not included:** the checkpoint
 256 KiB would not be enough; history copying is the deferred 2C-1b-2 work. The ceiling should be confirmed or
 changed when G3 fixes the real payload.
 
+**Measurement after the Chapter 6 expansion (26 Oct 2026).** `CheckpointSizeTest` measured thirty worst-case checkpoints at
+**472,493 bytes** (about 461 KiB), 28 flags, 1 item and 4 trophies above the story at 826d719, where the figure sat just under
+the old 450 KiB bound. The hard bound in the test is now 600 KiB and is still provisional. A second test fails when the figure
+rises more than 10% above 472,493 bytes, so each later chapter package has to look at what grew (flags, items, trophies) and
+whether checkpoints need all of it, update this paragraph, and only then change a number. The live save is unaffected (about
+7 KB); only a history bundle, which G3 has not built, would meet this bound.
+
 ## Test evidence
 
 112 tests (89 + 23 new): codec 21, selection table 3, store behaviour 30, fault injection 15 (486 scenarios), crash

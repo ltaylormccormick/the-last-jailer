@@ -45,7 +45,7 @@ class ChoiceReachabilityAnalyzer(
 
     private val byId = nodes.associateBy { it.id }
 
-    /** States accepted (not dominated by an earlier one) by the last [analyse] call, for headroom checks. */
+    /** States expanded (accepted and not dominated before their turn) by the last [analyse] call, for headroom checks. */
     var statesExplored: Int = 0
         private set
 
@@ -123,29 +123,67 @@ class ChoiceReachabilityAnalyzer(
         )
     }
 
+    /**
+     * Where each node stands in a reverse-postorder walk from the start, so a node comes up after the nodes that lead to it
+     * (the story's edges form a forward graph apart from replay edges, which are excluded). The search expands states in this
+     * order. By the time a node is reached, every route into it has usually been merged into its frontier, so a state that a
+     * later route dominates is skipped instead of being expanded along with everything after it. Order does not change which
+     * (node, flags, stats) states are reachable or which gates are satisfiable; it only avoids expanding dominated ones.
+     */
+    private val rank: Map<String, Int> by lazy {
+        val postorder = ArrayList<String>()
+        val seen = HashSet<String>()
+        val stack = ArrayDeque<Pair<String, Iterator<String>>>()
+        fun visit(id: String) {
+            if (!seen.add(id)) return
+            val next = byId[id]?.let { n -> edges(n).map { it.second }.iterator() } ?: emptyList<String>().iterator()
+            stack.addLast(id to next)
+        }
+        visit(startNodeId)
+        while (stack.isNotEmpty()) {
+            val (id, successors) = stack.last()
+            if (successors.hasNext()) {
+                val to = successors.next()
+                if (to in byId) visit(to)
+            } else {
+                stack.removeLast()
+                postorder += id
+            }
+        }
+        postorder.asReversed().withIndex().associate { (i, id) -> id to i }
+    }
+
+    private class Pending(val state: GameState, val key: FlagKey, val point: Triple<Int, Int, Int>, val rank: Int, val seq: Long)
+
     /** Runs the search once and returns one verdict per gated choice. */
     fun analyse(): List<Verdict> {
         val satisfied = HashSet<Pair<String, Int>>() // (nodeId, choice index) seen satisfiable
         val visitedNodes = HashSet<String>()
         val frontier = HashMap<FlagKey, MutableList<Triple<Int, Int, Int>>>()
-        var accepted = 0
-        val queue = ArrayDeque<GameState>()
+        var expanded = 0
+        var seq = 0L
+        val queue = java.util.PriorityQueue<Pending>(compareBy<Pending>({ it.rank }, { it.seq }))
         var overflow = false
 
         fun enqueue(state: GameState) {
             if (overflow) return
-            val points = frontier.getOrPut(flagKeyOf(state)) { ArrayList(2) }
+            val key = flagKeyOf(state)
+            val points = frontier.getOrPut(key) { ArrayList(2) }
             val p = statsOf(state)
             if (points.any { it.first >= p.first && it.second >= p.second && it.third >= p.third }) return // dominated
             points.removeAll { it.first <= p.first && it.second <= p.second && it.third <= p.third }
             points += p
-            if (++accepted > maxStates) { overflow = true; return }
-            queue.add(state)
+            queue.add(Pending(state, key, p, rank[state.sceneId] ?: Int.MAX_VALUE, seq++))
+            if (expanded + queue.size > maxStates) overflow = true
         }
         enqueue(startState)
 
         while (queue.isNotEmpty() && !overflow) {
-            val state = queue.removeFirst()
+            val pending = queue.poll()
+            // A state that a later arrival dominated has left the frontier; whatever it could do, its dominator can do.
+            if (frontier[pending.key]?.contains(pending.point) != true) continue
+            expanded++
+            val state = pending.state
             val node = byId[state.sceneId] ?: continue
             visitedNodes += node.id
             if (node.combatEncounterId != null) {
@@ -160,7 +198,7 @@ class ChoiceReachabilityAnalyzer(
             }
         }
 
-        statesExplored = accepted
+        statesExplored = expanded
         return nodes.flatMap { node ->
             node.choices.mapIndexedNotNull { index, choice ->
                 val req = choice.requirements ?: return@mapIndexedNotNull null

@@ -77,8 +77,10 @@ class TrophyBackTest {
     fun `every choice in the story that awards a trophy keeps it through Back`() {
         val sites = StoryRepository.chapters.flatMap { StoryRepository.nodesInChapter(it.id) }
             .flatMap { node -> node.choices.filter { it.consequences.unlockTrophy != null }.map { node to it } }
-        assertEquals("the twelve story-choice trophy sites", 12, sites.size)
-        assertEquals(setOf("Friend of Stonebeard", "Blood and Silver", "The Last Jailer", "The Watch Goes On"),
+        // 12 sites before the Chapter 6 expansion; it adds five (one tollhouse, one ledger, two burials, one pinning).
+        assertEquals("the seventeen story-choice trophy sites", 17, sites.size)
+        assertEquals(setOf("Friend of Stonebeard", "Blood and Silver", "The Last Jailer", "The Watch Goes On",
+            "Kestrel's Apprentice", "The Ledger, Read to the End", "Buried Properly", "Nails in the Dark"),
             sites.map { it.second.consequences.unlockTrophy }.toSet())
 
         for ((node, choice) in sites) {

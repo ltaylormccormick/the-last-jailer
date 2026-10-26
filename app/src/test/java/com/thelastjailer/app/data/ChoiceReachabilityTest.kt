@@ -235,6 +235,51 @@ class ChoiceReachabilityTest {
         assertEquals(Status.INCONCLUSIVE, statusOf(v, "a", "gated"))
     }
 
+    @Test
+    fun `a weaker route that reaches a node first never hides a stronger one that arrives later`() {
+        // The poorer arrival at "m" is found first; the richer one arrives later through a longer way. The gate needs Courage 3.
+        val v = analyse(
+            node("start", go("m", "poor"), go("long")),
+            node("long", go("m", "rich", c = Consequences(statDeltas = mapOf(StatType.COURAGE to 2)))),
+            node("m", go("end", "gated", ChoiceRequirement(minStats = mapOf(StatType.COURAGE to 3)))),
+            node("end")
+        )
+        assertEquals(Status.ALIVE, statusOf(v, "m", "gated"))
+    }
+
+    @Test
+    fun `a gate that no route can reach is still dead whichever arrival comes first`() {
+        val v = analyse(
+            node("start", go("m", "poor"), go("long")),
+            node("long", go("m", "rich", c = Consequences(statDeltas = mapOf(StatType.COURAGE to 2)))),
+            node("m", go("end", "gated", ChoiceRequirement(minStats = mapOf(StatType.COURAGE to 4)))),
+            node("end")
+        )
+        assertEquals(Status.DEAD, statusOf(v, "m", "gated"))
+    }
+
+    @Test
+    fun `a richer arrival is never hidden by a poorer one, in each of Courage, Honour and Gold`() {
+        // Two routes meet at "m". The short one is poorer; the long one is richer in exactly one stat. The gate needs more of that
+        // stat than the poor route has and no more than the rich route has. Pruning in the wrong direction would lose the rich route.
+        listOf(StatType.COURAGE to 5, StatType.HONOUR to 4, StatType.GOLD to 60).forEach { (stat, gate) ->
+            val v = analyse(
+                node("start", go("m", "poor"), go("long")),
+                node("long", go("m", "rich", c = Consequences(statDeltas = mapOf(stat to 40)))),
+                node("m", go("end", "gated", ChoiceRequirement(minStats = mapOf(stat to gate)))),
+                node("end")
+            )
+            assertEquals("$stat gate $gate is reachable only through the richer route", Status.ALIVE, statusOf(v, "m", "gated"))
+            val unreachable = analyse(
+                node("start", go("m", "poor"), go("long")),
+                node("long", go("m", "rich", c = Consequences(statDeltas = mapOf(stat to 40)))),
+                node("m", go("end", "gated", ChoiceRequirement(minStats = mapOf(stat to gate + 100)))),
+                node("end")
+            )
+            assertEquals("$stat gate ${gate + 100} is beyond both routes", Status.DEAD, statusOf(unreachable, "m", "gated"))
+        }
+    }
+
     // ---------- the real story ----------
 
     private val nodes = StoryRepository.chapters.flatMap { StoryRepository.nodesInChapter(it.id) }
@@ -279,6 +324,22 @@ class ChoiceReachabilityTest {
                 "approaching it, tighten the state abstraction before the story grows further.",
             realAnalyzer.statesExplored < 1_000_000
         )
+    }
+
+    @Test
+    fun `every gated choice in Chapter 6's new scenes and the scenes that now lead to them is reachable on a first playthrough`() {
+        val nodesToCheck = listOf(
+            "the_road_north_deliberate", "c6_camp", "c6_tollhouse_helped", "c6_cellar", "c6_garden", "c6_watchpost",
+            "c6_unbound_sighted", "unbound_defeat", "c6_pin_decided", "what_must_be_decided"
+        )
+        nodesToCheck.forEach { id ->
+            val atNode = verdicts.filter { it.nodeId == id }
+            assertTrue("$id has gated choices", atNode.isNotEmpty())
+            val notAlive = atNode.filter { it.status != Status.ALIVE }.map { it.choice.label to it.status }
+            assertTrue("$id: gated choices that are not alive: $notAlive", notAlive.isEmpty())
+        }
+        val pin = verdicts.single { it.nodeId == "c6_unbound_sighted" && it.choice.nextNodeId == "c6_pin_held" }
+        assertEquals("the ward-nail pinning needs the method, the nails and Courage 5, and a real playthrough can have all three", Status.ALIVE, pin.status)
     }
 
     @Test

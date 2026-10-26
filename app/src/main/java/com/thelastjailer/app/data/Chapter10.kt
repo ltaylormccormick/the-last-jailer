@@ -76,7 +76,7 @@ val chapter10Nodes: List<StoryNode> = listOf(
 
             She doesn't come at the front of a column this time either; she doesn't come with one
             at all, not visibly. Ilsevet walks into Stonebeard's braced gate alone, unhurried, the
-            way Voss always was and Voss's envoy never quite managed, and behind her the tunnel is
+            way Voss always was and the Marshal's envoy never quite managed, and behind her the tunnel is
             full of shapes that haven't stepped into the light yet. She takes in the barricades
             with something like professional respect before she speaks.
 
@@ -103,7 +103,7 @@ val chapter10Nodes: List<StoryNode> = listOf(
 
             She doesn't come at the front of a column this time either; she doesn't come with one
             at all, not visibly. Ilsevet walks into Stonebeard's broken gate alone, unhurried, the
-            way Voss always was and Voss's envoy never quite managed, and behind her the tunnel
+            way Voss always was and the Marshal's envoy never quite managed, and behind her the tunnel
             is full of shapes that haven't stepped into the light yet. She takes one look at the
             two of them, weapons already drawn, and something that might be amusement crosses her
             face.
