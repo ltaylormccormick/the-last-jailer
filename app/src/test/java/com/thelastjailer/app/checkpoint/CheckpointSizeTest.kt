@@ -16,13 +16,20 @@ class CheckpointSizeTest {
     }
 
     /**
-     * The measured maximum for thirty worst-case checkpoints after the Chapter 6 expansion: 472,493 bytes (about 461 KiB), with
-     * the story setting 28 more flags than at 826d719, where the figure sat just under the old 450 KiB bound. It bounds a
-     * hypothetical history bundle (G3). qa/G2_RECOVERY_STORE.md records that ceiling as provisional, not accepted; the live
-     * save is about 7 KB. Two guards follow: a hard ceiling that only a deliberate decision may move, and a growth marker that
-     * fails when the figure rises more than 10% above this measurement so the rise is looked at rather than absorbed.
+     * The measured maximum for thirty worst-case checkpoints after the Chapter 9 expansion: 530,891 bytes (about 518 KiB). It was
+     * 472,493 after Chapter 6 and about 450 KiB at 826d719. Chapters 7 to 9 added 48 flags (56,250 bytes, about 1.17 KiB each over
+     * thirty checkpoints) and 2 trophies (2,160 bytes) and no items; taking those out of the model reproduces 472,481, which is
+     * 12 bytes from the earlier figure, so the rise is fully accounted for (qa/CHECKPOINT_GROWTH_INVESTIGATION.md).
+     *
+     * This is a worst case: every flag the story can set, in every checkpoint. No play can hold that many (the most a random
+     * whole-game walk reached was 137 of 326), so a reachable-state measurement is a required investigation before Chapters 10
+     * to 12; it must sit beside this diagnostic, not replace it. The figure bounds a hypothetical history bundle (G3);
+     * qa/G2_RECOVERY_STORE.md records that ceiling as provisional, not accepted, and the live save is about 7 KB.
+     *
+     * Two guards follow: a hard ceiling that only a deliberate decision may move, and a growth marker that fails when the figure
+     * rises more than 10% above this measurement so the rise is looked at rather than absorbed.
      */
-    private val measuredAfterChapter6 = 472_493
+    private val measuredAfterChapter9 = 530_891
     private val hardCeiling = 600 * 1024
 
     private fun thirtyWorstCaseBytes(): Int {
@@ -41,11 +48,11 @@ class CheckpointSizeTest {
     }
 
     @Test
-    fun `worst-case checkpoint growth beyond the Chapter 6 measurement is investigated, not absorbed`() {
+    fun `worst-case checkpoint growth beyond the Chapter 9 measurement is investigated, not absorbed`() {
         val size = thirtyWorstCaseBytes()
-        val allowed = measuredAfterChapter6 / 10 * 11
+        val allowed = measuredAfterChapter9 / 10 * 11
         assertTrue(
-            "Thirty worst-case checkpoints are $size bytes, more than 10% above the $measuredAfterChapter6 measured after Chapter 6 " +
+            "Thirty worst-case checkpoints are $size bytes, more than 10% above the $measuredAfterChapter9 measured after Chapter 9 " +
                 "(allowed $allowed). Find out what grew (flags, items, trophies) and whether checkpoints need all of it, update " +
                 "qa/G2_RECOVERY_STORE.md with the new measurement, and only then change this number.",
             size <= allowed

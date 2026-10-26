@@ -78,9 +78,12 @@ class TrophyBackTest {
         val sites = StoryRepository.chapters.flatMap { StoryRepository.nodesInChapter(it.id) }
             .flatMap { node -> node.choices.filter { it.consequences.unlockTrophy != null }.map { node to it } }
         // 12 sites before the Chapter 6 expansion; it adds five (one tollhouse, one ledger, two burials, one pinning).
-        assertEquals("the seventeen story-choice trophy sites", 17, sites.size)
+        // Chapters 7 and 8 add three more: one for calling the Loyalists off, and one for each of the two routes on which a
+        // Voss who trusts Kaelen tells him where the cells are (the sentinel fight and the ramp).
+        assertEquals("the twenty story-choice trophy sites", 20, sites.size)
         assertEquals(setOf("Friend of Stonebeard", "Blood and Silver", "The Last Jailer", "The Watch Goes On",
-            "Kestrel's Apprentice", "The Ledger, Read to the End", "Buried Properly", "Nails in the Dark"),
+            "Kestrel's Apprentice", "The Ledger, Read to the End", "Buried Properly", "Nails in the Dark",
+            "Called Off", "Her Choice"),
             sites.map { it.second.consequences.unlockTrophy }.toSet())
 
         for ((node, choice) in sites) {

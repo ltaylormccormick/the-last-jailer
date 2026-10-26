@@ -141,6 +141,22 @@ rises more than 10% above 472,493 bytes, so each later chapter package has to lo
 whether checkpoints need all of it, update this paragraph, and only then change a number. The live save is unaffected (about
 7 KB); only a history bundle, which G3 has not built, would meet this bound.
 
+**Measurement after the Chapter 7 to 9 expansion (26 Oct 2026).** `CheckpointSizeTest` measured thirty worst-case checkpoints at
+**530,891 bytes** (about 518 KiB), against 472,493 after Chapter 6. The rise is fully accounted for: 48 flags (278 -> 326 settable) cost
+56,250 bytes, 2 trophies ("Called Off", "Her Choice") cost 2,160, items none; taking them out of the model gives 472,481, 12 bytes from the
+earlier figure. A flag costs about 1.17 KiB at the margin over thirty checkpoints (1.36 KiB averaged over the whole set), twice the
+figure that was recorded when the marker was first set. Flags are 88% of the total. The growth marker fired; it was investigated
+(`qa/CHECKPOINT_GROWTH_INVESTIGATION.md`) and, with approval (Option A), re-baselined to 530,891: the 10% marker now allows 583,979 bytes. The 600 KiB
+(614,400 byte) hard ceiling is unchanged and independent of the marker; it leaves 83,509 bytes, roughly 61 to 71 more flags. It is still
+provisional. The live save is unaffected (about 7 KB).
+
+This figure is a worst case: every flag the story can set, in every checkpoint. No play can hold that many. In 2,500 random whole-game
+walks the most flags set at once was 137 of 326 (median 121, 99th percentile 131), and thirty checkpoints each holding that set measure
+274,511 bytes, 52% of the worst case. **Required before the Chapters 10 to 12 package (Option B):** a deterministic reachable-state
+checkpoint measurement, a seeded walk of the real story that records the largest set of flags, items and trophies one playthrough can hold at
+a checkpoint, and a test that pins the figure and the seed. It complements the worst-case diagnostic and must not replace it: both stay,
+and either one crossing its limit is a failure to be investigated.
+
 ## Test evidence
 
 112 tests (89 + 23 new): codec 21, selection table 3, store behaviour 30, fault injection 15 (486 scenarios), crash

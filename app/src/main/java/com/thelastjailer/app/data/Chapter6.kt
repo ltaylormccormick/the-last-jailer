@@ -1272,7 +1272,7 @@ val chapter6Nodes: List<StoryNode> = listOf(
             Chapter VII awaits.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Rest, and plan for what's coming.", nextNodeId = "voss_returns_alone")
+            Choice(label = "Rest, and plan for what's coming.", nextNodeId = "c7_forge_night")
         )
     ),
     StoryNode(
@@ -1297,7 +1297,7 @@ val chapter6Nodes: List<StoryNode> = listOf(
             Chapter VII awaits.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Rest, and plan for what's coming.", nextNodeId = "voss_returns_alone")
+            Choice(label = "Rest, and plan for what's coming.", nextNodeId = "c7_forge_night")
         )
     ),
     StoryNode(
@@ -1321,7 +1321,7 @@ val chapter6Nodes: List<StoryNode> = listOf(
             Chapter VII awaits.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Rest, and plan for what's coming.", nextNodeId = "voss_returns_alone")
+            Choice(label = "Rest, and plan for what's coming.", nextNodeId = "c7_forge_night")
         )
     )
 )

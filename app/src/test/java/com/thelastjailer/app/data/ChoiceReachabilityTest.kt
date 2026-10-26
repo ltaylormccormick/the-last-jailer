@@ -356,6 +356,22 @@ class ChoiceReachabilityTest {
     }
 
     @Test
+    fun `every gated choice in the scenes Chapters 7 to 9 added or reroute is reachable on a first playthrough`() {
+        val interesting = nodes.filter { n ->
+            n.id.startsWith("c7_") || n.id.startsWith("c8_") || n.id.startsWith("c9_") ||
+                n.chapterId in setOf("chapter_7", "chapter_8", "chapter_9")
+        }
+        var checked = 0
+        interesting.forEach { n ->
+            verdicts.filter { it.nodeId == n.id }.forEach { v ->
+                checked++
+                assertEquals("${n.id}: ${v.choice.label} (${v.detail})", Status.ALIVE, v.status)
+            }
+        }
+        assertTrue("a real number of gated choices were checked: $checked", checked > 150)
+    }
+
+    @Test
     fun `every gated choice in Chapter 6's new scenes and the scenes that now lead to them is reachable on a first playthrough`() {
         val nodesToCheck = listOf(
             "the_road_north_deliberate", "c6_camp", "c6_tollhouse_helped", "c6_cellar", "c6_garden", "c6_watchpost",

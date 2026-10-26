@@ -101,7 +101,9 @@ class CheckpointTimelineTest {
         val device = SimulatedDevice()
         val store = Cp.store(device)
         val edges = Story.allCrossings()
-        assertEquals("64 forward edges and 6 loops", 70, edges.size)
+        // 64 forward edges and 6 loops at 826d719. Chapter 7 now has three more ways to arrive in Chapter 8: its three new
+        // departure scenes (the ones for someone who brought Voss below) lead there beside the three that shipped.
+        assertEquals("67 forward edges and 6 loops", 73, edges.size)
         var checked = 0
         for ((_, _, dest) in edges) {
             val n = ChapterIds.numberOf(dest.chapterId)!!
@@ -111,7 +113,7 @@ class CheckpointTimelineTest {
             assertEquals(CheckpointDigest.of(1, r), CheckpointDigest.of(1, back))
             checked++
         }
-        assertEquals(70, checked)
+        assertEquals(73, checked)
     }
 
     @Test
