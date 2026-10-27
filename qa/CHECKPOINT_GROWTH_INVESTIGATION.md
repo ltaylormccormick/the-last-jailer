@@ -75,6 +75,42 @@ for a number. A alone buys one more package; B stops the guard from forcing the 
 - **A, approved and applied:** `measuredAfterChapter6 = 472_493` became `measuredAfterChapter9 = 530_891`; the test, its comment and its failure
   message say Chapter 9; the hard ceiling and the 10% rule are unchanged. `G2_RECOVERY_STORE.md` has a new paragraph with the table above.
   (The test's name changed with it, so a comparison against an older run shows the old name gone and the new one added.)
-- **B, required before Chapters 10 to 12:** a seeded walk of the real story that finds the largest flag, item and trophy set one playthrough holds
-  at a checkpoint (137 flags, 274,511 bytes today), and a test that pins that figure and the seed. The worst-case diagnostic stays and keeps its marker.
+- **B, required before Chapters 10 to 12: done on 26 Oct 2026 (M0), see "Option B result" below.** The worst-case diagnostic stays and keeps its marker.
 - **C, not taken:** no flag was dropped to satisfy the guard.
+
+## Option B result (M0, 26 Oct 2026, on 8be2d98)
+
+`CheckpointReachableSizeTest` and its walker `ReachableCheckpointMeasure` (both new test sources; `CheckpointSizeTest` is byte for byte unchanged).
+
+| Figure | Bytes | Share of worst case |
+|---|---:|---:|
+| (a) Worst case: thirty checkpoints, every settable flag, item and trophy (unchanged test) | 530,891 | 100% |
+| (b) Thirty arrival records, each the largest found for its chapter | **161,198** | 30% |
+| (c) The largest single walk's history (30 records) | 160,911 | 30% |
+| Earlier estimate: 137 flags, every item and trophy, in all thirty | 274,511 | 52% |
+
+Method. 3,000 uniform walks (any takeable choice at random) and 3,000 collector walks (seven choices in eight take the one adding most
+flags, trophies and items; fights mostly won) from seed 0x10C5, 1,636,468 transitions in all, each using the real `applyChoice` and
+`resolveCombat`. At each forward chapter boundary the record `CheckpointRecord.fromState` would build (the call `ArrivalRecorder` makes) is kept
+if it holds more stored text than any earlier record for that chapter; sizes are measured through the real store in the same XML model as the
+worst case. Coverage: all 30 chapters, all 326 settable flags, no forward jump of other than one chapter. Most flags held at once: 139 (137 in a
+single arrival record), agreeing with the earlier diagnostic. Why the earlier estimate was high: a flag set in Chapter 10 is in 21 arrival records, not
+30, and the early chapters hold far fewer (Chapter 7: 53 flags, Chapter 10: 78, Chapter 30: 131; trophies 9, 14, 25; items 13, 17, 34).
+
+The guard. `reachableAfterChapter9 = 161,198` with a 10% growth warning (allowed 177,309), the seed and walk counts pinned, a coverage check
+(all chapters, at least 95% of settable flags), a repeatability check, and a check that the figure is below the worst case, within rounding of the largest single
+walk, and under the 600 KiB ceiling. It sits beside the worst-case test; neither replaces the other, and either one crossing its limit is investigated.
+
+Negative controls (Chapter10.kt edited, two checkpoint test classes run, file restored and hash verified):
+
+| Control | What it does | Reachable guard | Worst-case guard |
+|---|---|---|---|
+| C1 | 40 flags every play holds from Chapter 10 to the end | **fires**: 193,198 (+19.8%) | passes: 578,891 (+9.0%, under its 10% allowance) |
+| C2 | 70 flags set for two scenes, cleared before the chapter ends | passes: 161,198 (no arrival holds them) | **fires**: 608,591 (+14.6%) |
+
+So the reachable guard moves when a play can hold more, the worst-case guard moves when the story can set more, and they disagree in the way the design intended.
+
+What the figure does not cover. It is a lower bound: a walk that never met a state does not prove it unreachable (the two policies and a
+single walk within 0.2% of the per-chapter bound are the evidence it is close, not a proof). Shop purchases and items spent in a fight are not modelled, so the inventory
+field of a real checkpoint can be larger than sampled by a few hundred bytes per record. The sample is seeded, so a change to the story's graph changes the walks as well as the
+content: a move of a few percent in either direction after a chapter package is noise, ten percent is not.
