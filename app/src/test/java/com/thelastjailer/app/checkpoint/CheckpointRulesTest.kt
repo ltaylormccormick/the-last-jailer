@@ -108,7 +108,10 @@ class CheckpointRulesTest {
                 }
             }
         }
-        assertTrue("expected 36 entry scenes, found ${entries.size}", entries.size == 36)
+        // 36 before Chapter 10's ending was given three destinations: it used to lead to one scene in Chapter 11 and now leads to
+        // one of three (the first night at the north gap, one for each place Voss and Kaelen can stand), and the shipped start of
+        // the chapter is still an entry scene beside them.
+        assertTrue("expected 39 entry scenes, found ${entries.size}", entries.size == 39)
         entries.forEach { sceneId ->
             val node = StoryRepository.node(sceneId)
             val number = ChapterIds.numberOf(node.chapterId)!!

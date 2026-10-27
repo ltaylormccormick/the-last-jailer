@@ -22,8 +22,101 @@ import com.thelastjailer.app.StoryNode
  * III/IV/V/VI/VII/VIII/IX's aftermath-choice pattern (X deliberately skipped it). Ends on the
  * first real tactical win in the Ilsevet arc: for the first time since the missive, the math
  * favors Kaelen rather than her.
+ *
+ * The first night at the north gap, before the dream: Kaelen wears Halvard's chain, a sentry calls him Warden, and Voss
+ * answers according to where the two of them stand. And on the road to Fenmoor, a Kaelen who watched the tithe taken on the
+ * Ash Road knows where the extraction team's cart must slow, and may cut across the marsh to meet it. The shipped scenes are
+ * untouched; only where two of their choices lead has changed.
  */
 val chapter11Nodes: List<StoryNode> = listOf(
+    StoryNode(
+        id = "c11_weight_wary",
+        chapterId = "chapter_11",
+        title = "The Weight of It",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            By the third night Kaelen has taken to walking the north gap before he
+            sleeps. The dwarves have set new iron in the join, and it holds, and nobody
+            has said whether that is his doing. He lays a hand flat against the stone,
+            and only when the cold comes up through his palm, and the chain shifts
+            against his throat to meet it, does he know whose gesture it is.
+
+            "Warden," says a young sentry, passing with a lantern. Kaelen does not turn.
+            The boy stops, and goes on, and Kaelen listens to him go.
+
+            Voss has been on the wall for some time. She comes down when the lantern is
+            gone and stands at the join, looking at it and not at him. "You don't know
+            how it leans," she says. "Nobody expects you to yet. They expect you to
+            stand here, which is easier, and a different thing." She turns the scabbard
+            on her belt a quarter turn. "Answer to the word or don't. But do not make
+            the stone your penance. They will think it comes with the office."
+        """.trimIndent(),
+        choices = rungChoices(
+            label = "Tell her you do not know how it leans.",
+            next = "the_chain_speaks",
+            delta = 1,
+            possible = 1
+        ) + Choice(label = "Tell her you have it in hand.", nextNodeId = "the_chain_speaks")
+    ),
+    StoryNode(
+        id = "c11_weight_working",
+        chapterId = "chapter_11",
+        title = "The Weight of It",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            By the third night Kaelen has taken to walking the north gap before he
+            sleeps. The dwarves have set new iron in the join, and it holds, and nobody
+            has said whether that is his doing. He lays a hand flat against the stone,
+            and only when the cold comes up through his palm, and the chain shifts
+            against his throat to meet it, does he know whose gesture it is.
+
+            "Warden," says a young sentry, passing with a lantern. Kaelen does not turn.
+            The boy stops, and goes on.
+
+            Voss is already at the join, on the other side of the seam. She puts her own
+            hand against the stone, a hand's width from his. "He showed me where it
+            leans," she says. "An afternoon. He told me not to be the one to tell him
+            when it moved." She lets that sit. "I think he meant it for you. It is
+            moving, a little, on the left, and I can show you where. I do not know the
+            names. I know the wall."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Ask her to show you where it gives.",
+                nextNodeId = "the_chain_speaks",
+                requirements = ChoiceRequirement(requiredFlags = setOf("c7_rung_working")),
+                consequences = Consequences(clearFlags = C7_RUNG_FAMILY, setFlags = setOf("c7_rung_trusted"))
+            ),
+            Choice(label = "Say you will learn it alone.", nextNodeId = "the_chain_speaks")
+        )
+    ),
+    StoryNode(
+        id = "c11_weight_trusted",
+        chapterId = "chapter_11",
+        title = "The Weight of It",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            By the third night Kaelen has taken to walking the north gap before he
+            sleeps. The dwarves have set new iron in the join, and it holds, and nobody
+            has said whether that is his doing. He lays a hand flat against the stone,
+            and only when the cold comes up through his palm, and the chain shifts
+            against his throat to meet it, does he know whose gesture it is.
+
+            "Warden," says a young sentry, passing with a lantern. Kaelen does not turn.
+            The boy stops, and goes on.
+
+            He has not heard Voss come up behind him. She says nothing for a while, and
+            then she lays her hand over his on the stone, quick and light, and for the
+            length of a breath neither of them is testing the wall. "You have been
+            checking whether it fits," she says. "The name. It doesn't need to yet. It
+            is only a word they are using until you are." She takes her hand back.
+            "Sleep. I'll take the watch. I am awake in any case."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Let her take the watch, and sleep.", nextNodeId = "the_chain_speaks"),
+            Choice(label = "Stay on the wall until light.", nextNodeId = "the_chain_speaks")
+        )
+    ),
     StoryNode(
         id = "the_chain_speaks",
         chapterId = "chapter_11",
@@ -117,7 +210,63 @@ val chapter11Nodes: List<StoryNode> = listOf(
             needs to say out loud who they belong to.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Follow them.", nextNodeId = "the_drowned_ward")
+            Choice(
+                label = "Follow them.",
+                nextNodeId = "c11_tithe_route",
+                requirements = ChoiceRequirement(requiredFlags = setOf("c8_tithe_seen"))
+            ),
+            Choice(
+                label = "Follow them.",
+                nextNodeId = "the_drowned_ward",
+                requirements = ChoiceRequirement(forbiddenFlags = setOf("c8_tithe_seen"))
+            )
+        )
+    ),
+    StoryNode(
+        id = "c11_tithe_route",
+        chapterId = "chapter_11",
+        title = "A Thumbprint of Ash",
+        illustrationId = "the_road_to_fenmoor",
+        narrativeText = """
+            The tracks cut straight through the reeds, too many and too sure of
+            themselves, and Kaelen has seen the shape of a road like this before. On a
+            post at the edge of the first dry ground someone has pressed a thumbprint of
+            grey ash. It is the mark the collectors made on the Ash Road, and the ruts
+            beside it are cart ruts, not boots. He remembers how that tithe moved: in a
+            line, at a walk, with nobody looking up, toward the one place on any road
+            where a heavy cart must slow. Here that would be a causeway of black stones
+            a quarter mile on, where the reeds close in.
+
+            Voss reads the same post and the same ruts. "They are not following a road,"
+            she says. "They are following a habit."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Follow the tracks.", nextNodeId = "the_drowned_ward"),
+            Choice(label = "Cut through the reeds to the causeway.", nextNodeId = "c11_cut_them_off")
+        )
+    ),
+    StoryNode(
+        id = "c11_cut_them_off",
+        chapterId = "chapter_11",
+        title = "The Right Ground",
+        illustrationId = "the_road_to_fenmoor",
+        narrativeText = """
+            It is worse ground than the tracks, and Voss says so twice, once to the mud
+            and once to him. But the causeway is where he thought it would be, black and
+            narrow, with the reeds leaning in on both sides, and they come off it dry to
+            the knee instead of wet to the waist, a quarter mile of the right ground
+            gained on whoever made the tracks.
+
+            Ahead, over the reeds, a ward is guttering at the water's heart, and a spear
+            rings against something that is not a spear. They are in time. He does not
+            know yet for what.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Go in.",
+                nextNodeId = "the_drowned_ward",
+                consequences = Consequences(statDeltas = mapOf(StatType.COURAGE to 1))
+            )
         )
     ),
     StoryNode(

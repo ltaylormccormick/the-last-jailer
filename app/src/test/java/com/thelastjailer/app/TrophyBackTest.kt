@@ -80,10 +80,13 @@ class TrophyBackTest {
         // 12 sites before the Chapter 6 expansion; it adds five (one tollhouse, one ledger, two burials, one pinning).
         // Chapters 7 and 8 add three more: one for calling the Loyalists off, and one for each of the two routes on which a
         // Voss who trusts Kaelen tells him where the cells are (the sentinel fight and the ramp).
-        assertEquals("the twenty story-choice trophy sites", 20, sites.size)
+        // Chapter 10 adds three sites for one trophy, "The Last Evening": the same continue choice after Halvard's talk of the
+        // north gap, written once for each of the three exits from the night's hub (the first, second and third visit), of
+        // which exactly one is ever visible.
+        assertEquals("the twenty-three story-choice trophy sites", 23, sites.size)
         assertEquals(setOf("Friend of Stonebeard", "Blood and Silver", "The Last Jailer", "The Watch Goes On",
             "Kestrel's Apprentice", "The Ledger, Read to the End", "Buried Properly", "Nails in the Dark",
-            "Called Off", "Her Choice"),
+            "Called Off", "Her Choice", "The Last Evening"),
             sites.map { it.second.consequences.unlockTrophy }.toSet())
 
         for ((node, choice) in sites) {
