@@ -55,7 +55,7 @@ class Chapter17FamilyProofTest {
     }
 
     private val universe: Set<String> = keepers.toSet() + door + hold + rung + planned
-    private val targets: Set<String> = scenes.toSet() + "no_more_envoys"
+    private val targets: Set<String> = scenes.toSet() + "c18_gate_after_ashfall" + "no_more_envoys"
 
     private val report = StringBuilder()
     private fun say(s: String) { println(s); report.appendLine(s) }
@@ -157,7 +157,7 @@ class Chapter17FamilyProofTest {
     @Test
     fun `no Chapter 17 flag is held on arrival at Chapter 17 or at Chapter 18, so a replay starts the hub clean`() {
         val w = Evidence.walked(universe, targets)
-        listOf("the_signal", "no_more_envoys").forEach { at ->
+        listOf("the_signal", "c18_gate_after_ashfall", "no_more_envoys").forEach { at ->
             planned.forEach { f ->
                 assertTrue("$f held on arrival at $at", !w.witnessed(at, Question("stale", setOf(f))))
             }
@@ -179,7 +179,10 @@ class Chapter17FamilyProofTest {
         assertTrue("every road to Chapter 18 passes the first scene of Chapter 17", g.mustPass(leaving("the_signal"), "no_more_envoys"))
         assertEquals("the frame is entered only from the fight or its defeat scene", setOf("the_chamber_defended", "chamber_guardian_defeat"), g.edges.filter { it.to == "what_must_be_broken" }.map { it.from }.toSet())
         assertEquals("the end of the chapter is entered only from the frame", setOf("what_must_be_broken"), g.edges.filter { it.to == "chapter17_end" }.map { it.from }.toSet())
-        assertEquals("Chapter 18 is entered only from the end of Chapter 17", setOf("chapter17_end"), g.edges.filter { it.to == "no_more_envoys" }.map { it.from }.toSet())
+        assertTrue("every road to the first Chapter 18 scene passes the end of Chapter 17", g.mustPass(leaving("chapter17_end"), "c18_gate_after_ashfall"))
+        assertEquals("Chapter 18 is entered only from the end of Chapter 17", setOf("chapter17_end"), g.edges.filter { it.to == "c18_gate_after_ashfall" }.map { it.from }.toSet())
+        assertEquals("the end of Chapter 17 leads only to the gate that opens Chapter 18", setOf("c18_gate_after_ashfall"), g.edges.filter { it.from == "chapter17_end" }.map { it.to }.toSet())
+        assertEquals("the shipped first scene of Chapter 18 is now entered from the last scene before it", setOf("c18_three_days"), g.edges.filter { it.to == "no_more_envoys" }.map { it.from }.toSet())
         assertEquals("Chapter 17 is entered only from the end of Chapter 16", setOf("chapter16_end"), g.edges.filter { it.to == "the_signal" }.map { it.from }.toSet())
     }
 

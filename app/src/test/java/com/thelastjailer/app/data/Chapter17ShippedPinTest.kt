@@ -56,12 +56,13 @@ class Chapter17ShippedPinTest {
     }
 
     @Test
-    fun `the three approved retargets are the only shipped choices whose destination may change`() {
+    fun `the four approved retargets are the only shipped choices whose destination may change`() {
         assertEquals(
             setOf(
                 "gathering_what_they_have_asked|Move out.",
                 "gathering_what_they_have_moved|Move out.",
-                "the_road_to_ashfall_again|Get to the chamber."
+                "the_road_to_ashfall_again|Get to the chamber.",
+                "chapter17_end|Go home."
             ),
             Chapter17Pin.plannedRetargets.keys
         )
@@ -195,6 +196,18 @@ class Chapter17ShippedPinTest {
         return Choice(label = e.label, nextNodeId = e.next)
     }
 
+    @Test
+    fun `the pins accept the end of Chapter 17 once it leads to the Chapter 18 gate, and nothing else`() {
+        val s = shipped("chapter17_end")
+        val n = node("chapter17_end")
+        assertEquals("as it is", emptyList<String>(), Chapter17Pin.choiceProblems(s, n))
+        assertEquals("the shipped destination is still acceptable", emptyList<String>(),
+            Chapter17Pin.choiceProblems(s, withChoice("chapter17_end", 0) { it.copy(nextNodeId = "no_more_envoys") }))
+        assertTrue("another scene", Chapter17Pin.choiceProblems(s, withChoice("chapter17_end", 0) { it.copy(nextNodeId = "c18_marks") }).isNotEmpty())
+        assertTrue("both ways at once", Chapter17Pin.choiceProblems(s, n.copy(choices = n.choices + n.choices.first().copy(nextNodeId = "no_more_envoys"))).isNotEmpty())
+        assertTrue("a changed label", Chapter17Pin.choiceProblems(s, withChoice("chapter17_end", 0) { it.copy(label = "Go back.") }).isNotEmpty())
+    }
+
     private fun roadCopies(
         trusted: (Choice) -> Choice = { it },
         working: (Choice) -> Choice = { it },
@@ -251,7 +264,9 @@ internal object Chapter17Pin {
     val plannedRetargets: Map<String, Set<String>> = mapOf(
         "gathering_what_they_have_asked|Move out." to setOf("c17_chain_gate"),
         "gathering_what_they_have_moved|Move out." to setOf("c17_chain_gate"),
-        "the_road_to_ashfall_again|Get to the chamber." to setOf("c17_road_trusted", "c17_road_working", "c17_road_wary")
+        "the_road_to_ashfall_again|Get to the chamber." to setOf("c17_road_trusted", "c17_road_working", "c17_road_wary"),
+        // the Chapter 18-20 expansion: the end of Chapter 17 now leads to the gate before `no_more_envoys`; label and effects are the shipped ones
+        "chapter17_end|Go home." to setOf("c18_gate_after_ashfall")
     )
     private const val ROAD_KEY = "the_road_to_ashfall_again|Get to the chamber."
 

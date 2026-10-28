@@ -114,7 +114,10 @@ class CheckpointRulesTest {
         // Chapter 14 (the nights at the gate, one for each stance on who holds a gate) and Chapter 14's ending was given two in
         // Chapter 15 (Voss on how Kaelen asked Selvane, one for each way): five more arrival scenes, with the shipped starts of
         // both chapters still counted as entry scenes beside them.
-        assertTrue("expected 44 entry scenes, found ${entries.size}", entries.size == 44)
+        // 49 after the Chapter 18 to 20 expansion: Chapter 17's ending now leads to a new gate scene in Chapter 18 (one more entry beside the
+        // shipped start), Chapter 18's ending leads to one of three new scenes in Chapter 19, one for each fate of Ilsevet (three more), and
+        // Chapter 19's three endings lead to one new scene in Chapter 20 (one more); the shipped starts of all three chapters still count.
+        assertTrue("expected 49 entry scenes, found ${entries.size}", entries.size == 49)
         entries.forEach { sceneId ->
             val node = StoryRepository.node(sceneId)
             val number = ChapterIds.numberOf(node.chapterId)!!

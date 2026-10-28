@@ -24,6 +24,15 @@ val C17_PREPARATION_FLAGS: Set<String> = setOf(
 private val C17_CLEAR = Consequences(clearFlags = C17_PREPARATION_FLAGS)
 
 /**
+ * What the frame choice records. Chapter XVIII reads them, so a replay must not meet one left by an earlier telling: the three
+ * choices at the chain, where the chapter's new material begins, clear them with the preparation markers. Nothing clears them after
+ * the frame has been chosen; the final "Enter the chamber." choice clears the preparation markers only.
+ */
+val C17_FRAME_FLAGS: Set<String> = setOf("destroyed_the_frame_outright", "disrupted_carefully", "stopped_it_however_possible")
+
+private val C17_ENTRY_CLEAR = Consequences(clearFlags = C17_PREPARATION_FLAGS + C17_FRAME_FLAGS)
+
+/**
  * The step after the chain at the gate: what Stonebeard made of the answer Kaelen gave in Chapter XIII about who stands with it.
  * Training new wardens, standing the watch himself and leaving the question open are three exclusive flags, and the last copy is read
  * by the absence of the other two, so a save that holds none still goes on. Each copy clears the preparation markers.
@@ -33,19 +42,19 @@ private fun stonebeardsAnswer(label: String): List<Choice> = listOf(
         label = label,
         nextNodeId = "c17_wardens",
         requirements = ChoiceRequirement(requiredFlags = setOf("began_training_new_wardens")),
-        consequences = C17_CLEAR
+        consequences = C17_ENTRY_CLEAR
     ),
     Choice(
         label = label,
         nextNodeId = "c17_watch",
         requirements = ChoiceRequirement(requiredFlags = setOf("stood_watch_rather_than_delegate")),
-        consequences = C17_CLEAR
+        consequences = C17_ENTRY_CLEAR
     ),
     Choice(
         label = label,
         nextNodeId = "c17_council",
         requirements = ChoiceRequirement(forbiddenFlags = setOf("began_training_new_wardens", "stood_watch_rather_than_delegate")),
-        consequences = C17_CLEAR
+        consequences = C17_ENTRY_CLEAR
     )
 )
 
@@ -1122,7 +1131,7 @@ val chapter17Nodes: List<StoryNode> = listOf(
             Chapter XVIII awaits.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Go home.", nextNodeId = "no_more_envoys")
+            Choice(label = "Go home.", nextNodeId = "c18_gate_after_ashfall")
         )
     )
 )

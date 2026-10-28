@@ -484,7 +484,7 @@ class Chapter17ExpansionTest {
                 assertTrue("$id '${c.label}' grants an item", q.grantItemIds.isEmpty())
                 assertNull("$id '${c.label}' unlocks a trophy", q.unlockTrophy)
                 assertTrue("$id '${c.label}' sets ${q.setFlags - prep}", prep.containsAll(q.setFlags))
-                assertTrue("$id '${c.label}' clears ${q.clearFlags - prep}", q.clearFlags.isEmpty() || q.clearFlags == prep)
+                assertTrue("$id '${c.label}' clears ${q.clearFlags - prep}", q.clearFlags.isEmpty() || q.clearFlags == prep || (id == "c17_chain_gate" && q.clearFlags == prep + C17_FRAME_FLAGS))
                 assertNull("$id '${c.label}' is gated on a stat", c.requirements?.minStats?.takeIf { it.isNotEmpty() })
                 assertEquals("$id '${c.label}' shows a locked choice", com.thelastjailer.app.LockedDisplay.HIDE, c.lockedDisplay)
             }
@@ -498,6 +498,25 @@ class Chapter17ExpansionTest {
         prep.forEach {
             assertEquals(it, HiddenReason.BOOKKEEPING, FlagDescriptions.hidden[it])
             assertFalse("$it is described in the Journal", it in described)
+        }
+    }
+
+    @Test
+    fun `the frame flags are cleared by the three chain choices only, never by anything after the frame has been chosen`() {
+        C17_FRAME_FLAGS.forEach { f ->
+            val clearers = graph.clearersOf(f)
+            assertEquals("$f is cleared by the three chain choices", 3, clearers.size)
+            clearers.forEach { assertEquals("$f cleared at ${it.from}", "c17_chain_gate", it.from) }
+        }
+        // a replay that holds an old frame outcome and takes the chain meets the next telling with none
+        val stale = at("c17_chain_gate", "disrupted_carefully", "destroyed_the_frame_outright", *prep.toTypedArray()).pick("Continue.")
+        assertEquals(emptySet<String>(), stale.flags.intersect(C17_FRAME_FLAGS))
+        // continuing from a frame outcome, nothing on the way into Chapter 18 clears it
+        val chosen = at("what_must_be_broken").copy(courage = 20, honour = 20)
+        StoryRepository.visibleChoices(StoryRepository.node("what_must_be_broken"), chosen).forEach { c ->
+            val after = chosen.applyChoice(c)
+            assertEquals(c.consequences.setFlags, after.flags.intersect(C17_FRAME_FLAGS))
+            assertEquals(after.flags.intersect(C17_FRAME_FLAGS), after.pick("Go home.").flags.intersect(C17_FRAME_FLAGS))
         }
     }
 
@@ -554,9 +573,11 @@ class Chapter17ExpansionTest {
                         assertEquals("chapter17_end", t.sceneId)
                         assertTrue("the frame component is granted", "twisted_frame_component" in t.inventory)
                         assertEquals(emptySet<String>(), five(t))
+                        assertEquals("the frame outcome is recorded once", c.consequences.setFlags, t.flags.intersect(C17_FRAME_FLAGS))
                         t = t.pick("Go home.")
-                        assertEquals("no_more_envoys", t.sceneId)
+                        assertEquals("the end of Chapter 17 leads to the gate that opens Chapter 18", "c18_gate_after_ashfall", t.sceneId)
                         assertEquals("a marker reaches Chapter 18", emptySet<String>(), five(t))
+                        assertEquals("the frame outcome survives continuing", c.consequences.setFlags, t.flags.intersect(C17_FRAME_FLAGS))
                     }
                 }
             }

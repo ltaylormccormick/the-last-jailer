@@ -28,6 +28,20 @@ import com.thelastjailer.app.StoryNode
  */
 val chapter20Nodes: List<StoryNode> = listOf(
     StoryNode(
+        id = "c20_before_departure",
+        chapterId = "chapter_20",
+        title = "The Weight of a Report",
+        illustrationId = "black_door_beneath_the_tree",
+        narrativeText = """
+            The workshop had become a place on a map and a bundle of pages on Kaelen's table. That
+            was not enough. He wanted to see the bench where the ink had dried, the window the
+            archivist had looked through and the door Selvane's people had marked. Voss found him
+            studying the road before dawn. "You're going," she said. "Yes." She looked at the
+            report. "Then take the part that says what they actually found. Leave the guesses."
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Decide who goes.", nextNodeId = "the_workshop"))
+    ),
+    StoryNode(
         id = "the_workshop",
         chapterId = "chapter_20",
         title = "The Workshop",
@@ -35,13 +49,14 @@ val chapter20Nodes: List<StoryNode> = listOf(
         narrativeText = """
             Selvane's report is thorough. It is also, Kaelen decides within a day of reading it,
             not the same as seeing the place himself. Whatever wrote five names into a design
-            eleven years before any of them existed deserves more than a secondhand account, and
+            eleven years before any of them had taken up the roles it
+            gave them deserves more than a secondhand account, and
             some part of him needs to see the ink for himself before he can believe any of it.
         """.trimIndent(),
         choices = listOf(
             Choice(
                 label = "\"I'll go alone. This deserves a direct look, not a delegation.\"",
-                nextNodeId = "the_road_to_the_workshop_alone",
+                nextNodeId = "c20_alone_mile",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     setFlags = setOf("went_to_workshop_alone")
@@ -49,13 +64,41 @@ val chapter20Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "\"Voss comes with me. Two sets of eyes, not one.\"",
-                nextNodeId = "the_road_to_the_workshop_with_voss",
+                nextNodeId = "c20_with_voss_mile",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     setFlags = setOf("brought_voss_to_workshop")
                 )
             )
         )
+    ),
+    StoryNode(
+        id = "c20_alone_mile",
+        chapterId = "chapter_20",
+        title = "The Road Without Witnesses",
+        illustrationId = "the_road_to_the_workshop",
+        narrativeText = """
+            The first mile alone was easier than Kaelen expected. He could stop whenever the road
+            offered a question and take as long as he needed to answer it. The second mile was
+            worse. Every noise behind him became a footstep, and every footstep reminded him how
+            much he had grown used to Voss being there. He kept walking. Solitude was a choice he
+            had made, not a punishment the road had imposed.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Keep to the road.", nextNodeId = "the_road_to_the_workshop_alone"))
+    ),
+    StoryNode(
+        id = "c20_with_voss_mile",
+        chapterId = "chapter_20",
+        title = "Two Sets of Eyes",
+        illustrationId = "the_road_to_the_workshop",
+        narrativeText = """
+            Voss carried the report and made him carry the water. It was a small division of labour,
+            but it settled them into the road. At the first fork she spotted Selvane's mark on a
+            stone before he did. At the second she asked why the map had been copied twice in
+            different hands. Kaelen had no answer. "Good," she said. "That means we have something
+            to ask when we get there."
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Follow Selvane's markers.", nextNodeId = "the_road_to_the_workshop_with_voss"))
     ),
     StoryNode(
         id = "the_road_to_the_workshop_alone",
@@ -72,7 +115,7 @@ val chapter20Nodes: List<StoryNode> = listOf(
             apparently, ever remembers seeing it open.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Go inside.", nextNodeId = "what_the_workshop_holds")
+            Choice(label = "Enter the village.", nextNodeId = "c20_village_edge")
         )
     ),
     StoryNode(
@@ -91,8 +134,128 @@ val chapter20Nodes: List<StoryNode> = listOf(
             apparently, ever remembers seeing it open.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Go inside.", nextNodeId = "what_the_workshop_holds")
+            Choice(label = "Enter the village.", nextNodeId = "c20_village_edge")
         )
+    ),
+    StoryNode(
+        id = "c20_village_edge",
+        chapterId = "chapter_20",
+        title = "The Village That Left",
+        illustrationId = "the_road_to_the_workshop",
+        narrativeText = """
+            Kaelen walked in past the last field wall. The village had not burned. It had simply
+            emptied. Roofs sagged under moss, a trough held rainwater and a child's wooden hoop lay
+            half-buried beside the road. The workshop stood apart from the houses, its narrow
+            windows turned away from the square. Whoever had worked there had wanted light without
+            company. Kaelen wondered whether the archivist had chosen that loneliness or inherited
+            it from the work.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Inspect the village records.", nextNodeId = "c20_register"),
+            Choice(label = "Approach the workshop directly.", nextNodeId = "c20_workshop_door")
+        )
+    ),
+    StoryNode(
+        id = "c20_register",
+        chapterId = "chapter_20",
+        title = "The Last Ordinary Entry",
+        illustrationId = "the_road_to_the_workshop",
+        narrativeText = """
+            The village register ended with a list of grain owed and two names crossed out in a
+            different hand. There was no entry for an archivist, no lease on the workshop and no
+            record of anyone dying there. That absence did not prove he had never lived. It proved
+            only that the village had stopped writing about him, or had never thought to begin.
+            Kaelen copied the final date before leaving.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Go to the workshop.", nextNodeId = "c20_workshop_door"))
+    ),
+    StoryNode(
+        id = "c20_workshop_door",
+        chapterId = "chapter_20",
+        title = "The Mark on the Lintel",
+        illustrationId = "the_road_to_the_workshop",
+        narrativeText = """
+            Selvane's people had marked the lintel with a clean white stroke. Beneath it lay an
+            older mark, so worn Kaelen could not tell whether it had been carved or burned. The door
+            opened without resistance. Someone had been here recently enough to clear the threshold,
+            but not recently enough to chase away the smell of damp paper. He stood outside for one
+            breath longer, then crossed into the room.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Examine the first table.", nextNodeId = "c20_bench"))
+    ),
+    StoryNode(
+        id = "c20_bench",
+        chapterId = "chapter_20",
+        title = "The Work of One Hand",
+        illustrationId = "what_the_workshop_holds",
+        narrativeText = """
+            The bench held three kinds of work. The oldest pages were measured and hesitant, crowded
+            with corrections. Later sheets were cleaner, the lines more certain. The newest pages
+            were almost bare of mistakes. Kaelen set them beside one another. The handwriting
+            matched. The confidence did not. He thought of the prisoner's word, "remembering", and
+            wished it had offered him a less frightening one.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Study the ink.", nextNodeId = "c20_ink_layers"),
+            Choice(label = "Look for the archivist's belongings.", nextNodeId = "c20_personal_effects")
+        )
+    ),
+    StoryNode(
+        id = "c20_ink_layers",
+        chapterId = "chapter_20",
+        title = "Six Years of Impossible Work",
+        illustrationId = "what_the_workshop_holds",
+        narrativeText = """
+            Some pages had been written long after the others. The paper had come from a different
+            mill; the ink was made with a later recipe. Yet the hand was the same down to the way it
+            closed the letter a. Kaelen checked the dates against Selvane's notes. Whatever had
+            continued the work had not been careful to hide the passage of time. It had only been
+            careful to keep the handwriting.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Look behind the bench.", nextNodeId = "c20_recess"))
+    ),
+    StoryNode(
+        id = "c20_personal_effects",
+        chapterId = "chapter_20",
+        title = "The Man Before the Pages",
+        illustrationId = "what_the_workshop_holds",
+        narrativeText = """
+            A cup with a chipped handle stood beneath the bench. Beside it lay a mended glove and a
+            small knife sharpened almost to nothing. They belonged to someone who had eaten, worked
+            and worn things out. Kaelen held the glove for a moment. The archivist had been a person
+            before he became a mystery. That mattered. It made the later pages an intrusion into a
+            life, not merely a clever trick.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Look behind the bench.", nextNodeId = "c20_recess"))
+    ),
+    StoryNode(
+        id = "c20_recess",
+        chapterId = "chapter_20",
+        title = "What Selvane Could Not See",
+        illustrationId = "what_the_workshop_holds",
+        narrativeText = """
+            A shelving unit had fallen against the back wall. Beyond it was a shallow recess hidden
+            from the doorway. Kaelen moved the loose boards and found the remains of a man beneath a
+            collapsed coat, long undisturbed. Selvane's investigators had catalogued the desk and
+            the notes. They had not moved the shelf. Their report had been incomplete, not
+            dishonest. The distinction offered little comfort. The dead man had remained here while
+            his handwriting travelled on.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Check the oldest page against the remains.", nextNodeId = "c20_oldest_page"))
+    ),
+    StoryNode(
+        id = "c20_oldest_page",
+        chapterId = "chapter_20",
+        title = "Where the Hand Stopped",
+        illustrationId = "what_the_workshop_holds",
+        narrativeText = """
+            The oldest page ended halfway through a calculation. Its last line shook, then broke
+            off. The next sheet began the calculation again in a steadier hand. No note explained
+            the interruption. No name marked the change. Kaelen imagined a person sitting here,
+            setting down a pen for the last time, and something else taking it up. He did not know
+            whether the image was true. He knew he could no longer dismiss it.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Go to the workbench's centre.", nextNodeId = "what_the_workshop_holds"))
     ),
     StoryNode(
         id = "what_the_workshop_holds",
@@ -109,8 +272,22 @@ val chapter20Nodes: List<StoryNode> = listOf(
             to, and never once let the handwriting slip.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Keep reading.", nextNodeId = "the_workshops_own_guardian")
+            Choice(label = "Keep reading.", nextNodeId = "c20_guardian_warning")
         )
+    ),
+    StoryNode(
+        id = "c20_guardian_warning",
+        chapterId = "chapter_20",
+        title = "A Page Moves",
+        illustrationId = "the_workshops_own_guardian",
+        narrativeText = """
+            Kaelen kept reading until the loose page lifted at one corner, though the windows were
+            shut. He put his hand over it. Something answered from the darkness behind the bench, a
+            pressure rather than a sound. He drew his sword. The ink on the page remained still. The
+            room did not. Whatever had guarded this work had mistaken his arrival for an
+            interruption, and it had no intention of allowing the sentence to end elsewhere.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Face it.", nextNodeId = "the_workshops_own_guardian"))
     ),
     StoryNode(
         id = "the_workshops_own_guardian",
@@ -145,10 +322,38 @@ val chapter20Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "Check the workbench.",
-                nextNodeId = "the_last_page",
+                nextNodeId = "c20_after_guardian",
                 consequences = Consequences(setFlags = setOf("lost_to_the_ghostwriter"))
             )
         )
+    ),
+    StoryNode(
+        id = "c20_after_guardian",
+        chapterId = "chapter_20",
+        title = "The Coat on the Floor",
+        illustrationId = "the_workshops_own_guardian",
+        narrativeText = """
+            When the pressure faded, the coat lay empty. Kaelen did not touch it at once; he went to
+            the workbench instead. The thing had worn a dead man's belongings without becoming the
+            man. That was the part he wanted to remember. The fight had proved that the workshop
+            could defend itself. It had not proved who gave the order, or whether anyone living
+            still knew the order existed.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Look at the final page.", nextNodeId = "c20_final_margin"))
+    ),
+    StoryNode(
+        id = "c20_final_margin",
+        chapterId = "chapter_20",
+        title = "A Hand That Hesitated",
+        illustrationId = "the_last_page",
+        narrativeText = """
+            The last page was unlike the rest. Its lines were uneven. One word had been written
+            twice and crossed out once. The writer had known how to finish the frame and yet seemed
+            uncertain how to finish a sentence. Kaelen thought of the dead man's glove beneath the
+            bench. He could not decide whether the hesitation made the message more human or more
+            terrible.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Read the message.", nextNodeId = "the_last_page"))
     ),
     StoryNode(
         id = "the_last_page",
@@ -156,8 +361,7 @@ val chapter20Nodes: List<StoryNode> = listOf(
         title = "The Last Page",
         illustrationId = "the_last_page",
         narrativeText = """
-            It goes still, eventually, dissolving back into whatever passed for dark before
-            Kaelen's blade found it. The workbench's last page is different from the rest, not
+            The workbench's last page is different from the rest, not
             plans this time, just a single line, in a hand gone suddenly less certain than all
             the pages before it:
 
@@ -167,10 +371,39 @@ val chapter20Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "Take the page, and go home.",
-                nextNodeId = "what_the_prisoner_says_now",
+                nextNodeId = "c20_sixth_question",
                 consequences = Consequences(grantItemIds = listOf("archivists_final_page"))
             )
         )
+    ),
+    StoryNode(
+        id = "c20_sixth_question",
+        chapterId = "chapter_20",
+        title = "The Space After Five",
+        illustrationId = "the_last_page",
+        narrativeText = """
+            He took the page and started for home, and the message kept pace with him. The message
+            addressed a sixth, though Selvane had found only five names. Kaelen counted the
+            envelopes again in his mind. Five people had been named. A sixth had been remembered.
+            The distinction felt deliberate. He resisted the urge to supply a name simply to close
+            the gap. The last page asked for something more difficult than recognition: it asked
+            someone to distinguish agreement from choice.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Keep walking.", nextNodeId = "c20_homeward"))
+    ),
+    StoryNode(
+        id = "c20_homeward",
+        chapterId = "chapter_20",
+        title = "The Road Back",
+        illustrationId = "the_road_to_the_workshop",
+        narrativeText = """
+            The road home seemed shorter, though the page in Kaelen's pack made every step heavier.
+            He passed the abandoned trough and Selvane's marks without stopping. The workshop had
+            offered proof of a dead man and a hand that continued without him. It had not offered an
+            explanation. He wondered whether the prisoner would hear the difference when he read the
+            final line aloud.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Return to the black door.", nextNodeId = "what_the_prisoner_says_now"))
     ),
     StoryNode(
         id = "what_the_prisoner_says_now",
@@ -226,7 +459,7 @@ val chapter20Nodes: List<StoryNode> = listOf(
             track of all six wards for far longer than anyone still living has been keeping track
             of anything.
 
-            Ilsevet spent fifteen years thinking she was building something new. Kaelen is
+            Ilsevet spent eleven years thinking she was building something new. Kaelen is
             starting to suspect nobody involved in any of this has ever been doing anything
             except finishing somebody else's very old, very patient work.
 
@@ -251,7 +484,7 @@ val chapter20Nodes: List<StoryNode> = listOf(
             track of all six wards for far longer than anyone still living has been keeping track
             of anything.
 
-            Ilsevet spent fifteen years thinking she was building something new. Kaelen is
+            Ilsevet spent eleven years thinking she was building something new. Kaelen is
             starting to suspect nobody involved in any of this has ever been doing anything
             except finishing somebody else's very old, very patient work.
 
@@ -277,7 +510,7 @@ val chapter20Nodes: List<StoryNode> = listOf(
             all six wards for far longer than anyone still living has been keeping track of
             anything.
 
-            Ilsevet spent fifteen years thinking she was building something new. Kaelen is
+            Ilsevet spent eleven years thinking she was building something new. Kaelen is
             starting to suspect nobody involved in any of this has ever been doing anything
             except finishing somebody else's very old, very patient work.
 

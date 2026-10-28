@@ -145,7 +145,7 @@ object ItemCatalog {
         Item(
             id = "archivists_frame_notes",
             name = "Archivist's Frame Notes",
-            description = "Five sets of plans in the same careful hand, addressed to people who hadn't been born when the ink dried. The fifth is addressed to Kaelen."
+            description = "Five sets of plans in the same careful hand, addressed to people who hadn't yet taken up the roles the pages gave them when the ink dried. The fifth is addressed to Kaelen."
         ),
         Item(
             id = "archivists_final_page",
