@@ -343,6 +343,12 @@ object FlagDescriptions {
         "c6_spot_cellar" to HiddenReason.BOOKKEEPING,
         "c6_spot_garden" to HiddenReason.BOOKKEEPING,
         "c6_ruin_second" to HiddenReason.BOOKKEEPING,
+        // Chapter 17: what the preparation at Stonebeard leaves behind, cleared before the chapter is left
+        "c17_visited_stores" to HiddenReason.BOOKKEEPING,
+        "c17_visited_watch" to HiddenReason.BOOKKEEPING,
+        "c17_visited_records" to HiddenReason.BOOKKEEPING,
+        "c17_took_guard" to HiddenReason.BOOKKEEPING,
+        "c17_studied_junctions" to HiddenReason.BOOKKEEPING,
         // REDUNDANT
         "took_the_warden_chain" to HiddenReason.REDUNDANT,
         "c7_halvard_open" to HiddenReason.REDUNDANT,
