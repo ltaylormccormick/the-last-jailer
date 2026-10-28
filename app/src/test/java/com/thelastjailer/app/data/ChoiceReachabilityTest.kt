@@ -459,10 +459,18 @@ private object RealStoryReachability {
     var largestExactRun = 0
         private set
 
+    /**
+     * What real states witness: the global sample of random walks, plus the choices a deterministic witness stands in ([PivotWitnesses]).
+     * The sample shares one random sequence across all its walks, so a scene added anywhere later in the story shifts every walk after the
+     * first and a choice reached only by a rare combination can drop out of it (c10_forge_side's third exit did, when Chapters 13 to 16
+     * were added; other seeds find it). A pivot witness gives every walk its own sequence and finishes the local choices exhaustively, so it
+     * does not move. Both are witnesses, never verdicts of death, and neither the sample size nor the exact search's budget has changed.
+     */
     val sampled: Set<Pair<String, Int>> by lazy {
-        GatedChoiceSampler(nodes, combat = { n -> n.combatEncounterId?.let { CombatRepository.encounter(it) } })
+        val walked = GatedChoiceSampler(nodes, combat = { n -> n.combatEncounterId?.let { CombatRepository.encounter(it) } })
             .also { sampler = it }
             .satisfied(walks = SAMPLED_WALKS, seed = 0x5EED5L)
+        walked + PivotWitnesses.satisfied(nodes) { n -> n.combatEncounterId?.let { CombatRepository.encounter(it) } }
     }
     private var sampler: GatedChoiceSampler? = null
 
