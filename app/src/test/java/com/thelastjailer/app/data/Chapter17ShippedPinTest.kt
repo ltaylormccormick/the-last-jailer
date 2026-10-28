@@ -186,13 +186,22 @@ class Chapter17ShippedPinTest {
         }
     }
 
+    /**
+     * The road's one shipped choice as it was before the rung copies (the label and the destination come from the pinned shipped data), so
+     * that these tests hold both while the road is as shipped and once it carries the three copies.
+     */
+    private fun shippedRoadChoice(): Choice {
+        val e = shipped("the_road_to_ashfall_again").choices.single()
+        return Choice(label = e.label, nextNodeId = e.next)
+    }
+
     private fun roadCopies(
         trusted: (Choice) -> Choice = { it },
         working: (Choice) -> Choice = { it },
         wary: (Choice) -> Choice = { it }
     ): StoryNode {
         val n = node("the_road_to_ashfall_again")
-        val c = n.choices.single()
+        val c = shippedRoadChoice()
         return n.copy(
             choices = listOf(
                 trusted(c.copy(nextNodeId = "c17_road_trusted", requirements = ChoiceRequirement(requiredFlags = setOf("c7_rung_trusted")))),
@@ -219,7 +228,7 @@ class Chapter17ShippedPinTest {
         assertTrue("a copy with an effect added", Chapter17Pin.choiceProblems(s, roadCopies(trusted = { it.copy(consequences = it.consequences.copy(setFlags = setOf("c7_rung_trusted"))) })).isNotEmpty())
         assertTrue("a copy that clears", Chapter17Pin.choiceProblems(s, roadCopies(trusted = { it.copy(consequences = it.consequences.copy(clearFlags = setOf("c7_rung_wary"))) })).isNotEmpty())
         assertTrue("a copy with a stat gate", Chapter17Pin.choiceProblems(s, roadCopies(wary = { it.copy(requirements = ChoiceRequirement(forbiddenFlags = setOf("c7_rung_working", "c7_rung_trusted"), minStats = mapOf(StatType.HONOUR to 1))) })).isNotEmpty())
-        assertTrue("the shipped destination kept beside the copies", Chapter17Pin.choiceProblems(s, road.copy(choices = road.choices + node("the_road_to_ashfall_again").choices.single())).isNotEmpty())
+        assertTrue("the shipped destination kept beside the copies", Chapter17Pin.choiceProblems(s, road.copy(choices = road.choices + shippedRoadChoice())).isNotEmpty())
     }
 
     @Test

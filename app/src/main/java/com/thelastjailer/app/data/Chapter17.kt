@@ -15,7 +15,7 @@ private const val C17_STUDIED_JUNCTIONS = "c17_studied_junctions"
 /**
  * What the preparation at Stonebeard leaves behind: which of the three sites Kaelen visited, whether he took a guard from the watch,
  * and whether he studied where the old records' lines meet. The chain at the gate clears all five as it begins, so a replay reaches
- * the hub with an empty slate, and, for now, they are cleared again where the hub is left (see [setOut]).
+ * the hub with an empty slate, and the final "Enter the chamber." choice clears them again once every payoff has read them.
  */
 val C17_PREPARATION_FLAGS: Set<String> = setOf(
     C17_VISITED_STORES, C17_VISITED_WATCH, C17_VISITED_RECORDS, C17_TOOK_GUARD, C17_STUDIED_JUNCTIONS
@@ -86,15 +86,13 @@ private fun sites(secondTable: Boolean): List<Choice> = listOf(
 )
 
 /**
- * Leaving the hub for the road. Temporary: nothing after the hub reads the preparation markers yet, so every way out clears them.
- * Once the approach and payoff scenes read them, the markers must survive the road and be cleared by the final "Enter the chamber."
- * choice into `the_chamber_defended` instead, and these exits must stop clearing.
+ * Leaving the hub for the road. The markers stay set: the approach and the payoff scenes read them, and the final "Enter the
+ * chamber." choice clears them.
  */
 private fun setOut(label: String, requirements: ChoiceRequirement? = null) = Choice(
     label = label,
     nextNodeId = "the_road_to_ashfall_again",
-    requirements = requirements,
-    consequences = C17_CLEAR
+    requirements = requirements
 )
 
 private fun departFromTheHub(): List<Choice> = listOf(setOut("Depart for Ashfall."))
@@ -108,6 +106,74 @@ private fun afterASite(a: String, b: String): List<Choice> = listOf(
     Choice(label = "Continue.", nextNodeId = "c17_prepare_second", requirements = ChoiceRequirement(forbiddenFlags = setOf(a, b))),
     setOut("Set out for Ashfall.", ChoiceRequirement(requiredFlags = setOf(a))),
     setOut("Set out for Ashfall.", ChoiceRequirement(requiredFlags = setOf(b)))
+)
+
+private fun gate(required: Set<String> = emptySet(), forbidden: Set<String> = emptySet()) =
+    ChoiceRequirement(requiredFlags = required, forbiddenFlags = forbidden)
+
+/**
+ * The shipped road's single "Get to the chamber." choice, written once for each of Voss's three rungs: she walks beside Kaelen, and
+ * what she says depends on where the two of them stand. The lowest rung also covers a save that holds none, so exactly one copy is
+ * ever shown. The label, and the absence of any effect, are the shipped ones.
+ */
+private fun getToTheChamber(label: String): List<Choice> = listOf(
+    Choice(label = label, nextNodeId = "c17_road_trusted", requirements = gate(required = setOf("c7_rung_trusted"))),
+    Choice(label = label, nextNodeId = "c17_road_working", requirements = gate(required = setOf("c7_rung_working"))),
+    Choice(label = label, nextNodeId = "c17_road_wary", requirements = gate(forbidden = setOf("c7_rung_working", "c7_rung_trusted")))
+)
+
+private fun goOn(nextNodeId: String, requirements: ChoiceRequirement) =
+    Choice(label = "Go on.", nextNodeId = nextNodeId, requirements = requirements)
+
+/**
+ * The last choice before the guardian, and the only way into it: it clears the five preparation markers, so a finished telling
+ * leaves none, and a replay cannot meet a stale one. It is taken only after every payoff has been shown, so nothing is cleared
+ * before a payoff gate has been read.
+ */
+private fun enterTheChamber(requirements: ChoiceRequirement? = null) = Choice(
+    label = "Enter the chamber.",
+    nextNodeId = "the_chamber_defended",
+    requirements = requirements,
+    consequences = C17_CLEAR
+)
+
+/*
+ * The preparation payoffs are static scenes chosen by gated choices, never assembled text. They come in a fixed order: the stores,
+ * then the records (the arrangement, or the junctions if Kaelen studied where the lines meet), then the watch (the guard taken, or
+ * left), and only the ones that apply. A player who visited nothing gets the one passage for that. Each scene hands on to the next
+ * that applies, so every applicable payoff appears exactly once, and the last hands on to the chamber.
+ */
+
+/** From the approach, the first payoff that applies: the stores, else the records, else the watch, else the no-preparation passage. */
+private fun afterTheApproach(): List<Choice> = listOf(
+    goOn("c17_pay_stores", gate(required = setOf(C17_VISITED_STORES))),
+    goOn("c17_pay_interruption", gate(required = setOf(C17_STUDIED_JUNCTIONS), forbidden = setOf(C17_VISITED_STORES))),
+    goOn(
+        "c17_pay_arrangement",
+        gate(required = setOf(C17_VISITED_RECORDS), forbidden = setOf(C17_VISITED_STORES, C17_STUDIED_JUNCTIONS))
+    ),
+    goOn("c17_pay_taken", gate(required = setOf(C17_TOOK_GUARD), forbidden = setOf(C17_VISITED_STORES, C17_VISITED_RECORDS))),
+    goOn(
+        "c17_pay_left",
+        gate(required = setOf(C17_VISITED_WATCH), forbidden = setOf(C17_VISITED_STORES, C17_VISITED_RECORDS, C17_TOOK_GUARD))
+    ),
+    goOn("c17_pay_none", gate(forbidden = setOf(C17_VISITED_STORES, C17_VISITED_RECORDS, C17_VISITED_WATCH)))
+)
+
+/** After the stores: the records, else the watch, else the chamber. */
+private fun afterTheStores(): List<Choice> = listOf(
+    goOn("c17_pay_interruption", gate(required = setOf(C17_STUDIED_JUNCTIONS))),
+    goOn("c17_pay_arrangement", gate(required = setOf(C17_VISITED_RECORDS), forbidden = setOf(C17_STUDIED_JUNCTIONS))),
+    goOn("c17_pay_taken", gate(required = setOf(C17_TOOK_GUARD), forbidden = setOf(C17_VISITED_RECORDS))),
+    goOn("c17_pay_left", gate(required = setOf(C17_VISITED_WATCH), forbidden = setOf(C17_VISITED_RECORDS, C17_TOOK_GUARD))),
+    enterTheChamber(gate(forbidden = setOf(C17_VISITED_RECORDS, C17_VISITED_WATCH)))
+)
+
+/** After the records: the watch, else the chamber. */
+private fun afterTheRecords(): List<Choice> = listOf(
+    goOn("c17_pay_taken", gate(required = setOf(C17_TOOK_GUARD))),
+    goOn("c17_pay_left", gate(required = setOf(C17_VISITED_WATCH), forbidden = setOf(C17_TOOK_GUARD))),
+    enterTheChamber(gate(forbidden = setOf(C17_VISITED_WATCH)))
 )
 
 /**
@@ -682,9 +748,275 @@ val chapter17Nodes: List<StoryNode> = listOf(
             Whatever's left of Ilsevet's garrison isn't hiding it anymore. There's nothing left to
             hide it from, and no one left who'd believe the lie if they tried.
         """.trimIndent(),
-        choices = listOf(
-            Choice(label = "Get to the chamber.", nextNodeId = "the_chamber_defended")
-        )
+        choices = getToTheChamber("Get to the chamber.")
+    ),
+    StoryNode(
+        id = "c17_road_trusted",
+        chapterId = "chapter_17",
+        title = "What We Carry",
+        illustrationId = "back_to_the_ash",
+        narrativeText = """
+            They have been walking for an hour when Voss speaks.
+
+            "You keep touching the chain."
+
+            Kaelen lowers his hand.
+
+            "I didn't know I was."
+
+            "I did."
+
+            She lets the silence settle before continuing.
+
+            "Halvard chose where to stand. You didn't choose what happened to him."
+
+            "I chose enough."
+
+            "So did he."
+
+            Kaelen looks down at the six links.
+
+            "I keep thinking about what he would have done differently."
+
+            "He'd have told you. At length."
+
+            That earns a brief smile.
+
+            Voss walks beside him without trying to take the weight away.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Continue.", nextNodeId = "c17_approach"))
+    ),
+    StoryNode(
+        id = "c17_road_working",
+        chapterId = "chapter_17",
+        title = "What We Carry",
+        illustrationId = "back_to_the_ash",
+        narrativeText = """
+            Voss notices the chain when Kaelen checks the fastening on his bracer.
+
+            "Does it help?"
+
+            "Sometimes."
+
+            "And the rest of the time?"
+
+            "It reminds me."
+
+            She considers that.
+
+            "Then keep it where you can reach it."
+
+            They walk a little farther.
+
+            "Halvard trusted you to carry it," she adds.
+
+            "He didn't have much time to reconsider."
+
+            "He knew what he was doing."
+
+            Kaelen looks towards the road ahead. Neither of them says what the chain reminds him of.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Continue.", nextNodeId = "c17_approach"))
+    ),
+    StoryNode(
+        id = "c17_road_wary",
+        chapterId = "chapter_17",
+        title = "What We Carry",
+        illustrationId = "back_to_the_ash",
+        narrativeText = """
+            Voss looks at the chain once, then back to the road.
+
+            "He knew the gate wouldn't hold without him."
+
+            "He knew."
+
+            "I don't think he expected you to carry the answer afterward."
+
+            Kaelen says nothing.
+
+            A little later, she checks the road behind them and signals that it is clear.
+
+            They continue towards Ashfall with a careful distance between them, close enough to
+            fight together, not yet close enough to speak freely.
+
+            Whatever else remains unsettled, Kaelen knows she will warn him if danger comes from
+            behind.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Continue.", nextNodeId = "c17_approach"))
+    ),
+    StoryNode(
+        id = "c17_approach",
+        chapterId = "chapter_17",
+        title = "The Last Mile",
+        illustrationId = "ashfall_sanctum_vista",
+        narrativeText = """
+            By the time they see the Sanctum clearly, the light above it has stopped resembling
+            anything made by fire.
+
+            It holds steady against the clouds, pale and cold, while the stones beneath Kaelen's
+            boots give a faint answering tremor.
+
+            Voss studies the approaches.
+
+            "There's no sign of a full garrison."
+
+            "Ilsevet doesn't need one if the frame finishes."
+
+            The road narrows between broken walls. Beyond them stands the chamber entrance.
+
+            Kaelen thinks of the gate he left behind, the people still working on its repairs, and
+            the six links resting against his armour.
+
+            Stonebeard cannot afford another Halvard.
+
+            Neither can anywhere else.
+
+            He draws his sword.
+
+            "We stop it here."
+        """.trimIndent(),
+        choices = afterTheApproach()
+    ),
+    StoryNode(
+        id = "c17_pay_stores",
+        chapterId = "chapter_17",
+        title = "The Quartermaster's Pack",
+        illustrationId = "ashfall_sanctum_vista",
+        narrativeText = """
+            The pack from Stonebeard pulls against Kaelen's shoulder. He stops long enough to check
+            the bandages and the small flask the quartermaster allowed him to take.
+
+            Voss watches him tighten the strap.
+
+            "You could have asked for more."
+
+            "The people behind us need supplies too."
+
+            "That's beginning to sound like Halvard."
+
+            Kaelen fastens the pack without answering.
+        """.trimIndent(),
+        choices = afterTheStores()
+    ),
+    StoryNode(
+        id = "c17_pay_arrangement",
+        chapterId = "chapter_17",
+        title = "The Marked Threshold",
+        illustrationId = "ashfall_sanctum_vista",
+        narrativeText = """
+            At the chamber threshold, Kaelen unfolds the copied ward diagram. Six positions are
+            marked around its edge, like the numbers on a clock.
+
+            He looks from the page to the worn carvings beside the entrance. Their spacing is
+            familiar, though the door hides whatever lies beyond.
+
+            "The records were right about the arrangement," he says.
+
+            Voss studies the marks in the stone.
+
+            "Were they right about what it does?"
+
+            "They didn't agree."
+
+            Kaelen folds the page again. Knowing the shape of a danger is not the same as knowing
+            how to stop it.
+        """.trimIndent(),
+        choices = afterTheRecords()
+    ),
+    StoryNode(
+        id = "c17_pay_interruption",
+        chapterId = "chapter_17",
+        title = "Where the Lines Meet",
+        illustrationId = "ashfall_sanctum_vista",
+        narrativeText = """
+            Kaelen holds the copied diagram against the light. The old drawing marks where the ward
+            lines meet, but the chamber door keeps the workings beyond it hidden.
+
+            "There," he says, pointing to a junction on the page.
+
+            Voss follows his finger.
+
+            "A weakness?"
+
+            "A connection. Breaking it might stop the frame."
+
+            "Might?"
+
+            "The records couldn't tell us where the strain would go."
+
+            Voss looks towards the closed entrance.
+
+            "Then we'd better be certain before we strike."
+        """.trimIndent(),
+        choices = afterTheRecords()
+    ),
+    StoryNode(
+        id = "c17_pay_taken",
+        chapterId = "chapter_17",
+        title = "A Shield on the Road",
+        illustrationId = "ashfall_sanctum_vista",
+        narrativeText = """
+            The guard from Stonebeard crouches beside a broken wall, studying the entrance.
+
+            "The eastern stones have shifted," he says. "There's a narrow way through, but I
+            wouldn't trust it if the ground starts moving."
+
+            Kaelen studies the gap.
+
+            "Stay outside when we enter. Watch the road and warn anyone coming after us."
+
+            The guard looks disappointed, then glances back towards the distant light.
+
+            "Understood."
+
+            He takes his position with his shield raised.
+
+            Kaelen knows the Hold is one defender poorer because of that shield.
+        """.trimIndent(),
+        choices = listOf(enterTheChamber())
+    ),
+    StoryNode(
+        id = "c17_pay_left",
+        chapterId = "chapter_17",
+        title = "The Shield Left Behind",
+        illustrationId = "ashfall_sanctum_vista",
+        narrativeText = """
+            Kaelen studies the broken approach. An additional shield would have been useful here.
+
+            Voss follows his gaze.
+
+            "Thinking about the guard?"
+
+            "I'm thinking about the gap in Stonebeard's wall."
+
+            "You made your choice."
+
+            "I know."
+
+            They move forward without another word. Somewhere behind them, the watch remains at its
+            post.
+        """.trimIndent(),
+        choices = listOf(enterTheChamber())
+    ),
+    StoryNode(
+        id = "c17_pay_none",
+        chapterId = "chapter_17",
+        title = "No Time to Prepare",
+        illustrationId = "ashfall_sanctum_vista",
+        narrativeText = """
+            Stonebeard had offered what little it could spare. Kaelen had chosen to leave before the
+            preparations cost them more time.
+
+            Now the Sanctum stands before him, and there is no opportunity to go back for a map,
+            another shield or an extra bandage.
+
+            Voss draws the borrowed blade.
+
+            "Ready?"
+
+            "As ready as we're going to be."
+        """.trimIndent(),
+        choices = listOf(enterTheChamber())
     ),
     StoryNode(
         id = "the_chamber_defended",
