@@ -110,8 +110,11 @@ class CheckpointRulesTest {
         }
         // 36 before Chapter 10's ending was given three destinations: it used to lead to one scene in Chapter 11 and now leads to
         // one of three (the first night at the north gap, one for each place Voss and Kaelen can stand), and the shipped start of
-        // the chapter is still an entry scene beside them.
-        assertTrue("expected 39 entry scenes, found ${entries.size}", entries.size == 39)
+        // the chapter is still an entry scene beside them. 39 before Chapter 13's three endings were given new destinations in
+        // Chapter 14 (the nights at the gate, one for each stance on who holds a gate) and Chapter 14's ending was given two in
+        // Chapter 15 (Voss on how Kaelen asked Selvane, one for each way): five more arrival scenes, with the shipped starts of
+        // both chapters still counted as entry scenes beside them.
+        assertTrue("expected 44 entry scenes, found ${entries.size}", entries.size == 44)
         entries.forEach { sceneId ->
             val node = StoryRepository.node(sceneId)
             val number = ChapterIds.numberOf(node.chapterId)!!

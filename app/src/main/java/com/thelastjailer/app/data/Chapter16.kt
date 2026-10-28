@@ -7,6 +7,51 @@ import com.thelastjailer.app.StatType
 import com.thelastjailer.app.StoryNode
 
 /**
+ * Everything Chapter XVI records: the two shipped ways of meeting the prisoner's warning, the three shipped answers about the
+ * shards, and the defeat marker. The chapter's first choices clear it all, so a replay reaches the warning with an empty slate.
+ */
+val C16_TELLING_FLAGS: Set<String> = setOf(
+    "pressed_the_prisoner_for_detail", "let_the_prisoner_explain", "kept_shards_close", "dispersed_the_shards",
+    "trusted_to_luck", "lost_to_cinder_reliquary_thief"
+)
+
+/**
+ * The shipped answer that splits the shards between three keepers, written once per rung: Kaelen puts a piece in Voss's hand, and
+ * what she makes of it depends on where the two of them stand. The lowest rung also covers a save that holds none. The stat gate,
+ * the flag and the stat change are the shipped ones.
+ */
+private fun handedToVoss(label: String, minStats: Map<StatType, Int>, consequences: Consequences): List<Choice> = listOf(
+    Choice(
+        label = label,
+        nextNodeId = "c16_handing_trusted",
+        requirements = ChoiceRequirement(requiredFlags = setOf("c7_rung_trusted"), minStats = minStats),
+        consequences = consequences
+    ),
+    Choice(
+        label = label,
+        nextNodeId = "c16_handing_working",
+        requirements = ChoiceRequirement(requiredFlags = setOf("c7_rung_working"), minStats = minStats),
+        consequences = consequences
+    ),
+    Choice(
+        label = label,
+        nextNodeId = "c16_handing_wary",
+        requirements = ChoiceRequirement(forbiddenFlags = setOf("c7_rung_working", "c7_rung_trusted"), minStats = minStats),
+        consequences = consequences
+    )
+)
+
+/**
+ * What the theft cost, by the answer Kaelen gave Edda about the Hold's door in Chapter XIII: open, barred, or neither (where Edda's
+ * people are not, or an older save that never answered). The last is read by the absence of the other two.
+ */
+private fun whatItCost(label: String): List<Choice> = listOf(
+    Choice(label = label, nextNodeId = "c16_aftermath_open", requirements = ChoiceRequirement(requiredFlags = setOf("c13_door_open"))),
+    Choice(label = label, nextNodeId = "c16_aftermath_barred", requirements = ChoiceRequirement(requiredFlags = setOf("c13_door_barred"))),
+    Choice(label = label, nextNodeId = "c16_aftermath_none", requirements = ChoiceRequirement(forbiddenFlags = C13_DOOR_FAMILY))
+)
+
+/**
  * Chapter XVI — What Was Already Taken.
  *
  * Delivers on XV's closing hook by making the party's own accumulated trophies the target instead
@@ -24,6 +69,16 @@ import com.thelastjailer.app.StoryNode
  * removal (the data model has no consume-on-choice mechanism for story consequences), consistent
  * with how Halvard's death and other narrative losses aren't mirrored by removing entries from any
  * tracked list.
+ *
+ * The expansion lets the Hold's own state decide what the theft costs, and lets Voss be handed a piece. Four shipped phrases are
+ * corrected by the author's decision, because a player holds two shards or three, never four (Chapter1316FamilyProofTest), and the
+ * Seventh Door shard comes only from helping Ilsevet: "Four fragments" is now "Several fragments", "between three keepers" is now
+ * "between keepers", and in both versions of the prisoner's warning "the frame at Ashfall" is now "whatever came away from the frame
+ * at Ashfall", which names where a shard may have come from and does not say Kaelen took one there. Chapter1316ShippedPinTest
+ * records those four as the only changes to shipped prose in Chapters XIII to XVI. A Kaelen who split the shards puts one in Voss's hand first, and what she makes of it depends on where the two of
+ * them stand. After the fight, the door he told Edda about in Chapter XIII (open, barred, or neither) decides how the thief got in
+ * and who pays for it. The scenes name no count of shards: Chapter XVII needs at least two to have been taken, and the pieces are
+ * only ever "the pieces". The shipped scenes and their fight are untouched; only where some of their choices lead has changed.
  */
 val chapter16Nodes: List<StoryNode> = listOf(
     StoryNode(
@@ -64,11 +119,11 @@ val chapter16Nodes: List<StoryNode> = listOf(
         narrativeText = """
             It answers the demand without hesitation, words coming faster than its usual measured
             pace, as if it's relieved not to have to find its own way into the subject. "Every
-            shard you've carried out of a fight or a failed working: Fenmoor's ward, the frame at
-            Ashfall, whatever the vision at this gate left behind. None of them are a true
-            setting. But broken pieces of six can still make a passable seventh, if the hand
-            assembling them stops caring whether passable is good enough. She's stopped caring.
-            That's what four settings and a dead garrison taught her."
+            shard you've carried out of a fight or a failed working: Fenmoor's ward, whatever
+            came away from the frame at Ashfall, whatever the vision at this gate left behind.
+            None of them are a true setting. But broken pieces of six can still make a passable
+            seventh, if the hand assembling them stops caring whether passable is good enough.
+            She's stopped caring. That's what four settings and a dead garrison taught her."
         """.trimIndent(),
         choices = listOf(
             Choice(label = "Take stock of what you're carrying.", nextNodeId = "what_to_protect")
@@ -82,12 +137,12 @@ val chapter16Nodes: List<StoryNode> = listOf(
         narrativeText = """
             It takes its time getting there anyway, circling the point the way it always does
             when something matters enough to get wrong. "Every shard you've carried out of a
-            fight or a failed working: Fenmoor's ward, the frame at Ashfall, whatever the vision
-            at this gate left behind. None of them are a true setting. But broken pieces of six
-            can still make a passable seventh, if the hand assembling them stops caring whether
-            passable is good enough. She's stopped caring. That's what four settings and a dead
-            garrison taught her." Patience earned him the whole shape of it, unhurried and
-            unbroken.
+            fight or a failed working: Fenmoor's ward, whatever came away from the frame at
+            Ashfall, whatever the vision at this gate left behind. None of them are a true
+            setting. But broken pieces of six can still make a passable seventh, if the hand
+            assembling them stops caring whether passable is good enough. She's stopped caring.
+            That's what four settings and a dead garrison taught her." Patience earned him the
+            whole shape of it, unhurried and unbroken.
         """.trimIndent(),
         choices = listOf(
             Choice(label = "Take stock of what you're carrying.", nextNodeId = "what_to_protect")
@@ -99,7 +154,7 @@ val chapter16Nodes: List<StoryNode> = listOf(
         title = "What to Protect",
         illustrationId = "what_to_protect",
         narrativeText = """
-            Kaelen counts what he's actually carrying and doesn't like the total. Four fragments,
+            Kaelen counts what he's actually carrying and doesn't like the total. Several fragments,
             gathered without ever meaning to build anything, sitting in the same pack that's
             crossed half the ruined kingdom in the last year, each one now a target instead of
             just a keepsake.
@@ -113,22 +168,77 @@ val chapter16Nodes: List<StoryNode> = listOf(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     setFlags = setOf("kept_shards_close")
                 )
-            ),
-            Choice(
-                label = "\"Split them between Stonebeard, Fenmoor, and Voss. No single loss ends this.\"",
-                nextNodeId = "the_reliquary_thief_dispersed",
-                requirements = ChoiceRequirement(minStats = mapOf(StatType.HONOUR to 13)),
-                consequences = Consequences(
-                    statDeltas = mapOf(StatType.HONOUR to 1),
-                    setFlags = setOf("dispersed_the_shards")
-                )
-            ),
-            Choice(
-                label = "There isn't time to do anything but keep watch and hope it's enough.",
-                nextNodeId = "the_reliquary_thief_luck",
-                consequences = Consequences(setFlags = setOf("trusted_to_luck"))
             )
+        ) + handedToVoss(
+            "\"Split them between Stonebeard, Fenmoor, and Voss. No single loss ends this.\"",
+            mapOf(StatType.HONOUR to 13),
+            Consequences(
+                statDeltas = mapOf(StatType.HONOUR to 1),
+                setFlags = setOf("dispersed_the_shards")
+            )
+        ) + Choice(
+            label = "There isn't time to do anything but keep watch and hope it's enough.",
+            nextNodeId = "the_reliquary_thief_luck",
+            consequences = Consequences(setFlags = setOf("trusted_to_luck"))
         )
+    ),
+    StoryNode(
+        id = "c16_handing_wary",
+        chapterId = "chapter_16",
+        title = "A Piece for Voss",
+        illustrationId = "what_to_protect",
+        narrativeText = """
+            Voss looks at the piece for longer than the piece deserves, and then at Kaelen.
+            "You are giving the Order's own deserter a thing the Order would cross a kingdom
+            to have," she says. "You know that." She does not take it yet. "I will accept it
+            the way I accept a debt. It is mine to repay, and I will know exactly what it is
+            worth." Her hand closes on it, and the hand is not quite steady. "Do not ask me
+            to promise anything. Ask me again when I have kept it a while."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Give it to her without a condition.",
+                nextNodeId = "the_reliquary_thief_dispersed",
+                consequences = Consequences(clearFlags = C7_RUNG_FAMILY, setFlags = setOf("c7_rung_working"))
+            ),
+            Choice(label = "Tell her where the rest will be kept, and why.", nextNodeId = "the_reliquary_thief_dispersed")
+        )
+    ),
+    StoryNode(
+        id = "c16_handing_working",
+        chapterId = "chapter_16",
+        title = "A Piece for Voss",
+        illustrationId = "what_to_protect",
+        narrativeText = """
+            Voss takes the piece in two fingers, the way she would take a coin she suspected
+            of being false, and then closes her hand on it. "Where will the rest be kept?"
+            she asks. He tells her. She nods slowly, as she nods at a plan she would have
+            made differently and cannot fault. "Then mine is the one that must not be
+            found," she says. "Good. I know how to be unfound." She puts it somewhere inside
+            her coat. "I will keep it where I keep the things I intend to keep."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Tell her she is the one he trusts most with it.",
+                nextNodeId = "the_reliquary_thief_dispersed",
+                consequences = Consequences(clearFlags = C7_RUNG_FAMILY, setFlags = setOf("c7_rung_trusted"))
+            ),
+            Choice(label = "Tell her to go carefully.", nextNodeId = "the_reliquary_thief_dispersed")
+        )
+    ),
+    StoryNode(
+        id = "c16_handing_trusted",
+        chapterId = "chapter_16",
+        title = "A Piece for Voss",
+        illustrationId = "what_to_protect",
+        narrativeText = """
+            Voss says nothing when he holds the piece out. She takes it, and puts it under
+            her coat, against her ribs, and lays her hand flat over it for a moment, as one
+            does with a thing that might otherwise move. "You did not tell me where the
+            rest will be kept," she says. "Good. I would rather not know." She looks at him.
+            "If I am ever made to say where this is, you will know before anyone."
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Go on.", nextNodeId = "the_reliquary_thief_dispersed"))
     ),
     StoryNode(
         id = "the_reliquary_thief_close",
@@ -154,7 +264,7 @@ val chapter16Nodes: List<StoryNode> = listOf(
         title = "The Reliquary Thief",
         illustrationId = "the_reliquary_thief",
         narrativeText = """
-            Splitting the shards between three keepers means Ilsevet's thief has to gamble on
+            Splitting the shards between keepers means Ilsevet's thief has to gamble on
             which one to hit, and gambles on Stonebeard, the tunnels giving better cover for a
             quiet approach than Fenmoor's open water or Voss's own watchful company. Kaelen
             catches them with a hand already closing around the one shard the hold was trusted
@@ -222,9 +332,63 @@ val chapter16Nodes: List<StoryNode> = listOf(
             that alone tells him more than he wanted to know about what she's willing to settle
             for now.
         """.trimIndent(),
-        choices = listOf(
-            Choice(label = "Take stock of the damage.", nextNodeId = "chapter16_end")
-        )
+        choices = whatItCost("Take stock of the damage.")
+    ),
+    StoryNode(
+        id = "c16_aftermath_open",
+        chapterId = "chapter_16",
+        title = "How the Thief Came In",
+        illustrationId = "what_was_taken",
+        narrativeText = """
+            It does not take long to learn how the thief came in. The door was open, as
+            Kaelen said it would be, and the stair was full of people asleep with their shoes
+            on, and a figure that moves quietly can lose itself in a room full of breathing.
+            No one else is hurt. Edda counts her people twice and then a third time, and her voice,
+            when she gives Kaelen the number, is perfectly level. Tam is sitting by the lamp
+            with her knees drawn up. "It went straight past me," she says. "I held the light
+            up. It was no use."
+
+            The pieces the thief carried off are more than one, and it will be days before
+            anyone says the word "door" without looking at him. At the gate the pressure is
+            awake and pressing, as though it already knows what was taken.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Go on.", nextNodeId = "chapter16_end"))
+    ),
+    StoryNode(
+        id = "c16_aftermath_barred",
+        chapterId = "chapter_16",
+        title = "How the Thief Came In",
+        illustrationId = "what_was_taken",
+        narrativeText = """
+            The door held. That is the first thing anyone says, and for a while it is the
+            only thing, because the thief did not come through it. They came by the old
+            tunnels, which no bar would have kept shut, and no one else is hurt. But in the
+            morning two of Edda's company are standing at the barred door, back from the
+            road too late to be let in, and Edda is standing with them, looking at him with
+            great politeness. "A reason I can repeat," she says. "I repeated it." Tam says
+            nothing, and moves the lamp to where it can be seen from outside.
+
+            The pieces the thief carried off are more than one. At the gate the pressure is
+            awake and pressing, as though it already knows what was taken.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Go on.", nextNodeId = "chapter16_end"))
+    ),
+    StoryNode(
+        id = "c16_aftermath_none",
+        chapterId = "chapter_16",
+        title = "How the Thief Came In",
+        illustrationId = "what_was_taken",
+        narrativeText = """
+            It does not take long to learn how the thief came in, and there is nobody to
+            blame it on. The Hold is a place of dwarves and tunnels, and the thief went
+            through all of it as if it had been drawn for the purpose. No one else is hurt. The
+            smiths stand in the forge door with their arms folded and say the thing smiths
+            say when a lock has been picked: that it is a good lock, and a better picker.
+
+            The pieces the thief carried off are more than one. At the gate the pressure is
+            awake and pressing, as though it already knows what was taken.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Go on.", nextNodeId = "chapter16_end"))
     ),
     StoryNode(
         id = "chapter16_end",

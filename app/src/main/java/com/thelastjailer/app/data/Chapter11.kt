@@ -7,6 +7,12 @@ import com.thelastjailer.app.StatType
 import com.thelastjailer.app.StoryNode
 
 /**
+ * Family C11: what Kaelen told Thessaly about the third time. Alternatives; each answer clears the others, so a replay that answers
+ * differently never carries the earlier answer. Chapter XIII tells Fenmoor's word at the rites by this family.
+ */
+val C11_THESSALY_FAMILY: Set<String> = setOf("pledged_support_to_fenmoor", "invited_thessaly_to_stonebeard", "left_fenmoor_uncertain")
+
+/**
  * Chapter XI — The Sixth Name.
  *
  * Turns Kaelen's vow at the end of X into action: find the last unaccounted gate before Ilsevet
@@ -346,6 +352,7 @@ val chapter11Nodes: List<StoryNode> = listOf(
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     grantItemIds = listOf("fenmoor_ward_shard"),
+                    clearFlags = C11_THESSALY_FAMILY,
                     setFlags = setOf("pledged_support_to_fenmoor")
                 )
             ),
@@ -356,6 +363,7 @@ val chapter11Nodes: List<StoryNode> = listOf(
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     grantItemIds = listOf("fenmoor_ward_shard"),
+                    clearFlags = C11_THESSALY_FAMILY,
                     setFlags = setOf("invited_thessaly_to_stonebeard")
                 )
             ),
@@ -364,6 +372,7 @@ val chapter11Nodes: List<StoryNode> = listOf(
                 nextNodeId = "chapter11_end",
                 consequences = Consequences(
                     grantItemIds = listOf("fenmoor_ward_shard"),
+                    clearFlags = C11_THESSALY_FAMILY,
                     setFlags = setOf("left_fenmoor_uncertain")
                 )
             )

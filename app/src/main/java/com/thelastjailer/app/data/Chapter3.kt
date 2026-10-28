@@ -17,6 +17,19 @@ val CHAPTER3_FAMILY: Set<String> = setOf(
 )
 
 /**
+ * Family C3b: how Kaelen answered the office. Alternatives; each answer at `the_answer` clears the others, so a replay that
+ * answers differently never carries the earlier answer. Chapter XIV's stone remembers the day Kaelen answered Halvard, and
+ * reads this family.
+ */
+val C3_OFFICE_FAMILY: Set<String> = setOf("accepted_fully", "accepted_reluctantly", "refused_once")
+
+/**
+ * Family C3c: how Kaelen met the first true knock. Alternatives; each answer clears the other, so a replay never carries the
+ * earlier one. Chapter XIV's stone remembers the knock, and reads this family.
+ */
+val C3_KNOCK_FAMILY: Set<String> = setOf("listened_to_the_prisoner", "refused_the_prisoner")
+
+/**
  * What Kaelen may say to Voss before she states her business. Every row is optional and loops back to
  * `ch3_voss_waits`; the last row always works, so nothing here can block the chapter. Each row rests on
  * something Kaelen has actually earned; none of them reveals who hired the riders.
@@ -121,7 +134,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
                 nextNodeId = "the_binding_rite_full",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
-                    clearFlags = CHAPTER3_FAMILY,
+                    clearFlags = CHAPTER3_FAMILY + C3_OFFICE_FAMILY,
                     setFlags = setOf("accepted_fully")
                 )
             ),
@@ -130,14 +143,14 @@ val chapter3Nodes: List<StoryNode> = listOf(
                 nextNodeId = "the_binding_rite_reluctant",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
-                    clearFlags = CHAPTER3_FAMILY,
+                    clearFlags = CHAPTER3_FAMILY + C3_OFFICE_FAMILY,
                     setFlags = setOf("accepted_reluctantly")
                 )
             ),
             Choice(
                 label = "\"I need time. This isn't something I can just say yes to.\"",
                 nextNodeId = "the_walk_away",
-                consequences = Consequences(clearFlags = CHAPTER3_FAMILY,
+                consequences = Consequences(clearFlags = CHAPTER3_FAMILY + C3_OFFICE_FAMILY,
                     setFlags = setOf("refused_once"))
             )
         )
@@ -379,13 +392,14 @@ val chapter3Nodes: List<StoryNode> = listOf(
             Choice(
                 label = "Listen to what it's offering.",
                 nextNodeId = "voices_above_after_listening",
-                consequences = Consequences(setFlags = setOf("listened_to_the_prisoner"))
+                consequences = Consequences(clearFlags = C3_KNOCK_FAMILY, setFlags = setOf("listened_to_the_prisoner"))
             ),
             Choice(
                 label = "Turn away before it finishes.",
                 nextNodeId = "voices_above_after_refusing",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
+                    clearFlags = C3_KNOCK_FAMILY,
                     setFlags = setOf("refused_the_prisoner")
                 )
             )

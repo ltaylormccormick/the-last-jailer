@@ -7,6 +7,43 @@ import com.thelastjailer.app.StatType
 import com.thelastjailer.app.StoryNode
 
 /**
+ * Everything Chapter XV records: the two shipped ways of reading the dispatch, the three shipped answers about Ilsevet, and the
+ * defeat marker. The chapter's first choices clear it all, so a replay reaches the dispatch with an empty slate.
+ */
+val C15_TELLING_FLAGS: Set<String> = setOf(
+    "read_alone_first", "read_with_voss", "resolved_despite_sympathy", "committed_to_proving_her_wrong",
+    "deferred_the_question_of_ilsevet", "lost_to_cinder_reprisal_leader"
+)
+
+/** Voss reading the Order's pages, by where she and Kaelen stand. The lowest rung also covers a save that holds none. */
+private fun toTheVossReading(label: String): List<Choice> = listOf(
+    Choice(label = label, nextNodeId = "c15_voss_reads_trusted", requirements = ChoiceRequirement(requiredFlags = setOf("c7_rung_trusted"))),
+    Choice(label = label, nextNodeId = "c15_voss_reads_working", requirements = ChoiceRequirement(requiredFlags = setOf("c7_rung_working"))),
+    Choice(
+        label = label,
+        nextNodeId = "c15_voss_reads_wary",
+        requirements = ChoiceRequirement(forbiddenFlags = setOf("c7_rung_working", "c7_rung_trusted"))
+    )
+)
+
+/**
+ * What Ashfall looks like now that Kaelen has read the file, by how he met Ilsevet there in Chapter XII: he tried to reach her
+ * (warned her or appealed to her), took the fragment and left, or let her face it. The last is read by the absence of the others.
+ */
+private fun toTheEcho(label: String): List<Choice> = listOf(
+    Choice(label = label, nextNodeId = "c15_echo_reached", requirements = ChoiceRequirement(requiredFlags = setOf("warned_ilsevet_directly"))),
+    Choice(label = label, nextNodeId = "c15_echo_reached", requirements = ChoiceRequirement(requiredFlags = setOf("appealed_to_ilsevets_conscience"))),
+    Choice(label = label, nextNodeId = "c15_echo_left", requirements = ChoiceRequirement(requiredFlags = setOf("left_ilsevet_to_her_wreckage"))),
+    Choice(
+        label = label,
+        nextNodeId = "c15_echo_refused",
+        requirements = ChoiceRequirement(
+            forbiddenFlags = setOf("warned_ilsevet_directly", "appealed_to_ilsevets_conscience", "left_ilsevet_to_her_wreckage")
+        )
+    )
+)
+
+/**
  * Chapter XV — Old Debts.
  *
  * Deepens Ilsevet without softening the threat she poses. Selvane's Order archives reveal her
@@ -22,8 +59,46 @@ import com.thelastjailer.app.StoryNode
  * territorial: a reprisal squad targets Voss directly for her role in Kaelen's continued success,
  * not another attempt on the gates. Fifteenth and toughest combat encounter yet (Cinder Reprisal
  * Squad Leader, 205 HP).
+ *
+ * The expansion gives the file two more sheets and gives Kaelen's earlier choices a place to land. Before the dispatch comes,
+ * Voss says what she thinks of how Kaelen asked Selvane for it, in Chapter XIII, openly or low. The pages hold Ilsevet's own
+ * request, written before the ward failed, and the form that answered it. Voss reads them at her own rung, recognising only how
+ * the Order closes a file and nothing about herself or Ashwell. And Ashfall returns coloured by how Kaelen met Ilsevet there. Her
+ * conflict is not resolved or answered: the choice at "Old Debts" is still the player's. The shipped scenes and their fight are
+ * untouched; only where some of their choices lead has changed.
  */
 val chapter15Nodes: List<StoryNode> = listOf(
+    StoryNode(
+        id = "c15_waiting_open",
+        chapterId = "chapter_15",
+        title = "Waiting on the Order",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            A long stretch of days has gone by since the Order rode out, and Kaelen finds he
+            is still listening for hooves. Voss notices him doing it. "She will send it,"
+            she says. "She said so in front of me, and the Inquisitor-General does not say
+            a thing in front of a witness that she does not mean to do." She goes back to
+            the blade she is mending. "You were right to ask where I could hear. It would
+            have been worse to find out afterward that you had not."
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Keep the watch.", nextNodeId = "what_selvane_sends"))
+    ),
+    StoryNode(
+        id = "c15_waiting_private",
+        chapterId = "chapter_15",
+        title = "Waiting on the Order",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            A long stretch of days has gone by since the Order rode out, and Kaelen finds he
+            is still listening for hooves. Voss notices him doing it. "She will send it,"
+            she says. "Whatever you asked her, she will have answered, and she does not
+            answer a question and then forget it." She does not look up from the blade she
+            is mending. "I did not hear what you asked. I could guess." A pause, short
+            enough to be a decision. "You were right to ask it when I was not looking. I
+            would have hesitated, if I had been looking."
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Keep the watch.", nextNodeId = "what_selvane_sends"))
+    ),
     StoryNode(
         id = "what_selvane_sends",
         chapterId = "chapter_15",
@@ -78,7 +153,7 @@ val chapter15Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "Keep reading.",
-                nextNodeId = "what_it_made_of_her",
+                nextNodeId = "c15_the_reply",
                 consequences = Consequences(grantItemIds = listOf("record_of_ashwell"))
             )
         )
@@ -106,10 +181,77 @@ val chapter15Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "Keep reading.",
-                nextNodeId = "what_it_made_of_her",
+                nextNodeId = "c15_the_reply",
                 consequences = Consequences(grantItemIds = listOf("record_of_ashwell"))
             )
         )
+    ),
+    StoryNode(
+        id = "c15_the_reply",
+        chapterId = "chapter_15",
+        title = "What Else Was in the Case",
+        illustrationId = "the_woman_before_ilsevet",
+        narrativeText = """
+            Behind the account, clipped flat and easily taken for its backing, there are two
+            more sheets, and neither is from the Order's archivists. The first is in a
+            garrison hand, plain and square: a request from the post commander of a lesser
+            ward, signed with a name that meant nothing yet to anyone, asking that the hill
+            wards be looked at before the winter. It says why. The stone had begun to sweat
+            in a dry month, and the oldest watchman would not sleep near it. It was written
+            in the year before the ward failed.
+
+            The second sheet is the answer. It is a form, with a clerk's stamp, and the box
+            that has been ticked says that the matter has been noted. Kaelen turns the
+            sheet over, looking for more, and there is none.
+        """.trimIndent(),
+        choices = toTheVossReading("Go on.")
+    ),
+    StoryNode(
+        id = "c15_voss_reads_wary",
+        chapterId = "chapter_15",
+        title = "Voss Reads",
+        illustrationId = "the_woman_before_ilsevet",
+        narrativeText = """
+            Voss takes the sheets one at a time and reads each as if it might be a trap,
+            checking the wax, the hand, the stamp. At the form she stops. Her thumb finds
+            the clerk's mark and rests on it, and stays there longer than the mark
+            deserves. When she moves on, she squares the sheet against the table as one
+            squares something that has to be returned. She does not look at Kaelen. She has
+            the face of a woman who knows exactly how that sheet came to be written, and
+            has decided not to say so.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Wait for her.", nextNodeId = "what_it_made_of_her"))
+    ),
+    StoryNode(
+        id = "c15_voss_reads_working",
+        chapterId = "chapter_15",
+        title = "Voss Reads",
+        illustrationId = "the_woman_before_ilsevet",
+        narrativeText = """
+            Voss reads the sheets in the order they were written, and then in the order they
+            were answered, which is not the same. At the form she goes still. Her eyes go to
+            the box that was ticked, and to the clerk's stamp beside it, and for a moment
+            she is reading something that is not on the page. Then she sets it down with one
+            finger and does not touch it again. Whatever she has recognised, she has put
+            away behind her face, and she does what she always does with a thing she cannot
+            yet use. She waits.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Wait with her.", nextNodeId = "what_it_made_of_her"))
+    ),
+    StoryNode(
+        id = "c15_voss_reads_trusted",
+        chapterId = "chapter_15",
+        title = "Voss Reads",
+        illustrationId = "the_woman_before_ilsevet",
+        narrativeText = """
+            Voss reads the sheets slowly, and Kaelen lets her. At the form she shuts her
+            eyes for the length of a breath. Her hand has come to rest beside his on the
+            table, not touching, and it stays there while she reads the stamp again. When
+            she opens her eyes she is looking at the window and not at him. It is a long
+            stillness, and he does not put a name to it. He lets it be as long as it needs
+            to be.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Wait with her.", nextNodeId = "what_it_made_of_her"))
     ),
     StoryNode(
         id = "what_it_made_of_her",
@@ -130,9 +272,51 @@ val chapter15Nodes: List<StoryNode> = listOf(
             one for longer than anyone noticed, and of how easily that same arithmetic could have
             swallowed Stonebeard whole before he ever arrived.
         """.trimIndent(),
-        choices = listOf(
-            Choice(label = "Sit with that.", nextNodeId = "old_debts")
-        )
+        choices = toTheEcho("Sit with that.")
+    ),
+    StoryNode(
+        id = "c15_echo_reached",
+        chapterId = "chapter_15",
+        title = "What Ashfall Was",
+        illustrationId = "what_it_made_of_her",
+        narrativeText = """
+            He thinks of the chamber at Ashfall, and of what he said to her across the wreck
+            of the frame, when it had gone quiet enough for words. He had thought of it as
+            a warning, or an appeal, something for her to hear and do with as she liked. He
+            had not known then that she had once written the plainest request a post
+            commander can write, and been answered with a tick in a box. Whatever he
+            offered her in the wreckage was not nothing. It may have been the first answer
+            she had been given in a long time that came from a person.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Sit with that.", nextNodeId = "old_debts"))
+    ),
+    StoryNode(
+        id = "c15_echo_left",
+        chapterId = "chapter_15",
+        title = "What He Left Her",
+        illustrationId = "what_it_made_of_her",
+        narrativeText = """
+            He thinks of the chamber at Ashfall, and of the fragment he took out of the
+            wreck, and the silence he left her with. He had told himself that a woman who
+            builds such a thing has no claim on a parting word. He reads the stamped form
+            again, and finds that the silence he left was the same kind of answer. He cannot
+            say he is ashamed. He can say that he recognises it.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Sit with that.", nextNodeId = "old_debts"))
+    ),
+    StoryNode(
+        id = "c15_echo_refused",
+        chapterId = "chapter_15",
+        title = "What He Let Her Face",
+        illustrationId = "what_it_made_of_her",
+        narrativeText = """
+            He thinks of Ashfall, which he knows only from a messenger's mouth: a fire that
+            burned itself out, a garrison that mostly did not survive. He let her face it
+            alone, and sent word to Fenmoor instead. Nothing in the file says he was wrong.
+            It says only that the last time someone asked for help and was told it had been
+            noted, a ward in the hills failed in full.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Sit with that.", nextNodeId = "old_debts"))
     ),
     StoryNode(
         id = "old_debts",
@@ -296,7 +480,11 @@ val chapter15Nodes: List<StoryNode> = listOf(
             Chapter XVI awaits.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Prepare anyway.", nextNodeId = "what_kaelen_isnt_prepared_for")
+            Choice(
+                label = "Prepare anyway.",
+                nextNodeId = "what_kaelen_isnt_prepared_for",
+                consequences = Consequences(clearFlags = C16_TELLING_FLAGS)
+            )
         )
     )
 )

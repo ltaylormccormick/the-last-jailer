@@ -105,7 +105,10 @@ class CheckpointTimelineTest {
         // departure scenes (the ones for someone who brought Voss below) lead there beside the three that shipped.
         // Chapter 10's ending used to lead to one scene in Chapter 11; it now leads to one of three (the first night at the
         // north gap, one for each place Voss and Kaelen can stand), so two more edges arrive in Chapter 11.
-        assertEquals("69 forward edges and 6 loops", 75, edges.size)
+        // Chapter 14's ending used to lead to one scene in Chapter 15; it now leads to one of two (Voss on how Kaelen asked
+        // Selvane for the file, openly or low), so one more edge arrives in Chapter 15. Chapter 13's three endings still lead
+        // to one scene each in Chapter 14, now the nights at the gate rather than the prisoner's first words.
+        assertEquals("70 forward edges and 6 loops", 76, edges.size)
         var checked = 0
         for ((_, _, dest) in edges) {
             val n = ChapterIds.numberOf(dest.chapterId)!!
@@ -115,7 +118,7 @@ class CheckpointTimelineTest {
             assertEquals(CheckpointDigest.of(1, r), CheckpointDigest.of(1, back))
             checked++
         }
-        assertEquals(75, checked)
+        assertEquals(76, checked)
     }
 
     @Test

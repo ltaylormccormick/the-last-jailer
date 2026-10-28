@@ -6,6 +6,19 @@ import com.thelastjailer.app.Consequences
 import com.thelastjailer.app.StatType
 import com.thelastjailer.app.StoryNode
 
+/**
+ * Family C12a: whether Kaelen went back to Ashfall for Ilsevet, and the way he met her there. The two calls and the three ways are
+ * alternatives, and each call clears all five, so a replay that answers differently never carries the earlier answer. Chapter XV
+ * tells Ashfall again by this family.
+ */
+val C12_ILSEVET_FAMILY: Set<String> = setOf(
+    "chose_to_help_ilsevet", "refused_to_help_ilsevet", "warned_ilsevet_directly", "appealed_to_ilsevets_conscience",
+    "left_ilsevet_to_her_wreckage"
+)
+
+/** Family C12b: the three ways Kaelen met Ilsevet in the wreck. Each way clears the other two and nothing else. */
+val C12_WAY_FAMILY: Set<String> = setOf("warned_ilsevet_directly", "appealed_to_ilsevets_conscience", "left_ilsevet_to_her_wreckage")
+
 /** From the ash-field gate to Voss's word at the last dry stone, by where she and Kaelen stand. The lowest rung also covers a save with none. */
 private fun vossGoes(label: String): List<Choice> = listOf(
     Choice(label = label, nextNodeId = "c12_voss_trusted", requirements = ChoiceRequirement(requiredFlags = setOf("c7_rung_trusted"))),
@@ -120,6 +133,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
                 nextNodeId = "back_to_the_ash",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
+                    clearFlags = C12_ILSEVET_FAMILY,
                     setFlags = setOf("chose_to_help_ilsevet")
                 )
             ),
@@ -128,6 +142,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
                 nextNodeId = "watched_from_a_distance",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
+                    clearFlags = C12_ILSEVET_FAMILY,
                     setFlags = setOf("refused_to_help_ilsevet")
                 )
             )
@@ -159,6 +174,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
                 nextNodeId = "back_to_the_ash",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
+                    clearFlags = C12_ILSEVET_FAMILY,
                     setFlags = setOf("chose_to_help_ilsevet")
                 )
             ),
@@ -167,6 +183,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
                 nextNodeId = "watched_from_a_distance",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
+                    clearFlags = C12_ILSEVET_FAMILY,
                     setFlags = setOf("refused_to_help_ilsevet")
                 )
             )
@@ -364,6 +381,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     grantItemIds = listOf("shard_of_the_seventh_door"),
+                    clearFlags = C12_WAY_FAMILY,
                     setFlags = setOf("warned_ilsevet_directly")
                 )
             ),
@@ -374,6 +392,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     grantItemIds = listOf("shard_of_the_seventh_door"),
+                    clearFlags = C12_WAY_FAMILY,
                     setFlags = setOf("appealed_to_ilsevets_conscience")
                 )
             ),
@@ -382,6 +401,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
                 nextNodeId = "chapter12_end_helped",
                 consequences = Consequences(
                     grantItemIds = listOf("shard_of_the_seventh_door"),
+                    clearFlags = C12_WAY_FAMILY,
                     setFlags = setOf("left_ilsevet_to_her_wreckage")
                 )
             )
