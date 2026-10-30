@@ -44,15 +44,21 @@ fun CharacterScreen(state: GameState, modifier: Modifier = Modifier) {
 
         OrnatePanel(modifier = Modifier.fillMaxWidth()) {
             Text("TROPHIES · ${state.trophies.intersect(StoryRepository.availableTrophies).size} / ${StoryRepository.availableTrophies.size}", style = MaterialTheme.typography.labelLarge, color = JailerColors.Gold)
-            if (state.trophies.isEmpty()) {
+            // Presentation only: says the x / 37 above is the original collection, once the separate Endings panel exists.
+            EndingsPanel.collectionNote(state)?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+            // The nine ending trophies are shown in the Endings panel below, not in this list; nothing else is filtered.
+            val listed = EndingsPanel.listedTrophies(state.trophies)
+            if (listed.isEmpty()) {
                 Text("None earned yet.", style = MaterialTheme.typography.bodyMedium)
             } else {
                 Column {
-                    state.trophies.forEach { trophy ->
+                    listed.forEach { trophy ->
                         Text("🏆 $trophy", style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }
         }
+
+        EndingsSection(state)
     }
 }
