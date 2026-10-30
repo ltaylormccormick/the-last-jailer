@@ -116,7 +116,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         id = "the_answer",
         chapterId = "chapter_3",
         title = "The Answer",
-        illustrationId = "the_answer",
+        illustrationId = "ch3_the_answer",
         narrativeText = """
             Halvard waits the way old men wait for weather: patient, certain it will come whether
             or not he's ready for it.
@@ -376,7 +376,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         id = "the_first_true_knock",
         chapterId = "chapter_3",
         title = "The First True Knock",
-        illustrationId = "the_first_true_knock",
+        illustrationId = "ch3_first_true_knock",
         narrativeText = """
             That night, if the deep road can even be said to have nights, something knocks from
             the other side of the gate for the first time since the black door. Knuckles this
@@ -484,7 +484,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         id = "ch3_halvards_ledger",
         chapterId = "chapter_3",
         title = "A Count, Not a Complaint",
-        illustrationId = "warded_gate",
+        illustrationId = "ch3_halvards_ledger",
         narrativeText = """
             Halvard stops him at the foot of the stair with a hand like a knot of root. "The smith sent word by the last man down," he says. "Not a complaint. Only a count."
 
@@ -523,7 +523,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         id = "ch3_order_camp",
         chapterId = "chapter_3",
         title = "Above the Road",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "ch3_order_camp",
         narrativeText = """
             There is a second way up from the deep road: a place where the hillside has fallen in over an old tunnel mouth, and a man can climb out through the roots without ever passing the door. Kaelen takes it, and comes out on his belly in wet bracken above the road, with the first grey of morning coming up behind the trees.
 
@@ -565,7 +565,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         id = "ch3_camp_studied",
         chapterId = "chapter_3",
         title = "What the Oilcloth Covered",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "ch3_camp_studied",
         narrativeText = """
             Under a stone, against the wind, one sheet is weighted to the lid of a ration crate. A door. A place. A day. And beneath it in the same square hand: confirm whether it has found a keeper before you engage. Do not engage until confirmed.
 
@@ -577,7 +577,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         id = "ch3_camp_robbed",
         chapterId = "chapter_3",
         title = "The Supply Line",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "ch3_camp_robbed",
         narrativeText = """
             The sentry watches the road and not the bracken, and the stores tent has a loose flap. A purse of coin set aside for fodder. A stoppered vial in a case of them. Kaelen takes the coin and one vial, and does not take the rest, and is back under the roots before the fire has settled.
 
@@ -589,7 +589,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         id = "ch3_camp_parley",
         chapterId = "chapter_3",
         title = "Leave to Speak",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "ch3_camp_parley",
         narrativeText = """
             The sentry hears him out with a hand on his hilt and his eyes on the treeline. Kaelen keeps his own hands open and in sight, and says only that he has come to speak to whoever commands here.
 
@@ -601,7 +601,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         id = "ch3_surface_robbed",
         chapterId = "chapter_3",
         title = "The Surface, Again",
-        illustrationId = "a_choice_at_the_door",
+        illustrationId = "ch3_surface_again",
         narrativeText = """
             He comes down out of the bracken onto the road, and five horses lift their heads together. At the stores tent a rider has stopped with the flap in his hand, counting something twice. The woman at the door does not turn until Kaelen is close enough to touch.
 
@@ -615,7 +615,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         id = "ch3_surface_parleyed",
         chapterId = "chapter_3",
         title = "The Surface, Again",
-        illustrationId = "a_choice_at_the_door",
+        illustrationId = "ch3_surface_again",
         narrativeText = """
             He comes down out of the bracken onto the road with his hands open, and five horses lift their heads together. The sentry has already crossed to the door ahead of him and says something short and low. The woman at the door does not turn until Kaelen is close enough to touch.
 
@@ -629,7 +629,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         id = "ch3_surface_approached",
         chapterId = "chapter_3",
         title = "The Surface, Again",
-        illustrationId = "a_choice_at_the_door",
+        illustrationId = "ch3_surface_again",
         narrativeText = """
             He comes down out of the bracken onto the road, and five horses lift their heads together. Four riders in colours he doesn't recognize watch him come. The woman at the door does not turn until he is close enough to touch.
 
@@ -675,7 +675,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         id = "ch3_voss_sold",
         chapterId = "chapter_3",
         title = "A Price for the Riders",
-        illustrationId = "a_choice_at_the_door",
+        illustrationId = "ch3_voss_sold",
         narrativeText = """
             "What I know about those riders has a price."
 
@@ -687,7 +687,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         id = "ch3_voss_disc",
         chapterId = "chapter_3",
         title = "The Scraped Wax",
-        illustrationId = "a_choice_at_the_door",
+        illustrationId = "ch3_voss_disc",
         narrativeText = """
             He holds out the grey wax disc. Voss turns it over in the rain, a thumbnail along the flattened face. "Someone took a file to this before it ever left their hand," she says. "Not an accident. A seal scraped like this is a seal that was never meant to be traced."
 
@@ -711,7 +711,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         id = "the_surface_again",
         chapterId = "chapter_3",
         title = "The Surface, Again",
-        illustrationId = "a_choice_at_the_door",
+        illustrationId = "ch3_surface_again",
         narrativeText = """
             Rain again, or still; Kaelen has honestly lost track of how long he's been below. The
             ancient tree looks exactly as he left it. The black door does not.
@@ -728,7 +728,7 @@ val chapter3Nodes: List<StoryNode> = listOf(
         id = "a_choice_at_the_door",
         chapterId = "chapter_3",
         title = "A Choice at the Door",
-        illustrationId = "a_choice_at_the_door",
+        illustrationId = "ch3_a_choice_at_the_door",
         narrativeText = """
             "The Order doesn't believe in locked doors," Voss says. "Only opened ones and buried
             ones. Your gate has had three centuries to be the second kind and failed at it. We're
