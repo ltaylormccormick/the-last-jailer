@@ -2,6 +2,7 @@ package com.thelastjailer.app
 
 import com.thelastjailer.app.data.Chapter1Paths
 import com.thelastjailer.app.data.StoryRepository
+import com.thelastjailer.app.ending.EndingKit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -12,8 +13,9 @@ import org.junit.Test
  * Chapter 1 redesign intends to change. Each test says which batch is expected to alter it.
  *
  * Findings:
- *  - Replay keeps everything: stats, level, XP, gold, items, trophies and every flag. It only adds the
- *    "The Watch Goes On" trophy and moves the player to `fallen_knight`.
+ *  - Replay keeps everything: stats, level, XP, gold, items, trophies and every flag. It adds the
+ *    "The Watch Goes On" trophy and, since the ending trophies, the awards of the ending it leaves (completion and the aid
+ *    and fate outcomes; a legacy only when the flags prove one), and moves the player to `fallen_knight`.
  *  - A full reset happens only through SaveStore.restart (the New Game path).
  */
 class Chapter1ReplayBaselineTest {
@@ -51,7 +53,7 @@ class Chapter1ReplayBaselineTest {
     }
 
     @Test
-    fun `replaying keeps stats, level, xp, gold, items and every flag, and only adds the trophy`() {
+    fun `replaying keeps stats, level, xp, gold, items and every flag, and only adds the replay trophy and the ending's awards`() {
         replayNodes.forEach { id ->
             val before = finished(id)
             val after = replay(before)
@@ -59,7 +61,8 @@ class Chapter1ReplayBaselineTest {
             assertEquals(listOf(14, 9, 190, 412, 11, 35, 1100), listOf(after.courage, after.honour, after.maxHealth, after.gold, after.level, after.xp, after.xpToNextLevel))
             assertEquals(before.inventory, after.inventory)
             assertEquals(before.flags, after.flags)
-            assertEquals(before.trophies + "The Watch Goes On", after.trophies)
+            assertEquals(before.trophies + "The Watch Goes On" + EndingKit.awardsOf(id), after.trophies)
+            assertTrue("no decision is on record in this state, so no legacy can be proven", after.trophies.none { it in EndingKit.LEGACIES })
         }
     }
 

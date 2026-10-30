@@ -114,3 +114,22 @@ What the figure does not cover. It is a lower bound: a walk that never met a sta
 single walk within 0.2% of the per-chapter bound are the evidence it is close, not a proof). Shop purchases and items spent in a fight are not modelled, so the inventory
 field of a real checkpoint can be larger than sampled by a few hundred bytes per record. The sample is seeded, so a change to the story's graph changes the walks as well as the
 content: a move of a few percent in either direction after a chapter package is noise, ten percent is not.
+
+## The nine ending trophies (Batch 1, 30 Oct 2026, on efdc2bd plus the Batch 1 working tree)
+
+The ending trophies (`The Tale Told`, the three legacies, `Borrowed Strength`, `Unaided`, `Her Chains`, `Her Freedom`, `Her Fate Unwritten`) are
+added to the trophy set when a telling reaches an ending or replays from one. They are deliberately not in `StoryRepository.availableTrophies`
+(still the original 37), so the three tests that build a worst case from `availableTrophies` now add `EndingTrophies.all` explicitly, and
+`EndingTrophySizeTest` measures the replayed case. No limit and no pinned number was changed.
+
+| Figure | Before | With the nine | Limit in the test | Headroom |
+|---|---:|---:|---:|---:|
+| Thirty worst-case checkpoints (`CheckpointSizeTest`) | 551,681 | 562,241 (+10,560; 352 per record) | pinned 530,891, +10% = 583,979; ceiling 614,400 | 21,738 to the marker |
+| One worst-case checkpoint | 18,579 | 18,931 | 8,000 to 20,000 | 1,069 |
+| Thirty reachable arrival records, first telling (`CheckpointReachableSizeTest`) | 165,634 | 165,634 (unchanged: no ending trophy exists before the Chapter 30 arrival record) | pinned 161,198, +10% = 177,309 | 11,675 |
+| Same, replayed (the nine in every record; `EndingTrophySizeTest`) | | 176,194 | 177,309 | **1,115 (0.6%)** |
+| Worst-case save slot with its Back snapshot (`RecoveryPayloadSizingTest`) | 17,004 | 17,258 | 256 KiB provisional | large |
+
+Two things to know. The worst-case figure was already 3.9% above its Chapter 9 pin before this batch (the pin has not been moved since; the
+marker is 10%), and it is 5.9% above with the nine. The replayed reachable figure is the thin one: any further growth in what a play holds
+will reach its marker first, and the investigation procedure above applies when it does.

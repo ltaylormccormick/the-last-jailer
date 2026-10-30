@@ -2,6 +2,7 @@ package com.thelastjailer.app.checkpoint
 
 import com.thelastjailer.app.checkpoint.ReachableCheckpointMeasure.Sample
 import com.thelastjailer.app.data.StoryRepository
+import com.thelastjailer.app.ending.EndingTrophies
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -51,8 +52,9 @@ class CheckpointReachableSizeTest {
         val items = nodes.flatMap { node -> node.choices.flatMap { it.consequences.grantItemIds } }.distinct()
         val device = SimulatedDevice()
         val store = Cp.store(device)
+        // The nine ending trophies are not in availableTrophies, but a replayed game holds all of them in every record.
         val records = (1..30).map {
-            Cp.record(it, state = Cp.state(it, inventory = items, trophies = StoryRepository.availableTrophies, flags = flags))
+            Cp.record(it, state = Cp.state(it, inventory = items, trophies = StoryRepository.availableTrophies + EndingTrophies.all, flags = flags))
         }
         assertTrue(store.replaceAll(1, Cp.L1, records).isCommitted)
         return Cp.xmlSize(device.disk(Cp.file(1)))

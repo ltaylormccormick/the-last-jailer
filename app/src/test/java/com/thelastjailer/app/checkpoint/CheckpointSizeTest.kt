@@ -1,6 +1,7 @@
 package com.thelastjailer.app.checkpoint
 
 import com.thelastjailer.app.data.StoryRepository
+import com.thelastjailer.app.ending.EndingTrophies
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -12,7 +13,8 @@ class CheckpointSizeTest {
         val nodes = StoryRepository.chapters.flatMap { StoryRepository.nodesInChapter(it.id) }
         val flags = nodes.flatMap { node -> node.choices.flatMap { it.consequences.setFlags } }.toSet()
         val items = nodes.flatMap { node -> node.choices.flatMap { it.consequences.grantItemIds } }.distinct()
-        return Cp.state(n, inventory = items, trophies = StoryRepository.availableTrophies, flags = flags)
+        // The nine ending trophies are not in availableTrophies, but a replayed game holds all of them in every record.
+        return Cp.state(n, inventory = items, trophies = StoryRepository.availableTrophies + EndingTrophies.all, flags = flags)
     }
 
     /**

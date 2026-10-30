@@ -8,6 +8,7 @@ import com.thelastjailer.app.checkpoint.TimelineKeys
 import com.thelastjailer.app.checkpoint.TimelineWrite
 import com.thelastjailer.app.data.ItemCatalog
 import com.thelastjailer.app.data.StoryRepository
+import com.thelastjailer.app.ending.EndingAwards
 import com.thelastjailer.app.saveguard.gate.GateMode
 import com.thelastjailer.app.saveguard.gate.GateOutcome
 import com.thelastjailer.app.saveguard.gate.SaveGate
@@ -63,18 +64,23 @@ data class GameState(
  * Applies a [Choice]'s consequences and moves the player to its next node. [applyRegen] adds
  * [GameState.passiveRegenAmount] on top - left `false` only by [resolveCombat]'s victory path, since
  * that transition already carries the fight's own health cost and isn't an ordinary story beat.
+ *
+ * Arriving at one of the six endings, or leaving one, also adds that ending's [EndingAwards] to the trophies. Every other
+ * transition awards nothing here, and nothing is ever taken away.
  */
 fun GameState.applyChoice(choice: Choice, applyRegen: Boolean = true): GameState {
     val consequences = choice.consequences
     var next = this
     consequences.statDeltas.forEach { (stat, delta) -> next = next.withStatDelta(stat, delta) }
     if (applyRegen) next = next.withStatDelta(StatType.HEALTH, next.passiveRegenAmount())
-    return next.copy(
+    val moved = next.copy(
         sceneId = choice.nextNodeId,
         flags = (next.flags - consequences.clearFlags) + consequences.setFlags,
         inventory = next.inventory.withGrantedItems(consequences.grantItemIds),
         trophies = consequences.unlockTrophy?.let { next.trophies + it } ?: next.trophies
     ).withSceneChapter()
+    val awarded = EndingAwards.forTransition(this, choice, moved)
+    return if (awarded.isEmpty()) moved else moved.copy(trophies = moved.trophies + awarded)
 }
 
 /**

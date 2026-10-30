@@ -1,6 +1,7 @@
 package com.thelastjailer.app
 
 import com.thelastjailer.app.data.StoryRepository
+import com.thelastjailer.app.ending.EndingKit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -168,11 +169,13 @@ class TrophyBackTest {
         store.commitChoice(ending, loop)
         val back = store.restorePreviousState(1)!!
 
+        // Leaving an ending also gives that ending's awards (completion and the two outcomes); Back keeps every one of them.
+        val expected = setOf("Six, Not One", "The Watch Goes On") + EndingKit.awardsOf(node.id)
         assertEquals(node.id, back.sceneId)
-        assertEquals(setOf("Six, Not One", "The Watch Goes On"), back.trophies)
+        assertEquals(expected, back.trophies)
 
         val again = store.commitChoice(back, loop)
-        assertEquals(setOf("Six, Not One", "The Watch Goes On"), again.trophies)
+        assertEquals(expected, again.trophies)
     }
 
     // ---- restart, other slots, format -------------------------------------------------------------------------
