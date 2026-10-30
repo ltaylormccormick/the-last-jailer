@@ -5,6 +5,22 @@ import com.thelastjailer.app.R
 /** Maps a [com.thelastjailer.app.StoryNode.illustrationId] to its real drawable resource, if art exists for it yet. */
 object IllustrationCatalog {
     private val illustrations: Map<String, Int> = mapOf(
+        "ch1_wagon_stripped" to R.drawable.ch1_wagon_stripped,
+        "ch1_wagon_left" to R.drawable.ch1_wagon_left,
+        "ch1_the_old_shaft" to R.drawable.ch1_the_old_shaft,
+        "ch1_walked_the_road" to R.drawable.ch1_walked_the_road,
+        "hired_rider_combat" to R.drawable.hired_rider_combat,
+        "ch1_parley_answered" to R.drawable.ch1_parley_answered,
+        "ch1_wagon_searched" to R.drawable.ch1_wagon_searched,
+        "ch1_back_to_the_door" to R.drawable.ch1_back_to_the_door,
+        "ch1_driven_to_the_door" to R.drawable.ch1_driven_to_the_door,
+        "ch1_silent_forge" to R.drawable.ch1_silent_forge,
+        "smiths_warning_helped" to R.drawable.smiths_warning_helped,
+        "smiths_warning_robbed" to R.drawable.smiths_warning_robbed,
+        "ch2_root_tunnel" to R.drawable.ch2_root_tunnel,
+        "restitution_worked" to R.drawable.restitution_worked,
+        "ch2_warded_gate" to R.drawable.ch2_warded_gate,
+        "ch2_cloaks_truth" to R.drawable.ch2_cloaks_truth,
         "kaelen_combat_wounded" to R.drawable.kaelen_combat_wounded,
         "kaelen_combat_critical" to R.drawable.kaelen_combat_critical,
         "kaelen_combat_portrait" to R.drawable.kaelen_combat_portrait,

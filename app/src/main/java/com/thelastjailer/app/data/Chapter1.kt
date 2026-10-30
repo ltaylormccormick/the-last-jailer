@@ -200,7 +200,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
         id = "ch1_the_old_shaft",
         chapterId = "chapter_1",
         title = "The Old Shaft",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "ch1_the_old_shaft",
         narrativeText = """
             The hooves have gone. Up on the road the horn sounds once more, further away, and then there is only rain. The knocking at the door, which stopped when the horses came, has not begun again.
 
@@ -371,7 +371,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
         id = "ch1_parley_answered",
         chapterId = "chapter_1",
         title = "Across the Roots",
-        illustrationId = "knight_sword_drawn_door",
+        illustrationId = "ch1_parley_answered",
         narrativeText = """
             The rider stops at the edge of the roots as though he had walked into glass. For a moment Kaelen thinks he will laugh. He does not.
 
@@ -385,7 +385,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
         id = "ch1_back_to_the_door",
         chapterId = "chapter_1",
         title = "Back Through the Iron",
-        illustrationId = "black_door_beneath_the_tree",
+        illustrationId = "ch1_back_to_the_door",
         narrativeText = """
             Kaelen backs into the iron with the blade held between himself and the dismounted rider. The man does not follow. He stops at the edge of the roots and watches, his red-bound hand loose at his side, as the door swings wide behind Kaelen as if it had only been waiting to be asked.
         """.trimIndent(),
@@ -395,7 +395,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
         id = "ch1_driven_to_the_door",
         chapterId = "chapter_1",
         title = "Driven to the Door",
-        illustrationId = "black_door_beneath_the_tree",
+        illustrationId = "ch1_driven_to_the_door",
         narrativeText = """
             The rider's second blow takes Kaelen's feet out from under him, and the iron is at his back. He braces for the wall.
 
@@ -466,7 +466,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
         id = "ch1_wagon_searched",
         chapterId = "chapter_1",
         title = "What Stayed Dry",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "ch1_wagon_searched",
         narrativeText = """
             Under the tailboard: a few coins in a twist of cloth, and a flask of lamp oil with its stopper still sound. He takes the oil and the coins and leaves the rest, and the cart keeps its silence.
         """.trimIndent(),
@@ -476,7 +476,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
         id = "ch1_wagon_stripped",
         chapterId = "chapter_1",
         title = "Nothing Left to Mind It",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "ch1_wagon_stripped",
         narrativeText = """
             He takes everything it has: the coins, the oil, the iron fittings that will fetch something later, the strap off the yoke. It takes a while, and it is not clean work. When he is done the cart looks like it has been robbed twice.
 
@@ -488,7 +488,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
         id = "ch1_wagon_left",
         chapterId = "chapter_1",
         title = "A Word Over the Wreck",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "ch1_wagon_left",
         narrativeText = """
             He stands a moment in the mud with his hand on the tailboard and says what a man says over something that cannot hear it. Then he takes his hand away and leaves the cart as he found it.
         """.trimIndent(),
@@ -534,7 +534,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
         id = "walked_the_road",
         chapterId = "chapter_1",
         title = "The Weight of a Name",
-        illustrationId = "road_away_from_tree",
+        illustrationId = "ch1_walked_the_road",
         narrativeText = """
             Kaelen takes ten steps before the knocking comes again, softer now, almost patient.
 
@@ -637,7 +637,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
         id = "the_silent_forge",
         chapterId = "chapter_1",
         title = "The Silent Forge",
-        illustrationId = "silent_forge",
+        illustrationId = "ch1_silent_forge",
         narrativeText = """
             The hammering does not resume.
 
@@ -735,7 +735,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
         id = "smiths_warning_robbed",
         chapterId = "chapter_1",
         title = "A Warning in the Dark",
-        illustrationId = "dwarven_hold_gate",
+        illustrationId = "smiths_warning_robbed",
         narrativeText = """
             The smith turns back to the gate frame, and the bench is behind him, and Kaelen's hand is on the draught before he has decided to put it there. A stoppered vial, still warm from the forge. Beside it sits a tin with a few coins in it, left out for whatever dwarves need coin for, down here. He takes those too. He tells himself it is for the road.
 
@@ -756,7 +756,7 @@ val chapter1Nodes: List<StoryNode> = listOf(
         id = "smiths_warning_helped",
         chapterId = "chapter_1",
         title = "A Warning in the Dark",
-        illustrationId = "dwarven_hold_gate",
+        illustrationId = "smiths_warning_helped",
         narrativeText = """
             The gate sits a little straighter for the work, and the smith straightens with it,
             some of the wariness gone out of his shoulders now that he's seen what Kaelen's hands

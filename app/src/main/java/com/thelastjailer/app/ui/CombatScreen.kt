@@ -54,6 +54,7 @@ private const val KAELEN_COMBAT_PORTRAIT = "kaelen_combat_portrait_v2"
 /** Explicit opponent art avoids selecting a different story scene on different routes. */
 private val dedicatedEnemyPortraits = mapOf(
     "cave_lurker" to "cave_lurker_combat",
+    "hired_rider" to "hired_rider_combat",
     "seal_wraith" to "seal_wraith_combat",
     "ashen_vanguard" to "ashen_vanguard_combat",
     "cinder_adept" to "cinder_adept_combat",
