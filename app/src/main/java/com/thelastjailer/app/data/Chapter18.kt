@@ -16,6 +16,53 @@ import com.thelastjailer.app.StoryNode
 val ILSEVET_FATE_FAMILY: Set<String> = setOf("captured_ilsevet", "showed_ilsevet_mercy", "deferred_ilsevets_fate")
 
 /**
+ * How the frame was stopped, as Chapter XVII recorded it. One copy is shown, always: destroyed outright, else disrupted carefully,
+ * else (stopped however possible, or an older save that holds none) the third. The order makes the copies exclusive even if a replay
+ * left an old flag beside a new one; the chain at Chapter XVII's gate clears them as a telling begins.
+ */
+private fun tellHowTheFrameWasStopped(label: String): List<Choice> = listOf(
+    Choice(label = label, nextNodeId = "c18_frame_destroyed", requirements = ChoiceRequirement(requiredFlags = setOf("destroyed_the_frame_outright"))),
+    Choice(
+        label = label,
+        nextNodeId = "c18_frame_disrupted",
+        requirements = ChoiceRequirement(requiredFlags = setOf("disrupted_carefully"), forbiddenFlags = setOf("destroyed_the_frame_outright"))
+    ),
+    Choice(
+        label = label,
+        nextNodeId = "c18_frame_uncertain",
+        requirements = ChoiceRequirement(forbiddenFlags = setOf("destroyed_the_frame_outright", "disrupted_carefully"))
+    )
+)
+
+/**
+ * The decision about Ilsevet, in the Voss variant the current rung gives: trusting if Voss stands at the trusted rung now, guarded
+ * otherwise (the lower rungs, or a save that holds none). The shipped scenes and their three choices are untouched.
+ */
+private fun chooseForIlsevet(label: String): List<Choice> = listOf(
+    Choice(label = label, nextNodeId = "what_kaelen_chooses_trusted", requirements = ChoiceRequirement(requiredFlags = setOf("c7_rung_trusted"))),
+    Choice(label = label, nextNodeId = "what_kaelen_chooses_guarded", requirements = ChoiceRequirement(forbiddenFlags = setOf("c7_rung_trusted")))
+)
+
+/**
+ * The way on from the end of the chapter, by what Kaelen decided about Ilsevet. The three fate flags are exclusive (every fate choice
+ * clears all three before it sets one); the order keeps the copies exclusive anyway, and the third is read by the absence of the other
+ * two, so a save that holds none still goes on.
+ */
+private fun restWhileItLasts(): List<Choice> = listOf(
+    Choice(label = "Rest, while it lasts.", nextNodeId = "c19_fate_captured", requirements = ChoiceRequirement(requiredFlags = setOf("captured_ilsevet"))),
+    Choice(
+        label = "Rest, while it lasts.",
+        nextNodeId = "c19_fate_mercy",
+        requirements = ChoiceRequirement(requiredFlags = setOf("showed_ilsevet_mercy"), forbiddenFlags = setOf("captured_ilsevet"))
+    ),
+    Choice(
+        label = "Rest, while it lasts.",
+        nextNodeId = "c19_fate_deferred",
+        requirements = ChoiceRequirement(forbiddenFlags = setOf("captured_ilsevet", "showed_ilsevet_mercy"))
+    )
+)
+
+/**
  * Chapter XVIII — No More Between Us.
  *
  * The first direct duel between Kaelen and Ilsevet. With the frame destroyed or disrupted in XVII
@@ -37,6 +84,167 @@ val ILSEVET_FATE_FAMILY: Set<String> = setOf("captured_ilsevet", "showed_ilsevet
  */
 val chapter18Nodes: List<StoryNode> = listOf(
     StoryNode(
+        id = "c18_gate_after_ashfall",
+        chapterId = "chapter_18",
+        title = "What the Gate Kept",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            The gate had been repaired in three places since Kaelen last stood beneath it. The new
+            mortar was paler than the old stone. Someone had hung a lamp where a broken hinge had
+            been, and somebody else had scratched six short lines into the wood beside it. He could
+            not tell whether they were a tally or a warning. He left them untouched. Behind him, the
+            chain Halvard had carried knocked once against his breastplate as he climbed the steps.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Ask who made the marks.", nextNodeId = "c18_marks"),
+            Choice(label = "Leave the marks alone.", nextNodeId = "c18_quiet_wall")
+        )
+    ),
+    StoryNode(
+        id = "c18_marks",
+        chapterId = "chapter_18",
+        title = "Six Lines",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            Tam was the one who answered. She had not cut the marks herself, but she knew who had.
+            Each line belonged to someone who had kept the wall while Kaelen was gone. One had been
+            made for a man who would never keep it again. Tam did not offer names. Kaelen found that
+            he did not need them. The gate had its own way of remembering, even when its books were
+            closed.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Thank Tam for keeping watch.", nextNodeId = "c18_stonebeard_report"))
+    ),
+    StoryNode(
+        id = "c18_quiet_wall",
+        chapterId = "chapter_18",
+        title = "What Goes Unasked",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            He passed the marks without asking. By morning he regretted the silence, though he could
+            not have said what answer he had wanted. The wall was still standing. That had become
+            the measure of too many things. He rested his hand against the newer mortar and felt the
+            cold through his bracer. A repaired wall was not an untouched one. It was only proof
+            that someone had come back to mend it.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Find the old smith.", nextNodeId = "c18_stonebeard_report"))
+    ),
+    StoryNode(
+        id = "c18_stonebeard_report",
+        chapterId = "chapter_18",
+        title = "The Account Given",
+        illustrationId = "who_stands_with_stonebeard",
+        narrativeText = """
+            The old smith listened without interrupting while Kaelen described the chamber at
+            Ashfall. He asked about the guardian, the six settings and the people who had held the
+            road. Only when Kaelen finished did he ask the question that mattered to him. "Will it
+            work again?" Kaelen looked at the old dwarf across the table. "I stopped it," he said.
+            "That is what I know." The old smith accepted the difference between those answers
+            without pretending it comforted him.
+        """.trimIndent(),
+        choices = tellHowTheFrameWasStopped("Tell him how the frame was stopped.")
+    ),
+    StoryNode(
+        id = "c18_frame_destroyed",
+        chapterId = "chapter_18",
+        title = "Broken Settings",
+        illustrationId = "who_stands_with_stonebeard",
+        narrativeText = """
+            "I broke the settings," Kaelen said. "Whatever pattern they held, it cannot be made to
+            answer in that chamber again without someone building it anew." The old smith nodded
+            once. That was a useful answer, but not a final one. There were people in the world who
+            would call a broken machine a problem to be solved. Kaelen had met too many of them. He
+            told Stonebeard as much, and the dwarf wrote it down.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Go to the watch.", nextNodeId = "c18_watch"))
+    ),
+    StoryNode(
+        id = "c18_frame_disrupted",
+        chapterId = "chapter_18",
+        title = "The Pattern Interrupted",
+        illustrationId = "who_stands_with_stonebeard",
+        narrativeText = """
+            "The settings are still there," Kaelen said. "I broke their agreement, not the stones
+            themselves." The old smith's pen stopped. "Can they be put back?" "By someone who knows
+            how, perhaps." Neither man liked that answer. It was still the only honest one. He wrote
+            down the shape of the danger rather than crossing it out of the ledger. Kaelen was
+            grateful for that small refusal to make the story simpler.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Go to the watch.", nextNodeId = "c18_watch"))
+    ),
+    StoryNode(
+        id = "c18_frame_uncertain",
+        chapterId = "chapter_18",
+        title = "Enough to Stop It",
+        illustrationId = "who_stands_with_stonebeard",
+        narrativeText = """
+            "It stopped," Kaelen said. "I cannot promise what remains of the frame." The old smith
+            looked at the chain in Kaelen's hands and then at Kaelen. "A thing can be stopped
+            without being settled," he said. Halvard might have said the same, though probably with
+            fewer words. They marked the chamber for another inspection when the road could be held.
+            For now there were wounded people, a damaged wall and a night to get through.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Go to the watch.", nextNodeId = "c18_watch"))
+    ),
+    StoryNode(
+        id = "c18_watch",
+        chapterId = "chapter_18",
+        title = "The Road Below",
+        illustrationId = "ashfall_sanctum_vista",
+        narrativeText = """
+            Voss was on the watch platform, her wounded arm resting against the stone as she studied
+            the road. She made room for him without turning. Far below, the last supply cart of the
+            evening crept towards the gate. "You told them what happened?" she asked. "What I know
+            of it." "Good." She watched the cart a little longer. "There will be people who want a
+            cleaner account." "They can wait," Kaelen said. Voss gave him a brief, tired smile.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Ask what she expects next.", nextNodeId = "c18_voss_warning"),
+            Choice(label = "Let the road speak for itself.", nextNodeId = "c18_voss_silence")
+        )
+    ),
+    StoryNode(
+        id = "c18_voss_warning",
+        chapterId = "chapter_18",
+        title = "No More Messengers",
+        illustrationId = "ashfall_sanctum_vista",
+        narrativeText = """
+            "Ilsevet has run out of people she trusts to fail for her," Voss said. "That doesn't
+            mean she's run out of reasons." Kaelen followed her gaze to the far bend in the road.
+            "You think she'll come herself?" "I think she'll want to see what you did to the frame.
+            And I think she'll tell herself that's the only reason." Voss turned at last. "Whatever
+            she says, make her answer for the people who never got to stand in front of you."
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Promise nothing you cannot keep.", nextNodeId = "c18_three_days"))
+    ),
+    StoryNode(
+        id = "c18_voss_silence",
+        chapterId = "chapter_18",
+        title = "The Watch Shared",
+        illustrationId = "ashfall_sanctum_vista",
+        narrativeText = """
+            They stood together until the cart reached the gate. Voss did not ask for a promise, and
+            Kaelen did not make one. A year ago he might have mistaken that for distance. Now he
+            understood it as a kindness, at least some of the time. The watch bell sounded below.
+            Voss straightened and winced before she could hide it. Kaelen noticed. She noticed him
+            noticing. Neither mentioned it.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Take the next watch.", nextNodeId = "c18_three_days"))
+    ),
+    StoryNode(
+        id = "c18_three_days",
+        chapterId = "chapter_18",
+        title = "The Third Morning",
+        illustrationId = "no_more_envoys",
+        narrativeText = """
+            On the third morning after Ashfall, a single figure appeared on the roots road. The
+            guards saw the plain sword before they recognised the woman carrying it. Nobody fired.
+            Nobody opened the gate. By the time word reached Kaelen, Ilsevet had stopped where the
+            road widened and laid her empty left hand against the trunk of the old tree. She waited
+            without calling up. That patience frightened him more than a shouted threat would have.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Go down to meet her.", nextNodeId = "no_more_envoys"))
+    ),
+    StoryNode(
         id = "no_more_envoys",
         chapterId = "chapter_18",
         title = "No More Envoys",
@@ -47,7 +255,7 @@ val chapter18Nodes: List<StoryNode> = listOf(
             on foot, a fresh scar along one arm that wasn't there the last time Kaelen saw her up
             close.
 
-            "I'm done sending people to do this," she says. "The frame's gone. Whatever I build
+            "I'm done sending people to do this," she says. "The frame's stopped. Whatever I build
             next starts with a decision only the two of us can actually make."
         """.trimIndent(),
         choices = listOf(
@@ -84,7 +292,7 @@ val chapter18Nodes: List<StoryNode> = listOf(
             a vote. Just the two people this has actually been about since the beginning."
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Accept.", nextNodeId = "what_kaelen_says_first")
+            Choice(label = "Accept.", nextNodeId = "c18_after_terms")
         )
     ),
     StoryNode(
@@ -102,8 +310,67 @@ val chapter18Nodes: List<StoryNode> = listOf(
             Just the two people this has actually been about since the beginning."
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Accept.", nextNodeId = "what_kaelen_says_first")
+            Choice(label = "Accept.", nextNodeId = "c18_after_terms")
         )
+    ),
+    StoryNode(
+        id = "c18_after_terms",
+        chapterId = "chapter_18",
+        title = "The People Between Them",
+        illustrationId = "her_own_terms",
+        narrativeText = """
+            Kaelen accepted, and the terms sounded simple only if he let Ilsevet name the two people
+            who mattered. He thought of the riders on the road, the smiths at the Hold and Halvard's
+            empty place at the table. "You don't get to say this was only ever between us," he told
+            her. Ilsevet's jaw tightened. She had come to settle an argument with one man. He would
+            not let her erase the people who had already paid for it.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(label = "Ask who she meant to save.", nextNodeId = "c18_ashwell_question"),
+            Choice(label = "Ask who she was willing to lose.", nextNodeId = "c18_cost_question")
+        )
+    ),
+    StoryNode(
+        id = "c18_ashwell_question",
+        chapterId = "chapter_18",
+        title = "The Name of the Loss",
+        illustrationId = "her_own_terms",
+        narrativeText = """
+            "Ashwell," she said before he finished asking. The name was almost an accusation, though
+            Kaelen had not been there to earn it. "I thought if I could make one thing hold, nobody
+            would have to stand where I stood." Her eyes moved to the wall. "Then I kept finding
+            reasons other people had to stand there first." She said it without asking to be
+            forgiven. For the first time Kaelen believed she knew the difference.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Tell her knowing is not enough.", nextNodeId = "c18_before_blades"))
+    ),
+    StoryNode(
+        id = "c18_cost_question",
+        chapterId = "chapter_18",
+        title = "A List Without an End",
+        illustrationId = "her_own_terms",
+        narrativeText = """
+            Ilsevet tried to answer with numbers. Men sent, gates held, villages spared, years
+            bought. Kaelen let her finish. "And the names?" he asked. She looked away. There were
+            names she could give him and names she had never learned. The missing ones troubled him
+            more. "I told myself the count mattered," she said. "It did," Kaelen replied. "It
+            mattered to the people you counted." She did not argue.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Bring the argument to its end.", nextNodeId = "c18_before_blades"))
+    ),
+    StoryNode(
+        id = "c18_before_blades",
+        chapterId = "chapter_18",
+        title = "What the Sword Cannot Say",
+        illustrationId = "her_own_terms",
+        narrativeText = """
+            Ilsevet set her feet on the wet stones. Kaelen saw the fresh scar along her arm and the
+            exhaustion beneath her careful stance. She was dangerous. She was also tired. Neither
+            fact cancelled the other. "There is still time to answer without steel," he said. "For
+            what?" "For why you kept going when you knew the cost." Ilsevet's grip tightened. "I
+            don't have an answer you'll accept." "Then tell the truth anyway."
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Wait for her to move.", nextNodeId = "what_kaelen_says_first"))
     ),
     StoryNode(
         id = "what_kaelen_says_first",
@@ -112,7 +379,7 @@ val chapter18Nodes: List<StoryNode> = listOf(
         illustrationId = "what_kaelen_says_first",
         narrativeText = """
             There's a version of this where Kaelen has something clever to say, about Ashwell,
-            about Halvard, about everything four settings and a stolen shard and a reliquary
+            about Halvard, about everything four settings and stolen shards and a reliquary
             thief have cost people who never chose to be part of her arithmetic. He finds, when
             it actually comes to it, that he doesn't much feel like making a speech.
         """.trimIndent(),
@@ -204,18 +471,67 @@ val chapter18Nodes: List<StoryNode> = listOf(
             "Go on, then," she says, not quite steady. "Finish what Ashwell should have taught me
             to expect."
         """.trimIndent(),
+        choices = listOf(Choice(label = "Decide.", nextNodeId = "c18_after_duel"))
+    ),
+    StoryNode(
+        id = "c18_after_duel",
+        chapterId = "chapter_18",
+        title = "The Silence After",
+        illustrationId = "what_is_left_of_her",
+        narrativeText = """
+            Kaelen began to decide, and found that the road had gone quiet. Ilsevet's sword lay a
+            few steps away, its plain blade dark with rain. He stood where the fight had ended and
+            listened for the gate bell. It did not ring. The guards were waiting for him to decide
+            what kind of victory they had witnessed. He wished they would stop. He had fought to end
+            a threat. He had not fought to become the only person allowed to judge what came after.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Hear Voss before deciding.", nextNodeId = "c18_voss_account"))
+    ),
+    StoryNode(
+        id = "c18_voss_account",
+        chapterId = "chapter_18",
+        title = "Her Own Reckoning",
+        illustrationId = "what_is_left_of_her",
+        narrativeText = """
+            Voss approached without touching Ilsevet or the fallen sword. "She hurt people," she
+            said. "So did the people who obeyed her. Some of them will want a reason to stop. Others
+            will want a new Marshal." Kaelen looked at her. "What would you do?" "I would remember
+            the people who aren't here to answer." She left the choice with him. He had learned that
+            this was different from leaving him alone.
+        """.trimIndent(),
         choices = listOf(
-            Choice(
-                label = "Decide.",
-                nextNodeId = "what_kaelen_chooses_trusted",
-                requirements = ChoiceRequirement(requiredFlags = setOf("trusted_voss_fully"))
-            ),
-            Choice(
-                label = "Decide.",
-                nextNodeId = "what_kaelen_chooses_guarded",
-                requirements = ChoiceRequirement(forbiddenFlags = setOf("trusted_voss_fully"))
-            )
+            Choice(label = "Ask what Ilsevet can still tell them.", nextNodeId = "c18_ilsevet_last_question"),
+            Choice(label = "Make the decision without another answer.", nextNodeId = "c18_choice_return")
         )
+    ),
+    StoryNode(
+        id = "c18_ilsevet_last_question",
+        chapterId = "chapter_18",
+        title = "One Thing Unfinished",
+        illustrationId = "what_is_left_of_her",
+        narrativeText = """
+            Ilsevet's breathing steadied. When Kaelen asked whether the frame had been hers from the
+            beginning, she looked at him with sudden alarm, as though he had touched something she
+            kept covered. "That is not a question for a road," she said. He waited. She shook her
+            head. "If you want the rest, ask me when I can stand without a sword between us." Kaelen
+            could not tell whether it was a bargain or the first honest admission she had made that
+            day. He chose to remember the words.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Decide her fate.", nextNodeId = "c18_choice_return"))
+    ),
+    StoryNode(
+        id = "c18_choice_return",
+        chapterId = "chapter_18",
+        title = "The Decision Is His",
+        illustrationId = "what_is_left_of_her",
+        narrativeText = """
+            Kaelen retrieved the plain sword. He did not offer it back. Beyond the wall, the day
+            carried on: carts arriving, people calling, a hammer striking iron somewhere out of
+            sight. Ilsevet had made the world wait for her decisions for too long. He would not do
+            the same. Whatever he chose, it would be an answer he could explain to the living and
+            carry among the dead.
+        """.trimIndent(),
+        choices = chooseForIlsevet("Choose what happens to Ilsevet.")
     ),
     StoryNode(
         id = "what_kaelen_chooses_trusted",
@@ -335,9 +651,7 @@ val chapter18Nodes: List<StoryNode> = listOf(
 
             Chapter XIX awaits.
         """.trimIndent(),
-        choices = listOf(
-            Choice(label = "Rest, while it lasts.", nextNodeId = "what_ilsevet_knew")
-        )
+        choices = restWhileItLasts()
     )
 )
 

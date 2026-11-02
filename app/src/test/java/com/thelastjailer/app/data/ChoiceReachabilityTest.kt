@@ -235,20 +235,71 @@ class ChoiceReachabilityTest {
         assertEquals(Status.INCONCLUSIVE, statusOf(v, "a", "gated"))
     }
 
+    @Test
+    fun `a weaker route that reaches a node first never hides a stronger one that arrives later`() {
+        // The poorer arrival at "m" is found first; the richer one arrives later through a longer way. The gate needs Courage 3.
+        val v = analyse(
+            node("start", go("m", "poor"), go("long")),
+            node("long", go("m", "rich", c = Consequences(statDeltas = mapOf(StatType.COURAGE to 2)))),
+            node("m", go("end", "gated", ChoiceRequirement(minStats = mapOf(StatType.COURAGE to 3)))),
+            node("end")
+        )
+        assertEquals(Status.ALIVE, statusOf(v, "m", "gated"))
+    }
+
+    @Test
+    fun `a gate that no route can reach is still dead whichever arrival comes first`() {
+        val v = analyse(
+            node("start", go("m", "poor"), go("long")),
+            node("long", go("m", "rich", c = Consequences(statDeltas = mapOf(StatType.COURAGE to 2)))),
+            node("m", go("end", "gated", ChoiceRequirement(minStats = mapOf(StatType.COURAGE to 4)))),
+            node("end")
+        )
+        assertEquals(Status.DEAD, statusOf(v, "m", "gated"))
+    }
+
+    @Test
+    fun `a richer arrival is never hidden by a poorer one, in each of Courage, Honour and Gold`() {
+        // Two routes meet at "m". The short one is poorer; the long one is richer in exactly one stat. The gate needs more of that
+        // stat than the poor route has and no more than the rich route has. Pruning in the wrong direction would lose the rich route.
+        listOf(StatType.COURAGE to 5, StatType.HONOUR to 4, StatType.GOLD to 60).forEach { (stat, gate) ->
+            val v = analyse(
+                node("start", go("m", "poor"), go("long")),
+                node("long", go("m", "rich", c = Consequences(statDeltas = mapOf(stat to 40)))),
+                node("m", go("end", "gated", ChoiceRequirement(minStats = mapOf(stat to gate)))),
+                node("end")
+            )
+            assertEquals("$stat gate $gate is reachable only through the richer route", Status.ALIVE, statusOf(v, "m", "gated"))
+            val unreachable = analyse(
+                node("start", go("m", "poor"), go("long")),
+                node("long", go("m", "rich", c = Consequences(statDeltas = mapOf(stat to 40)))),
+                node("m", go("end", "gated", ChoiceRequirement(minStats = mapOf(stat to gate + 100)))),
+                node("end")
+            )
+            assertEquals("$stat gate ${gate + 100} is beyond both routes", Status.DEAD, statusOf(unreachable, "m", "gated"))
+        }
+    }
+
     // ---------- the real story ----------
 
-    private val nodes = StoryRepository.chapters.flatMap { StoryRepository.nodesInChapter(it.id) }
+    private val nodes get() = RealStoryReachability.nodes
+    private val combatTargetsOf: (StoryNode) -> List<String> get() = RealStoryReachability.combatTargetsOf
 
-    private val realAnalyzer = ChoiceReachabilityAnalyzer(
-            nodes = nodes,
-            combatTargets = { n ->
-                n.combatEncounterId?.let { CombatRepository.encounter(it) }
-                    ?.let { listOfNotNull(it.victoryNodeId, it.defeatNodeId ?: it.victoryNodeId) }
-                    ?: emptyList()
-            }
-        )
-
-    private val verdicts: List<ChoiceReachabilityAnalyzer.Verdict> by lazy { realAnalyzer.analyse() }
+    /**
+     * How the real story is judged. Once Chapter IX began to read the decisions of Chapters VII and VIII, the number of
+     * states an exact search has to hold at once outgrew the machine it runs on: a hub there stands over a product of about
+     * twenty independent earlier choices. So three things are done, each exact for what it claims:
+     *  1. A sample of random walks of the real transitions witnesses most gated choices outright. A witness is a proof of life.
+     *  2. Every gated choice no walk witnessed is put to the exact search, one node at a time, confined to the nodes that can
+     *     still reach it ([ChoiceReachabilityAnalyzer] `focus`). It answers ALIVE, DEAD, or INCONCLUSIVE if its budget runs out.
+     *  3. Chapters 1 to 6, which the exact search has always been able to hold, are still judged by the exact search in full.
+     */
+    private val sampled: Set<Pair<String, Int>> get() = RealStoryReachability.sampled
+    private val gated: List<Triple<StoryNode, Int, Choice>> get() = RealStoryReachability.gated
+    private val verdicts: List<ChoiceReachabilityAnalyzer.Verdict> get() = RealStoryReachability.verdicts
+    private val exactStates: Int get() = RealStoryReachability.exactStates
+    private val exactRuns: Int get() = RealStoryReachability.exactRuns
+    private val largestExactRun: Int get() = RealStoryReachability.largestExactRun
 
     /**
      * Choices known to be dead, as (nodeId, label). Empty since C1-1 removed the two unreachable
@@ -262,6 +313,16 @@ class ChoiceReachabilityTest {
     )
 
     @Test
+    fun `random walks witness nearly every gated choice so the exact search is left only the rare ones`() {
+        verdicts
+        assertTrue(
+            "Only ${sampled.size} of ${gated.size} gated choices were witnessed by ${SAMPLED_WALKS} walks; the exact search " +
+                "would be asked about too many. Add walks or look at what changed.",
+            sampled.size >= gated.size * 9 / 10
+        )
+    }
+
+    @Test
     fun `the analysis of the real story completes without hitting its state budget`() {
         val inconclusive = verdicts.filter { it.status == Status.INCONCLUSIVE }
         assertTrue(
@@ -272,13 +333,90 @@ class ChoiceReachabilityTest {
     }
 
     @Test
-    fun `the real analysis keeps comfortable headroom under its state budget`() {
+    fun `the exact searches keep comfortable headroom under their state budget`() {
         verdicts // force the run
         assertTrue(
-            "Explored ${realAnalyzer.statesExplored} states; the budget is 1,500,000; keep this check well under it. If this is " +
-                "approaching it, tighten the state abstraction before the story grows further.",
-            realAnalyzer.statesExplored < 1_000_000
+            "The exact searches explored $exactStates states in $exactRuns runs (largest $largestExactRun); each run's budget is " +
+                "$FOCUSED_BUDGET. Keep the largest well under it; if it is approaching it, add walks or tighten the abstraction.",
+            largestExactRun < FOCUSED_BUDGET / 2
         )
+    }
+
+    @Test
+    fun `the exact search still judges every gated choice in Chapters 1 to 6 and finds only the known dead one`() {
+        val prefix = nodes.filter { (it.chapterId.removePrefix("chapter_").toIntOrNull() ?: 99) <= 6 }
+        val analyzer = ChoiceReachabilityAnalyzer(prefix, combatTargetsOf)
+        val result = analyzer.analyse()
+        assertTrue("Inconclusive: ${result.filter { it.status == Status.INCONCLUSIVE }.map { it.nodeId }}",
+            result.none { it.status == Status.INCONCLUSIVE })
+        val dead = result.filter { it.status == Status.DEAD }.map { it.nodeId to it.choice.label }.toSet()
+        assertEquals(knownDead, dead)
+        assertTrue("Explored ${analyzer.statesExplored} states of a 1,500,000 budget", analyzer.statesExplored < 1_000_000)
+        println("REACH exact search over Chapters 1 to 6 explored ${analyzer.statesExplored} states for ${result.size} gated choices")
+    }
+
+    @Test
+    fun `every gated choice in the scenes Chapters 7 to 9 added or reroute is reachable on a first playthrough`() {
+        val interesting = nodes.filter { n ->
+            n.id.startsWith("c7_") || n.id.startsWith("c8_") || n.id.startsWith("c9_") ||
+                n.chapterId in setOf("chapter_7", "chapter_8", "chapter_9")
+        }
+        var checked = 0
+        interesting.forEach { n ->
+            verdicts.filter { it.nodeId == n.id }.forEach { v ->
+                checked++
+                assertEquals("${n.id}: ${v.choice.label} (${v.detail})", Status.ALIVE, v.status)
+            }
+        }
+        assertTrue("a real number of gated choices were checked: $checked", checked > 150)
+    }
+
+    @Test
+    fun `every gated choice in the scenes Chapters 10 to 12 added or reroute is reachable on a first playthrough`() {
+        val interesting = nodes.filter { n ->
+            n.id.startsWith("c10_") || n.id.startsWith("c11_") || n.id.startsWith("c12_") ||
+                n.chapterId in setOf("chapter_10", "chapter_11", "chapter_12")
+        }
+        var checked = 0
+        interesting.forEach { n ->
+            verdicts.filter { it.nodeId == n.id }.forEach { v ->
+                checked++
+                assertEquals("${n.id}: ${v.choice.label} (${v.detail})", Status.ALIVE, v.status)
+            }
+        }
+        assertTrue("a real number of gated choices were checked: $checked", checked > 100)
+    }
+
+    @Test
+    fun `every gated choice in the scenes Chapters 13 to 16 added or reroute is reachable on a first playthrough`() {
+        val interesting = nodes.filter { n ->
+            n.id.startsWith("c13_") || n.id.startsWith("c14_") || n.id.startsWith("c15_") || n.id.startsWith("c16_") ||
+                n.chapterId in setOf("chapter_13", "chapter_14", "chapter_15", "chapter_16")
+        }
+        var checked = 0
+        interesting.forEach { n ->
+            verdicts.filter { it.nodeId == n.id }.forEach { v ->
+                checked++
+                assertEquals("${n.id}: ${v.choice.label} (${v.detail})", Status.ALIVE, v.status)
+            }
+        }
+        assertTrue("a real number of gated choices were checked: $checked", checked > 100)
+    }
+
+    @Test
+    fun `every gated choice in Chapter 6's new scenes and the scenes that now lead to them is reachable on a first playthrough`() {
+        val nodesToCheck = listOf(
+            "the_road_north_deliberate", "c6_camp", "c6_tollhouse_helped", "c6_cellar", "c6_garden", "c6_watchpost",
+            "c6_unbound_sighted", "unbound_defeat", "c6_pin_decided", "what_must_be_decided"
+        )
+        nodesToCheck.forEach { id ->
+            val atNode = verdicts.filter { it.nodeId == id }
+            assertTrue("$id has gated choices", atNode.isNotEmpty())
+            val notAlive = atNode.filter { it.status != Status.ALIVE }.map { it.choice.label to it.status }
+            assertTrue("$id: gated choices that are not alive: $notAlive", notAlive.isEmpty())
+        }
+        val pin = verdicts.single { it.nodeId == "c6_unbound_sighted" && it.choice.nextNodeId == "c6_pin_held" }
+        assertEquals("the ward-nail pinning needs the method, the nails and Courage 5, and a real playthrough can have all three", Status.ALIVE, pin.status)
     }
 
     @Test
@@ -302,5 +440,76 @@ class ChoiceReachabilityTest {
     fun `the real story only gates on Courage, Honour and Gold`() {
         val analyzer = ChoiceReachabilityAnalyzer(nodes)
         assertEquals(emptySet<StatType>(), analyzer.reportsUnsupportedGates())
+    }
+
+    private companion object {
+        const val SAMPLED_WALKS = 25_000
+        const val FOCUSED_BUDGET = 600_000
+    }
+}
+
+/**
+ * The judgement of the real story, computed once for the whole test class (JUnit builds a new instance for every test, and
+ * the sampled walks take half a minute). See the comment on [ChoiceReachabilityTest] for what the three parts are.
+ */
+private object RealStoryReachability {
+    val nodes: List<StoryNode> = StoryRepository.chapters.flatMap { StoryRepository.nodesInChapter(it.id) }
+
+    val combatTargetsOf: (StoryNode) -> List<String> = { n ->
+        n.combatEncounterId?.let { CombatRepository.encounter(it) }
+            ?.let { listOfNotNull(it.victoryNodeId, it.defeatNodeId ?: it.victoryNodeId) }
+            ?: emptyList()
+    }
+
+    private const val SAMPLED_WALKS = 25_000
+    private const val FOCUSED_BUDGET = 600_000
+
+    val gated: List<Triple<StoryNode, Int, Choice>> = nodes.flatMap { n ->
+        n.choices.mapIndexedNotNull { i, c -> if (c.requirements != null) Triple(n, i, c) else null }
+    }
+
+    var exactStates = 0
+        private set
+    var exactRuns = 0
+        private set
+    var largestExactRun = 0
+        private set
+
+    /**
+     * What real states witness: the global sample of random walks, plus the choices a deterministic witness stands in ([PivotWitnesses]).
+     * The sample shares one random sequence across all its walks, so a scene added anywhere later in the story shifts every walk after the
+     * first and a choice reached only by a rare combination can drop out of it (c10_forge_side's third exit did, when Chapters 13 to 16
+     * were added; other seeds find it). A pivot witness gives every walk its own sequence and finishes the local choices exhaustively, so it
+     * does not move. Both are witnesses, never verdicts of death, and neither the sample size nor the exact search's budget has changed.
+     */
+    val sampled: Set<Pair<String, Int>> by lazy {
+        val walked = GatedChoiceSampler(nodes, combat = { n -> n.combatEncounterId?.let { CombatRepository.encounter(it) } })
+            .also { sampler = it }
+            .satisfied(walks = SAMPLED_WALKS, seed = 0x5EED5L)
+        walked + PivotWitnesses.satisfied(nodes) { n -> n.combatEncounterId?.let { CombatRepository.encounter(it) } }
+    }
+    private var sampler: GatedChoiceSampler? = null
+
+    val verdicts: List<ChoiceReachabilityAnalyzer.Verdict> by lazy {
+        val witnessed = sampled
+        val unproven = gated.filter { (n, i, _) -> (n.id to i) !in witnessed }
+        val exact = HashMap<Pair<String, Int>, ChoiceReachabilityAnalyzer.Verdict>()
+        unproven.map { it.first }.distinctBy { it.id }.forEach { node ->
+            val analyzer = ChoiceReachabilityAnalyzer(nodes, combatTargetsOf, maxStates = FOCUSED_BUDGET, focus = setOf(node.id))
+            val result = analyzer.analyse()
+            exactRuns++
+            exactStates += analyzer.statesExplored
+            largestExactRun = maxOf(largestExactRun, analyzer.statesExplored)
+            node.choices.forEachIndexed { i, c ->
+                result.firstOrNull { it.nodeId == node.id && it.choice === c }?.let { exact[node.id to i] = it }
+            }
+        }
+        println("REACH sampled ${witnessed.size} of ${gated.size} gated choices in ${sampler?.stepsTaken} steps; " +
+            "${unproven.size} unproven at ${unproven.map { it.first.id }.distinct().size} nodes went to $exactRuns exact runs " +
+            "($exactStates states, largest $largestExactRun)")
+        gated.map { (n, i, c) ->
+            if ((n.id to i) in witnessed) ChoiceReachabilityAnalyzer.Verdict(n.id, c, ChoiceReachabilityAnalyzer.Status.ALIVE, "a sampled walk stood in a satisfying state")
+            else exact[n.id to i] ?: ChoiceReachabilityAnalyzer.Verdict(n.id, c, ChoiceReachabilityAnalyzer.Status.INCONCLUSIVE, "the exact search gave no verdict")
+        }
     }
 }

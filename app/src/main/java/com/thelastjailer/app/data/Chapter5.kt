@@ -7,6 +7,25 @@ import com.thelastjailer.app.StatType
 import com.thelastjailer.app.StoryNode
 
 /**
+ * Family C5: the flags that record how this telling answered the Marshal's envoy at the black door.
+ * Each answer clears all three, then sets its own, so a replay that answers differently never carries
+ * the earlier answer. Chapter VII reads all three as dialogue options with Voss, and the Journal groups
+ * them as one moment, so they must describe this telling only. This runs when a choice is taken, never
+ * when a scene is entered or loaded.
+ */
+val ENVOY_REPLY_FAMILY: Set<String> =
+    setOf("refused_envoy", "heard_envoy_offer", "confronted_envoy_with_prisoners_words")
+
+/**
+ * Family C5b: the flags that record what this telling told Halvard about the envoy's offer. Each of the
+ * four choices after the missive clears both, then sets its own, so a replay that decides differently
+ * never carries the earlier decision, and the Journal groups them as one moment. This runs when a choice
+ * is taken, never when a scene is entered or loaded.
+ */
+val HALVARD_ACCOUNT_FAMILY: Set<String> =
+    setOf("told_halvard_the_truth", "kept_the_offer_from_halvard")
+
+/**
  * Chapter V — What the Marshal Wants.
  *
  * Follows through on the Cinder Marshal thread Chapter IV left hanging. Where Voss represented the
@@ -88,13 +107,17 @@ val chapter5Nodes: List<StoryNode> = listOf(
                 nextNodeId = "the_envoys_mask_slips_refused",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
+                    clearFlags = ENVOY_REPLY_FAMILY,
                     setFlags = setOf("refused_envoy")
                 )
             ),
             Choice(
                 label = "\"Keep talking. I'm listening.\"",
                 nextNodeId = "the_envoys_mask_slips_heard",
-                consequences = Consequences(setFlags = setOf("heard_envoy_offer"))
+                consequences = Consequences(
+                    clearFlags = ENVOY_REPLY_FAMILY,
+                    setFlags = setOf("heard_envoy_offer")
+                )
             ),
             Choice(
                 label = "\"The thing behind that gate already told me what it wants. Did the Marshal send you to finish what it started?\"",
@@ -102,8 +125,13 @@ val chapter5Nodes: List<StoryNode> = listOf(
                 requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid")),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
+                    clearFlags = ENVOY_REPLY_FAMILY,
                     setFlags = setOf("confronted_envoy_with_prisoners_words")
                 )
+            ),
+            Choice(
+                label = "\"Say what the Marshal actually wants with the brand.\"",
+                nextNodeId = "the_envoy_explains_alone"
             )
         )
     ),
@@ -137,13 +165,17 @@ val chapter5Nodes: List<StoryNode> = listOf(
                 nextNodeId = "the_envoys_mask_slips_refused",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
+                    clearFlags = ENVOY_REPLY_FAMILY,
                     setFlags = setOf("refused_envoy")
                 )
             ),
             Choice(
                 label = "\"Keep talking. I'm listening.\"",
                 nextNodeId = "the_envoys_mask_slips_heard",
-                consequences = Consequences(setFlags = setOf("heard_envoy_offer"))
+                consequences = Consequences(
+                    clearFlags = ENVOY_REPLY_FAMILY,
+                    setFlags = setOf("heard_envoy_offer")
+                )
             ),
             Choice(
                 label = "\"The thing behind that gate already told me what it wants. Did the Marshal send you to finish what it started?\"",
@@ -151,6 +183,110 @@ val chapter5Nodes: List<StoryNode> = listOf(
                 requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid")),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
+                    clearFlags = ENVOY_REPLY_FAMILY,
+                    setFlags = setOf("confronted_envoy_with_prisoners_words")
+                )
+            ),
+            Choice(
+                label = "\"Say what the Marshal actually wants with the brand.\"",
+                nextNodeId = "the_envoy_explains_with_halvard"
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_envoy_explains_alone",
+        chapterId = "chapter_5",
+        title = "What the Marshal Asks",
+        illustrationId = "cinder_envoy",
+        narrativeText = """
+            The envoy takes the question like a page he had hoped to be spared. "The Marshal
+            won't take it," the envoy says, each word set down with care and a breath late.
+            "I was told a taken brand is a broken one. That the hand must answer when it is
+            offered. I don't know what that means." He stops there, the way a man stops at
+            the edge of a map.
+
+            Then he looks at the way Kaelen still holds his shoulders. "King's Guard. Your
+            Guard held the outside of these gates once, and the kingdom forgot why. Who ever
+            thanked you for it? What does this brand keep that the cloak never did?" His
+            eyes slide past Kaelen to the treeline, and come back. "Why your hand, and why
+            now, I was not told." Somewhere in the last few minutes the birds have stopped.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "\"Whatever the Marshal wants with the brand, the answer is no.\"",
+                nextNodeId = "the_envoys_mask_slips_refused",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    clearFlags = ENVOY_REPLY_FAMILY,
+                    setFlags = setOf("refused_envoy")
+                )
+            ),
+            Choice(
+                label = "\"Keep talking. I'm listening.\"",
+                nextNodeId = "the_envoys_mask_slips_heard",
+                consequences = Consequences(
+                    clearFlags = ENVOY_REPLY_FAMILY,
+                    setFlags = setOf("heard_envoy_offer")
+                )
+            ),
+            Choice(
+                label = "\"The thing behind that gate already told me what it wants. Did the Marshal send you to finish what it started?\"",
+                nextNodeId = "the_envoys_mask_slips_confronted",
+                requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid")),
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.COURAGE to 1),
+                    clearFlags = ENVOY_REPLY_FAMILY,
+                    setFlags = setOf("confronted_envoy_with_prisoners_words")
+                )
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_envoy_explains_with_halvard",
+        chapterId = "chapter_5",
+        title = "What the Marshal Asks",
+        illustrationId = "cinder_envoy",
+        narrativeText = """
+            The envoy answers Kaelen, but his eyes keep going to Halvard. "The Marshal knows
+            what it costs when a gate fails," the envoy says, each word a breath late. "That
+            is how I was told to put it. How the Marshal knows, I wasn't told." Then, to the
+            old dwarf, softer, as if he has been waiting for leave to say it: "Warden, six
+            centuries on one post. There is a bed waiting, and someone else to stand your
+            door. No one would call it desertion."
+
+            Halvard doesn't answer at once. His hand has found the stone beside him, and
+            Kaelen sees how much of him it is holding up. "The bed sounds like something I
+            gave up asking for a long time ago," Halvard says. "But anyone who has held a
+            gate knows what it costs when one fails. That's not a reason, that's the job,
+            and a watch isn't mine to put down because I'm tired." He tips his head toward
+            the trees. "You've looked at that treeline four times. Whatever you're waiting
+            on can wait for his answer."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "\"Whatever the Marshal wants with the brand, the answer is no.\"",
+                nextNodeId = "the_envoys_mask_slips_refused",
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.HONOUR to 1),
+                    clearFlags = ENVOY_REPLY_FAMILY,
+                    setFlags = setOf("refused_envoy")
+                )
+            ),
+            Choice(
+                label = "\"Keep talking. I'm listening.\"",
+                nextNodeId = "the_envoys_mask_slips_heard",
+                consequences = Consequences(
+                    clearFlags = ENVOY_REPLY_FAMILY,
+                    setFlags = setOf("heard_envoy_offer")
+                )
+            ),
+            Choice(
+                label = "\"The thing behind that gate already told me what it wants. Did the Marshal send you to finish what it started?\"",
+                nextNodeId = "the_envoys_mask_slips_confronted",
+                requirements = ChoiceRequirement(requiredFlags = setOf("accepted_dark_aid")),
+                consequences = Consequences(
+                    statDeltas = mapOf(StatType.COURAGE to 1),
+                    clearFlags = ENVOY_REPLY_FAMILY,
                     setFlags = setOf("confronted_envoy_with_prisoners_words")
                 )
             )
@@ -177,7 +313,7 @@ val chapter5Nodes: List<StoryNode> = listOf(
             exactly this word.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Stand your ground.", nextNodeId = "the_marshals_warning")
+            Choice(label = "Stand your ground.", nextNodeId = "the_escort_closes")
         )
     ),
     StoryNode(
@@ -200,7 +336,7 @@ val chapter5Nodes: List<StoryNode> = listOf(
             exactly this word.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Stand your ground.", nextNodeId = "the_marshals_warning")
+            Choice(label = "Stand your ground.", nextNodeId = "the_escort_closes")
         )
     ),
     StoryNode(
@@ -224,7 +360,34 @@ val chapter5Nodes: List<StoryNode> = listOf(
             exactly this word.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Stand your ground.", nextNodeId = "the_marshals_warning")
+            Choice(label = "Stand your ground.", nextNodeId = "the_escort_closes")
+        )
+    ),
+    StoryNode(
+        id = "the_escort_closes",
+        chapterId = "chapter_5",
+        title = "The Escort Closes",
+        illustrationId = "envoy_reveals_guard",
+        narrativeText = """
+            They do not rush. The shapes along the treeline walk out in a long curve, each a
+            measured pace from the next, and the curve closes around the black door the way
+            a hand closes on something it means to keep. Nobody speaks. A palm lifts at one
+            end of the line and every one of them stops at once, a clean dozen paces out, as
+            if a cord had drawn tight.
+
+            None of them looks at Kaelen's sword. They watch his hands, the branded palm
+            most of all. Halvard comes up beside him, chain wound once round his fist, like
+            a man who never trusted a quiet morning. Behind them the ruined road stays open,
+            the one side the circle leaves unclosed, and that is no oversight. It is meant
+            to be seen.
+
+            Then the line opens in one place, exactly as wide as a man.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Watch the gap.",
+                nextNodeId = "the_marshals_warning"
+            )
         )
     ),
     StoryNode(
@@ -234,9 +397,10 @@ val chapter5Nodes: List<StoryNode> = listOf(
         illustrationId = "cinder_adept_ambush",
         narrativeText = """
             One of them steps forward alone, cinder-grey robes over something harder underneath, a
-            mark on the back of each hand that isn't the Ashen Order's sigil at all. Whatever the
-            Cinder Marshal branded onto this one, it wasn't mercy, and it shows in the way he
-            moves, like a blade that's already decided how the fight ends.
+            mark on the back of each hand that isn't the Ashen Order's sigil at all, and a plain
+            band of grey iron on one finger. Whatever the Cinder Marshal branded onto this one, it
+            wasn't mercy, and it shows in the way he moves, like a blade that's already decided
+            how the fight ends.
 
             "The Marshal did warn me you might refuse," the adept says, almost fondly, and comes
             on fast.
@@ -275,8 +439,9 @@ val chapter5Nodes: List<StoryNode> = listOf(
         narrativeText = """
             The adept goes down hard, and whatever nerve held the rest of the escort together goes
             with them: they scatter back down the ruined road faster than they arrived, boots
-            slipping on wet stone. The envoy himself never drew a blade. He's already gone, horse
-            and all, by the time Kaelen gets his breath back.
+            slipping on wet stone, all but two, who fall back in good order as if told to. The
+            envoy himself never drew a blade. He's already gone, horse and all, by the time
+            Kaelen gets his breath back.
 
             Halvard took a graze along the ribs holding the line beside him, not enough to fell
             him, more than enough to slow him down for a week he doesn't have to spare. Someone
@@ -286,7 +451,7 @@ val chapter5Nodes: List<StoryNode> = listOf(
         choices = listOf(
             Choice(
                 label = "\"Chase the envoy down before he reaches word of this to anyone.\"",
-                nextNodeId = "what_the_missive_says",
+                nextNodeId = "the_chase_to_the_ford",
                 requirements = ChoiceRequirement(minStats = mapOf(StatType.COURAGE to 4)),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
@@ -296,7 +461,7 @@ val chapter5Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "\"Get Halvard back down to the Hold first. The envoy can wait.\"",
-                nextNodeId = "what_the_missive_says",
+                nextNodeId = "halvard_by_the_door",
                 requirements = ChoiceRequirement(minStats = mapOf(StatType.HONOUR to 3)),
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
@@ -306,11 +471,155 @@ val chapter5Nodes: List<StoryNode> = listOf(
             ),
             Choice(
                 label = "Let him go, and see what he left behind.",
-                nextNodeId = "what_the_missive_says",
+                nextNodeId = "what_the_ground_says",
                 consequences = Consequences(
                     grantItemIds = listOf("cinder_marshal_missive"),
                     setFlags = setOf("searched_the_ground")
                 )
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_chase_to_the_ford",
+        chapterId = "chapter_5",
+        title = "After the Envoy",
+        illustrationId = "road_away_from_tree",
+        narrativeText = """
+            Kaelen drags the dispatch case out of the mud without breaking stride and runs.
+            The churned road shows where the envoy's horse went: down the hill toward the
+            stream crossing, at a pace no animal can keep up for long.
+
+            Two of the escort did not scatter with the rest. They have planted themselves
+            where the road pinches between rock and trees, blades out, in no hurry at all: a
+            rearguard, and a patient one. Beyond them the envoy is a hunched shape on a
+            hard-driven horse. To the left the pines drop away down a slope of loose shale
+            that cuts the bend in half. It would put Kaelen at the crossing before the
+            horse, and it would take something out of him on the way down.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Cut through the pines. Steep and loose underfoot, but it reaches the crossing before he does.",
+                nextNodeId = "the_ford_caught",
+                consequences = Consequences(statDeltas = mapOf(StatType.HEALTH to -10))
+            ),
+            Choice(
+                label = "Stay on the road and break the rearguard. Surer footing, but he will be across before you arrive.",
+                nextNodeId = "the_ford_lost"
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_ford_caught",
+        chapterId = "chapter_5",
+        title = "At the Crossing",
+        illustrationId = "cinder_envoy",
+        narrativeText = """
+            The shale throws Kaelen down the slope rather than letting him down it. A stone
+            turns under his boot and he goes the last stretch on his side, left forearm
+            scraped raw and the breath knocked out of him. He fetches up against a root
+            above the crossing.
+
+            The envoy's horse is already in the water, and the stones Kaelen brought down
+            rattle around its legs. Kaelen lurches in and catches the bridle, but his left
+            hand has gone numb and will not close, and the envoy, white to the lips, can see
+            it.
+
+            "Let go," the envoy says. "Nobody is coming back for me, not the Marshal or
+            anyone else." The horse rears, the leather tears out of Kaelen's grip, and he
+            goes down in the stream as the envoy clatters up the bank. No one runs down a
+            horse on foot with a hand that will not close. The rearguard reach the top of
+            the slope, see the envoy across, and stop: they were told to hold the road until
+            he was over. Kaelen hauls himself out and goes back to Halvard, alone at the
+            door, the case still on his back, feeling returning to his hand as a hot ache.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Open the dispatch case.",
+                nextNodeId = "what_the_missive_says"
+            )
+        )
+    ),
+    StoryNode(
+        id = "the_ford_lost",
+        chapterId = "chapter_5",
+        title = "The Rearguard",
+        illustrationId = "envoy_reveals_guard",
+        narrativeText = """
+            The road is kinder to his feet and crueller to his time. The rearguard fight
+            like people told exactly how long to hold: close, patient, yielding a step only
+            when they must, and never once trying to kill him. Kaelen takes a cut across the
+            sleeve and breaks the first of them at last with a shoulder to the chest.
+
+            By then the hoofbeats below have faded from the crossing to nothing. The two let
+            go of him as if a rope had been cut and vanish into the trees. The backs of
+            their hands carry the same dull scar as the adept's. Whatever the Marshal sends
+            against the Hold, it seems to send it all branded alike.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Turn back. Open the dispatch case.",
+                nextNodeId = "what_the_missive_says"
+            )
+        )
+    ),
+    StoryNode(
+        id = "halvard_by_the_door",
+        chapterId = "chapter_5",
+        title = "Halvard, Bound Up",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            Halvard says he can walk, and manages it as far as the first stair before he
+            agrees to lean. Kaelen gets him to the bench in the lower passage and cuts the
+            shirt from the graze: a long, shallow furrow along the ribs, ugly and clean.
+            "I've been cut by better," Halvard says, "and outlived most of them. Stop
+            looking at it as if it owes you something."
+
+            He holds out a hand for the dispatch case anyway and spends longer on the mark
+            pressed into the leather over the clasp than on his own wound. "A hand around a
+            flame. We scratched a sign like that over watch-posts, if I remember it right.
+            The hand was open, though, and this one is shut. I wouldn't hang a theory on a
+            stamp."
+
+            Far above, iron rings once against the patched gate, and again, and stops.
+            Kaelen is on his feet before he thinks. "Let it knock," Halvard says, already
+            closing his eyes. "They won't come down tonight, and the rain will have the road
+            by morning whether you stand in it or not." He is asleep before the silence has
+            finished settling.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Let him rest, and open the dispatch case.",
+                nextNodeId = "what_the_missive_says"
+            )
+        )
+    ),
+    StoryNode(
+        id = "what_the_ground_says",
+        chapterId = "chapter_5",
+        title = "What the Ground Says",
+        illustrationId = "aftermath_of_betrayal",
+        narrativeText = """
+            The envoy is long gone, and Kaelen kneels where the adept fell, because a fight
+            always leaves something behind.
+
+            The ring comes first: an officer's band of grey iron on the left hand, the Ashen
+            Order's stamp scored out of it with a blade and a smaller mark struck over the
+            scoring, a closed hand around a flame. It will not come off the finger without a
+            knife, and he is unwilling to use one. The backs of both hands carry the same
+            dull scar he saw before the fight.
+
+            The ground tells him the rest. The grass under the pines is pressed flat in a
+            dozen places, and there is not one scrap of fire-black among them. They came in
+            file, in the dark, and lay waiting without a spark to warm them.
+
+            When he stands, something at the far edge of the pines is standing too: a
+            figure, perfectly still, watching him the way a clerk watches a ledger. Kaelen
+            takes a single step toward it and it is simply gone.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Open the dispatch case.",
+                nextNodeId = "what_the_missive_says"
             )
         )
     ),
@@ -329,9 +638,140 @@ val chapter5Nodes: List<StoryNode> = listOf(
             running as thin as Halvard. Voss's siege wasn't a punishment, reading it now. It was a
             rehearsal, for unmaking every ward like this one at once and seeing what answers when
             they fall together instead of one at a time.
+
+            Beneath the signature stand four short lines. Offer first. If refused, show the
+            cost. Do not spend the bearer. Do not recover the envoy. Kaelen reads the last
+            line twice. The envoy was never meant to ride home.
         """.trimIndent(),
         choices = listOf(
-            Choice(label = "Bring this to Halvard.", nextNodeId = "chapter5_end")
+            Choice(label = "Bring this to Halvard.", nextNodeId = "halvard_asks")
+        )
+    ),
+    StoryNode(
+        id = "halvard_asks",
+        chapterId = "chapter_5",
+        title = "What Halvard Asks",
+        illustrationId = "dwarven_hold_gate",
+        narrativeText = """
+            Halvard is resting with one hand pressed to his ribs, and if he was asleep he
+            has the grace not to say so. He doesn't ask for the page. He studies Kaelen's
+            hands the way a warden studies stone he suspects of a crack.
+
+            "I'm not asking for his words," Halvard says. "A rider like that is only ever
+            the mouth. What did you make of what he put to you?"
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Tell him how little your no felt like winning.",
+                nextNodeId = "halvard_hears_the_refusal",
+                requirements = ChoiceRequirement(requiredFlags = setOf("refused_envoy")),
+                consequences = Consequences(
+                    clearFlags = HALVARD_ACCOUNT_FAMILY,
+                    setFlags = setOf("told_halvard_the_truth")
+                )
+            ),
+            Choice(
+                label = "Tell him you listened, and that some of it landed.",
+                nextNodeId = "halvard_hears_the_listening",
+                requirements = ChoiceRequirement(requiredFlags = setOf("heard_envoy_offer")),
+                consequences = Consequences(
+                    clearFlags = HALVARD_ACCOUNT_FAMILY,
+                    setFlags = setOf("told_halvard_the_truth")
+                )
+            ),
+            Choice(
+                label = "Tell him what the prisoner said, and that it said it first.",
+                nextNodeId = "halvard_hears_the_prisoners_words",
+                requirements = ChoiceRequirement(requiredFlags = setOf("confronted_envoy_with_prisoners_words")),
+                consequences = Consequences(
+                    clearFlags = HALVARD_ACCOUNT_FAMILY,
+                    setFlags = setOf("told_halvard_the_truth")
+                )
+            ),
+            Choice(
+                label = "Give him the page and keep what you made of the offer to yourself.",
+                nextNodeId = "halvard_gets_only_the_page",
+                consequences = Consequences(
+                    clearFlags = HALVARD_ACCOUNT_FAMILY,
+                    setFlags = setOf("kept_the_offer_from_halvard")
+                )
+            )
+        )
+    ),
+    StoryNode(
+        id = "halvard_hears_the_refusal",
+        chapterId = "chapter_5",
+        title = "What Halvard Hears",
+        illustrationId = "warden_chamber",
+        narrativeText = """
+            Kaelen tells him what the offer was aimed at, and what he did not say at the
+            door: that refusing felt less like winning than putting something off. Halvard
+            listens with his eyes closed. "A no is mostly a delay," he says. "They'll ask
+            again, and kinder. Better you have someone at your shoulder when they do." He
+            holds out his hand for the page.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Give him the page.",
+                nextNodeId = "chapter5_end"
+            )
+        )
+    ),
+    StoryNode(
+        id = "halvard_hears_the_listening",
+        chapterId = "chapter_5",
+        title = "What Halvard Hears",
+        illustrationId = "warden_chamber",
+        narrativeText = """
+            It costs more to say than the refusal would have: that the offer found something
+            in him. Halvard is quiet a while. "Some of it should land," he says at last.
+            "The wards are failing, and I've no quarrel with that arithmetic. It's what the
+            Marshal wants done about it I'd not forgive." He holds out his hand for the
+            page.
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Give him the page.",
+                nextNodeId = "chapter5_end"
+            )
+        )
+    ),
+    StoryNode(
+        id = "halvard_hears_the_prisoners_words",
+        chapterId = "chapter_5",
+        title = "What Halvard Hears",
+        illustrationId = "warden_chamber",
+        narrativeText = """
+            Kaelen tells Halvard more of the voice behind the gate, and how it named what
+            the Marshal wanted before the envoy ever reached the door. Halvard's face goes
+            still, the way stone goes still. "So it speaks to you," he says. "How often?" He
+            listens to the answer as though it mattered more than the page. "Show me the
+            palm. Then give me the page."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Give him the page.",
+                nextNodeId = "chapter5_end"
+            )
+        )
+    ),
+    StoryNode(
+        id = "halvard_gets_only_the_page",
+        chapterId = "chapter_5",
+        title = "What Halvard Lets Lie",
+        illustrationId = "warden_chamber",
+        narrativeText = """
+            Kaelen holds out the page and keeps back what he made of the offer. He tells
+            himself it is mercy, for a warden hurt and tired, and is not sure that is the
+            whole of it. Halvard takes the page, but his eyes stay on Kaelen's closed hand.
+            "A hand kept shut," he says. "I know the look. Tell me when it's yours to tell,
+            and not a day after it's mine to know."
+        """.trimIndent(),
+        choices = listOf(
+            Choice(
+                label = "Let him read.",
+                nextNodeId = "chapter5_end"
+            )
         )
     ),
     StoryNode(
@@ -344,7 +784,8 @@ val chapter5Nodes: List<StoryNode> = listOf(
             has lost the dry patience Kaelen has gotten used to. "Six wards," he says. "Six
             jailers, when the office was whole. I always assumed the others fell the way mine
             nearly did: one at a time, one door at a time, forgotten." He folds the page shut. "I
-            never considered someone might be counting."
+            never considered someone might be counting." He does not read the last lines aloud, and
+            Kaelen does not ask him to.
 
             Outside, the ruined road is empty again, rain filling in the tracks the escort left
             behind. It won't stay empty. Kaelen knows that now with a certainty that has nothing

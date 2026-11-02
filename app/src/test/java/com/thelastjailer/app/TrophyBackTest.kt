@@ -1,6 +1,7 @@
 package com.thelastjailer.app
 
 import com.thelastjailer.app.data.StoryRepository
+import com.thelastjailer.app.ending.EndingKit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -77,8 +78,16 @@ class TrophyBackTest {
     fun `every choice in the story that awards a trophy keeps it through Back`() {
         val sites = StoryRepository.chapters.flatMap { StoryRepository.nodesInChapter(it.id) }
             .flatMap { node -> node.choices.filter { it.consequences.unlockTrophy != null }.map { node to it } }
-        assertEquals("the twelve story-choice trophy sites", 12, sites.size)
-        assertEquals(setOf("Friend of Stonebeard", "Blood and Silver", "The Last Jailer", "The Watch Goes On"),
+        // 12 sites before the Chapter 6 expansion; it adds five (one tollhouse, one ledger, two burials, one pinning).
+        // Chapters 7 and 8 add three more: one for calling the Loyalists off, and one for each of the two routes on which a
+        // Voss who trusts Kaelen tells him where the cells are (the sentinel fight and the ramp).
+        // Chapter 10 adds three sites for one trophy, "The Last Evening": the same continue choice after Halvard's talk of the
+        // north gap, written once for each of the three exits from the night's hub (the first, second and third visit), of
+        // which exactly one is ever visible.
+        assertEquals("the twenty-three story-choice trophy sites", 23, sites.size)
+        assertEquals(setOf("Friend of Stonebeard", "Blood and Silver", "The Last Jailer", "The Watch Goes On",
+            "Kestrel's Apprentice", "The Ledger, Read to the End", "Buried Properly", "Nails in the Dark",
+            "Called Off", "Her Choice", "The Last Evening"),
             sites.map { it.second.consequences.unlockTrophy }.toSet())
 
         for ((node, choice) in sites) {
@@ -160,11 +169,13 @@ class TrophyBackTest {
         store.commitChoice(ending, loop)
         val back = store.restorePreviousState(1)!!
 
+        // Leaving an ending also gives that ending's awards (completion and the two outcomes); Back keeps every one of them.
+        val expected = setOf("Six, Not One", "The Watch Goes On") + EndingKit.awardsOf(node.id)
         assertEquals(node.id, back.sceneId)
-        assertEquals(setOf("Six, Not One", "The Watch Goes On"), back.trophies)
+        assertEquals(expected, back.trophies)
 
         val again = store.commitChoice(back, loop)
-        assertEquals(setOf("Six, Not One", "The Watch Goes On"), again.trophies)
+        assertEquals(expected, again.trophies)
     }
 
     // ---- restart, other slots, format -------------------------------------------------------------------------

@@ -134,6 +134,44 @@ About 17x headroom for state + Back + trophies. **Not included:** the checkpoint
 256 KiB would not be enough; history copying is the deferred 2C-1b-2 work. The ceiling should be confirmed or
 changed when G3 fixes the real payload.
 
+**Measurement after the Chapter 6 expansion (26 Oct 2026).** `CheckpointSizeTest` measured thirty worst-case checkpoints at
+**472,493 bytes** (about 461 KiB), 28 flags, 1 item and 4 trophies above the story at 826d719, where the figure sat just under
+the old 450 KiB bound. The hard bound in the test is now 600 KiB and is still provisional. A second test fails when the figure
+rises more than 10% above 472,493 bytes, so each later chapter package has to look at what grew (flags, items, trophies) and
+whether checkpoints need all of it, update this paragraph, and only then change a number. The live save is unaffected (about
+7 KB); only a history bundle, which G3 has not built, would meet this bound.
+
+**Measurement after the Chapter 7 to 9 expansion (26 Oct 2026).** `CheckpointSizeTest` measured thirty worst-case checkpoints at
+**530,891 bytes** (about 518 KiB), against 472,493 after Chapter 6. The rise is fully accounted for: 48 flags (278 -> 326 settable) cost
+56,250 bytes, 2 trophies ("Called Off", "Her Choice") cost 2,160, items none; taking them out of the model gives 472,481, 12 bytes from the
+earlier figure. A flag costs about 1.17 KiB at the margin over thirty checkpoints (1.36 KiB averaged over the whole set), twice the
+figure that was recorded when the marker was first set. Flags are 88% of the total. The growth marker fired; it was investigated
+(`qa/CHECKPOINT_GROWTH_INVESTIGATION.md`) and, with approval (Option A), re-baselined to 530,891: the 10% marker now allows 583,979 bytes. The 600 KiB
+(614,400 byte) hard ceiling is unchanged and independent of the marker; it leaves 83,509 bytes, roughly 61 to 71 more flags. It is still
+provisional. The live save is unaffected (about 7 KB).
+
+This figure is a worst case: every flag the story can set, in every checkpoint. No play can hold that many. In 2,500 random whole-game
+walks the most flags set at once was 137 of 326 (median 121, 99th percentile 131), and thirty checkpoints each holding that set measure
+274,511 bytes, 52% of the worst case. **Required before the Chapters 10 to 12 package (Option B), done (26 Oct 2026, M0):** a deterministic reachable-state
+checkpoint measurement, a seeded walk of the real story that records the largest set of flags, items and trophies one playthrough can hold at
+a checkpoint, and a test that pins the figure and the seed. It complements the worst-case diagnostic and must not replace it: both stay,
+and either one crossing its limit is a failure to be investigated.
+
+**Reachable-state measurement at 8be2d98 (Option B, 26 Oct 2026).** `CheckpointReachableSizeTest` (new; `ReachableCheckpointMeasure` is its
+walker) walks the real story, 3,000 uniform and 3,000 collector walks from seed 0x10C5 (1,636,468 transitions, real `applyChoice` and
+`resolveCombat`), and builds at each chapter boundary the arrival record the recorder would build. Thirty arrival records, each the
+largest found for its chapter, measure **161,198 bytes**, 30% of the worst case; the largest single walk's history is 160,911 bytes. The sample
+reached all 30 chapters and all 326 settable flags; the most flags held at once was 139 (137 in one arrival record), which agrees with the
+earlier diagnostic's 137. The earlier 274,511-byte estimate put the largest set into all thirty checkpoints, with every item and trophy;
+arrival records in early chapters hold far fewer flags (Chapter 7: 53, Chapter 10: 78, Chapter 30: 131), so it overstated by about 70%.
+A 10% growth warning (allowed 177,309) sits on this figure beside, not instead of, the unchanged worst-case marker (583,979) and 600 KiB ceiling.
+Limits, stated plainly: the walk is a lower bound on the true reachable maximum (it found the same figure from two policies, and a single
+walk came within 0.2% of the per-chapter bound, but a walk that never met a state does not prove it unreachable); shop purchases and spent
+items are not modelled, so the inventory field can be larger than sampled; the figure is seeded, so a change to the graph also changes the
+walks, and a move of a few percent either way is noise. Negative controls: 40 extra flags every play holds from Chapter 10 on take the
+reachable figure to 193,198 (+19.8%, guard fires) and the worst case to 578,891 (+9.0%, under its 10% allowance); 70 extra flags set for two scenes
+and cleared inside the chapter take the worst case to 608,591 (+14.6%, guard fires) and leave the reachable figure at 161,198.
+
 ## Test evidence
 
 112 tests (89 + 23 new): codec 21, selection table 3, store behaviour 30, fault injection 15 (486 scenarios), crash

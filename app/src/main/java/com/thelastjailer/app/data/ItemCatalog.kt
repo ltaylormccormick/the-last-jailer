@@ -83,6 +83,11 @@ object ItemCatalog {
             description = "Warded in the same hand as a gate that failed anyway. An apology, carried the rest of the way for her."
         ),
         Item(
+            id = "ward_nails",
+            name = "Kestrel's Ward-Nails",
+            description = "The nails left over once three were driven into Greymoor's crack and left there: black iron, cold, scratched with a warden's marks. They were made to hold what cannot be bound."
+        ),
+        Item(
             id = "voss_seal",
             name = "Voss's Seal",
             description = "A signet ring bearing the Ashen Order's true mark, offered freely rather than seized. What it still opens, this far from anyone who answers to it, remains to be seen."
@@ -140,7 +145,7 @@ object ItemCatalog {
         Item(
             id = "archivists_frame_notes",
             name = "Archivist's Frame Notes",
-            description = "Five sets of plans in the same careful hand, addressed to people who hadn't been born when the ink dried. The fifth is addressed to Kaelen."
+            description = "Five sets of plans in the same careful hand, addressed to people who hadn't yet taken up the roles the pages gave them when the ink dried. The fifth is addressed to Kaelen."
         ),
         Item(
             id = "archivists_final_page",

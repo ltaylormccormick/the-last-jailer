@@ -25,7 +25,7 @@ val chapter2Nodes: List<StoryNode> = listOf(
         id = "the_deeper_dark",
         chapterId = "chapter_2",
         title = "The Deeper Dark",
-        illustrationId = "root_tunnel_dwarven_path",
+        illustrationId = "ch2_root_tunnel",
         narrativeText = """
             The thing that attacked him stops moving, and for a long while Kaelen's own breath is
             the loudest sound in the passage. He checks it twice before he trusts that. His sword
@@ -70,7 +70,7 @@ val chapter2Nodes: List<StoryNode> = listOf(
         id = "the_tended_dark",
         chapterId = "chapter_2",
         title = "What Tends the Dark",
-        illustrationId = "root_tunnel_dwarven_path",
+        illustrationId = "ch2_root_tunnel",
         narrativeText = """
             Kaelen goes on alone, and the going gets stranger the farther he walks. No rubble
             underfoot. No old bones, no rust, none of the small human wreckage that litters every
@@ -212,7 +212,7 @@ val chapter2Nodes: List<StoryNode> = listOf(
         id = "restitution_worked",
         chapterId = "chapter_2",
         title = "A Shift at the Forge",
-        illustrationId = "silent_forge",
+        illustrationId = "restitution_worked",
         narrativeText = """
             He does not ask what for. He hands Kaelen a pair of tongs and points at the bellows, and
             for the length of a shift Kaelen works the iron the way the Hold's own do, badly at
@@ -235,7 +235,7 @@ val chapter2Nodes: List<StoryNode> = listOf(
         id = "the_warded_gate",
         chapterId = "chapter_2",
         title = "The Warded Gate",
-        illustrationId = "warded_gate",
+        illustrationId = "ch2_warded_gate",
         narrativeText = """
             The tended passage ends at a gate that dwarfs Stonebeard Hold's own: no hinge, no
             handle, only a wall of black stone banded in iron and carved edge to edge with wards.
@@ -301,7 +301,7 @@ val chapter2Nodes: List<StoryNode> = listOf(
         id = "the_cloaks_truth_asked",
         chapterId = "chapter_2",
         title = "What the Silver Cloak Was For",
-        illustrationId = "cloaks_truth",
+        illustrationId = "ch2_cloaks_truth",
         narrativeText = """
             Halvard studies him a moment before answering, the way a man checks a stranger's hands
             before he bothers checking his face. "A prison," he says finally. "Older than the
@@ -338,7 +338,7 @@ val chapter2Nodes: List<StoryNode> = listOf(
         id = "the_cloaks_truth_offered",
         chapterId = "chapter_2",
         title = "What the Silver Cloak Was For",
-        illustrationId = "cloaks_truth",
+        illustrationId = "ch2_cloaks_truth",
         narrativeText = """
             Something crosses Halvard's face before he answers, quick enough that Kaelen almost
             misses it: not suspicion, but the particular startlement of a man who stopped

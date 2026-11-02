@@ -7,6 +7,87 @@ import com.thelastjailer.app.StatType
 import com.thelastjailer.app.StoryNode
 
 /**
+ * Everything Chapters XXI to XXX record: the flags first set in these ten chapters. Chapter XXI's two opening
+ * choices clear it all before setting their own flag, so a replay reaches the prisoner with an empty slate instead
+ * of finding the earlier telling's answers. Chapters XIX and XX, the aid and fate decisions, trophies, items and
+ * stats are not touched. Declared above [chapter21Nodes] because that list reads it when the file loads.
+ */
+val C21_TELLING_FLAGS: Set<String> = setOf(
+    // Chapter 21
+    "still_asking",
+    "asked_for_measured_truth",
+    "vowed_to_protect_the_prisoner",
+    "affirmed_its_own_choice",
+    "left_the_question_open",
+    // Chapter 22
+    "asked_directly_ch22",
+    "offered_patience_ch22",
+    "stood_with_it_in_the_asking",
+    "reassured_without_conditions",
+    "lost_to_the_patient_voice",
+    "vowed_constant_vigilance",
+    "vowed_to_share_the_burden",
+    "simply_stayed",
+    // Chapter 23
+    "raced_to_emberlow",
+    "asked_before_racing",
+    "lost_to_cinder_straggler_captain",
+    "refused_to_leave_emberlow",
+    "insisted_on_real_choice",
+    "waited_at_emberlow",
+    // Chapter 24
+    "brought_voss_to_greymoor",
+    "asked_how_long_ch24",
+    "lost_to_greymoor_ward_wraith",
+    "reminded_greymoor_of_choice",
+    "offered_presence_not_replacement",
+    "sat_with_greymoors_silence",
+    // Chapter 25
+    "asked_answered_how",
+    "accepted_too_late",
+    "lost_to_the_answering_door",
+    "vowed_to_hold_duskmere",
+    "sought_to_remember_wren",
+    "secured_duskmere_in_silence",
+    // Chapter 26
+    "connected_to_the_sundering",
+    "resolved_to_go_regardless",
+    "lost_to_the_unremembering",
+    "pressed_the_forgotten_to_remember",
+    "respected_the_forgetting",
+    "stepped_back_from_the_sundering",
+    // Chapter 27
+    "demanded_plain_warning",
+    "resolved_to_hold_the_thread",
+    "lost_to_the_reclamation",
+    "chose_to_pursue_the_vision",
+    "chose_caution_before_pursuit",
+    "secured_the_splinter_quietly",
+    // Chapter 28
+    "expected_wraithspire_to_be_dangerous",
+    "hoped_wraithspire_was_well_kept",
+    "tried_to_explain_first",
+    "lost_to_vigil_captain_of_wraithspire",
+    "offered_the_vigil_alliance",
+    "respected_the_vigils_pace",
+    "simply_bore_witness_at_wraithspire",
+    // Chapter 29
+    "stood_defiant_before_the_whole",
+    "asked_what_it_needed_before",
+    "lost_to_the_whole_undisguised",
+    "resolved_to_seek_the_whole",
+    "prioritized_the_undecided_fragments",
+    "rested_before_deciding",
+    // Chapter 30
+    "chose_to_seek_the_ending",
+    "insisted_on_another_way",
+    "lost_to_the_whole_at_full_reach",
+    "demanded_it_be_earned",
+    "offered_connection_without_merging",
+    "simply_stayed_at_the_end"
+)
+
+/**
  * Chapter XXI — What Six Used to Be.
  *
  * Pays off the promise the prisoner made in XIV ("ask me again after there are fewer of us left
@@ -48,6 +129,7 @@ val chapter21Nodes: List<StoryNode> = listOf(
                 nextNodeId = "what_it_was_still_asking",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
+                    clearFlags = C21_TELLING_FLAGS,
                     setFlags = setOf("still_asking")
                 )
             ),
@@ -56,6 +138,7 @@ val chapter21Nodes: List<StoryNode> = listOf(
                 nextNodeId = "what_it_was_measured",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
+                    clearFlags = C21_TELLING_FLAGS,
                     setFlags = setOf("asked_for_measured_truth")
                 )
             )

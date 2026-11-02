@@ -4,6 +4,7 @@ import com.thelastjailer.app.FakeSharedPreferences
 import com.thelastjailer.app.GameState
 import com.thelastjailer.app.SaveStore
 import com.thelastjailer.app.data.StoryRepository
+import com.thelastjailer.app.ending.EndingTrophies
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -23,10 +24,11 @@ class RecoveryPayloadSizingTest {
         val flags = nodes.flatMap { n -> n.choices.flatMap { it.consequences.setFlags } }.toSet()
         val items = nodes.flatMap { n -> n.choices.flatMap { it.consequences.grantItemIds } }.distinct()
         val last = StoryRepository.chapters.last()
+        // The nine ending trophies are not in availableTrophies, but a replayed game holds all of them.
         return GameState(
             activeSlot = 1, chapterId = last.id, sceneId = last.startNodeId,
             courage = 99, honour = 99, health = 100, maxHealth = 999, gold = 999_999, level = 99, xp = 99_999, xpToNextLevel = 99_999,
-            inventory = items, trophies = StoryRepository.availableTrophies, flags = flags
+            inventory = items, trophies = StoryRepository.availableTrophies + EndingTrophies.all, flags = flags
         )
     }
 

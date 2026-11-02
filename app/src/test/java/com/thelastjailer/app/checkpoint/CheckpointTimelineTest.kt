@@ -101,7 +101,16 @@ class CheckpointTimelineTest {
         val device = SimulatedDevice()
         val store = Cp.store(device)
         val edges = Story.allCrossings()
-        assertEquals("64 forward edges and 6 loops", 70, edges.size)
+        // 64 forward edges and 6 loops at 826d719. Chapter 7 now has three more ways to arrive in Chapter 8: its three new
+        // departure scenes (the ones for someone who brought Voss below) lead there beside the three that shipped.
+        // Chapter 10's ending used to lead to one scene in Chapter 11; it now leads to one of three (the first night at the
+        // north gap, one for each place Voss and Kaelen can stand), so two more edges arrive in Chapter 11.
+        // Chapter 14's ending used to lead to one scene in Chapter 15; it now leads to one of two (Voss on how Kaelen asked
+        // Selvane for the file, openly or low), so one more edge arrives in Chapter 15. Chapter 13's three endings still lead
+        // to one scene each in Chapter 14, now the nights at the gate rather than the prisoner's first words.
+        // Chapter 18's ending is now written once for each fate of Ilsevet, so two more edges arrive in Chapter 19 (78 with the Chapter 18 to 20
+        // expansion); the other crossings keep their number and only change where they land.
+        assertEquals("72 forward edges and 6 loops", 78, edges.size)
         var checked = 0
         for ((_, _, dest) in edges) {
             val n = ChapterIds.numberOf(dest.chapterId)!!
@@ -111,7 +120,7 @@ class CheckpointTimelineTest {
             assertEquals(CheckpointDigest.of(1, r), CheckpointDigest.of(1, back))
             checked++
         }
-        assertEquals(70, checked)
+        assertEquals(78, checked)
     }
 
     @Test

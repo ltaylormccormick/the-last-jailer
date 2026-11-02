@@ -7,6 +7,50 @@ import com.thelastjailer.app.StatType
 import com.thelastjailer.app.StoryNode
 
 /**
+ * Family C12a: whether Kaelen went back to Ashfall for Ilsevet, and the way he met her there. The two calls and the three ways are
+ * alternatives, and each call clears all five, so a replay that answers differently never carries the earlier answer. Chapter XV
+ * tells Ashfall again by this family.
+ */
+val C12_ILSEVET_FAMILY: Set<String> = setOf(
+    "chose_to_help_ilsevet", "refused_to_help_ilsevet", "warned_ilsevet_directly", "appealed_to_ilsevets_conscience",
+    "left_ilsevet_to_her_wreckage"
+)
+
+/** Family C12b: the three ways Kaelen met Ilsevet in the wreck. Each way clears the other two and nothing else. */
+val C12_WAY_FAMILY: Set<String> = setOf("warned_ilsevet_directly", "appealed_to_ilsevets_conscience", "left_ilsevet_to_her_wreckage")
+
+/** From the ash-field gate to Voss's word at the last dry stone, by where she and Kaelen stand. The lowest rung also covers a save with none. */
+private fun vossGoes(label: String): List<Choice> = listOf(
+    Choice(label = label, nextNodeId = "c12_voss_trusted", requirements = ChoiceRequirement(requiredFlags = setOf("c7_rung_trusted"))),
+    Choice(label = label, nextNodeId = "c12_voss_working", requirements = ChoiceRequirement(requiredFlags = setOf("c7_rung_working"))),
+    Choice(
+        label = label,
+        nextNodeId = "c12_voss_wary",
+        requirements = ChoiceRequirement(forbiddenFlags = setOf("c7_rung_working", "c7_rung_trusted"))
+    )
+)
+
+/**
+ * From Voss's word into the Sanctum: by the way Kaelen went in the last time, or straight to the frame chamber. The east stair
+ * is offered only where Voss trusts him ([stair]): it was open to Kaelen only because she had told him where the cells were,
+ * which a Voss on a lower rung at the capture never did, and the ladder does not fall after it. Where it is not offered, a save
+ * that somehow holds that flag still goes straight to the frame chamber.
+ */
+private fun wayChoices(label: String, stair: Boolean): List<Choice> = (if (stair) listOf(
+    Choice(label = label, nextNodeId = "c12_way_stair", requirements = ChoiceRequirement(requiredFlags = setOf("c9_way_stair")))
+) else emptyList()) + listOf(
+    Choice(label = label, nextNodeId = "c12_way_wall", requirements = ChoiceRequirement(requiredFlags = setOf("c9_way_wall"))),
+    Choice(label = label, nextNodeId = "c12_way_cart", requirements = ChoiceRequirement(requiredFlags = setOf("c9_way_cart"))),
+    Choice(
+        label = label,
+        nextNodeId = "what_the_frame_did",
+        requirements = ChoiceRequirement(
+            forbiddenFlags = setOf("c9_way_wall", "c9_way_cart") + (if (stair) setOf("c9_way_stair") else emptySet())
+        )
+    )
+)
+
+/**
  * Chapter XII — Four Settings.
  *
  * Ilsevet, denied both remaining gates in Chapter XI, tries activating the seventh-door frame with
@@ -25,6 +69,11 @@ import com.thelastjailer.app.StoryNode
  * pattern of III/IV/V/VII/IX/X: Ilsevet isn't attacking this time, she's overwhelmed, and whichever
  * way the player goes, both Kaelen and Ilsevet come out the other side knowing exactly what a
  * completed seventh door would do.
+ *
+ * On the way into the ruined Sanctum, Voss says what going back costs her, according to where she and Kaelen stand, and a
+ * Kaelen who went in by the east stair, the south wall or the tithe road in Chapter IX meets that way again. The shipped
+ * scenes and both endings, with their routing on trusted_voss_fully, are untouched; only where the single choice at the
+ * ash-field gate leads has changed.
  */
 val chapter12Nodes: List<StoryNode> = listOf(
     StoryNode(
@@ -84,6 +133,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
                 nextNodeId = "back_to_the_ash",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
+                    clearFlags = C12_ILSEVET_FAMILY,
                     setFlags = setOf("chose_to_help_ilsevet")
                 )
             ),
@@ -92,6 +142,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
                 nextNodeId = "watched_from_a_distance",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
+                    clearFlags = C12_ILSEVET_FAMILY,
                     setFlags = setOf("refused_to_help_ilsevet")
                 )
             )
@@ -123,6 +174,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
                 nextNodeId = "back_to_the_ash",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
+                    clearFlags = C12_ILSEVET_FAMILY,
                     setFlags = setOf("chose_to_help_ilsevet")
                 )
             ),
@@ -131,6 +183,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
                 nextNodeId = "watched_from_a_distance",
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
+                    clearFlags = C12_ILSEVET_FAMILY,
                     setFlags = setOf("refused_to_help_ilsevet")
                 )
             )
@@ -150,9 +203,102 @@ val chapter12Nodes: List<StoryNode> = listOf(
             Whatever's loose, it hasn't left the Sanctum's walls yet. That's the only mercy on
             offer, and neither of them slows down to be grateful for it.
         """.trimIndent(),
-        choices = listOf(
-            Choice(label = "Go in.", nextNodeId = "what_the_frame_did")
-        )
+        choices = vossGoes("Go in.")
+    ),
+    StoryNode(
+        id = "c12_voss_wary",
+        chapterId = "chapter_12",
+        title = "The Last Dry Stone",
+        illustrationId = "back_to_the_ash",
+        narrativeText = """
+            The ash-field is quieter than Kaelen remembers, the way a bell is quiet
+            after it has been struck. Voss stops at the last dry stone before the
+            Sanctum's outer wall and does not go on.
+
+            "I was in that wing a season ago," she says, to the wall. "I intend to enter
+            by a different door." She looks, at last, at him. "I am going in because I
+            know the corridors and nobody else here does. That is the reason. Don't ask
+            me for the others." Her hand rests on the borrowed blade, not gripping it.
+            "I won't be slower than you."
+        """.trimIndent(),
+        choices = wayChoices("Go in.", stair = false)
+    ),
+    StoryNode(
+        id = "c12_voss_working",
+        chapterId = "chapter_12",
+        title = "The Last Dry Stone",
+        illustrationId = "back_to_the_ash",
+        narrativeText = """
+            The ash-field is quieter than Kaelen remembers, the way a bell is quiet
+            after it has been struck. Voss stops at the last dry stone before the
+            Sanctum's outer wall, and does not go on until he has drawn level.
+
+            "I said I would not tell you which way to go," she says. "I will tell you
+            which way I am going. In." She nods at the wall. "I know where the corridors
+            run. I have been dragged down most of them." She says it dryly, the way you
+            say a thing so that nobody can say it for you. "If the woman who built this
+            is out of options, I would sooner be near her with a blade than far from her
+            with an opinion."
+        """.trimIndent(),
+        choices = wayChoices("Go in.", stair = false)
+    ),
+    StoryNode(
+        id = "c12_voss_trusted",
+        chapterId = "chapter_12",
+        title = "The Last Dry Stone",
+        illustrationId = "back_to_the_ash",
+        narrativeText = """
+            The ash-field is quieter than Kaelen remembers, the way a bell is quiet
+            after it has been struck. Voss stops at the last dry stone before the
+            Sanctum's outer wall and waits for him to stop beside her.
+
+            "I was chained in that wing," she says. "I would like to see it from the
+            other side of its door. I think I am allowed that." She does not ask whether
+            he is sure about helping the woman who sent the column to Stonebeard. She
+            asks, "Are you ready?", which is the kinder question, and she waits as
+            though she has all night. The borrowed blade is at her hip, and her hand is
+            nowhere near it.
+        """.trimIndent(),
+        choices = wayChoices("Go in.", stair = true)
+    ),
+    StoryNode(
+        id = "c12_way_stair",
+        chapterId = "chapter_12",
+        title = "The East Stair",
+        illustrationId = "back_to_the_ash",
+        narrativeText = """
+            The east stair is where Voss said it would be, and where it was. The door at
+            the top hangs from one hinge, and nobody is behind it. Voss looks at the
+            first step for a moment longer than the step deserves, and then goes up
+            ahead of him, because that is a thing she has decided to be able to do.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Go in.", nextNodeId = "what_the_frame_did"))
+    ),
+    StoryNode(
+        id = "c12_way_wall",
+        chapterId = "chapter_12",
+        title = "The South Wall",
+        illustrationId = "back_to_the_ash",
+        narrativeText = """
+            The south wall has a breach in it where the fire went through, and the hold
+            Kaelen climbed on the night of the watch change is a charred stump of
+            masonry. He looks up at it out of habit, and then at the open gate beside
+            it, and finds it strange to feel almost fond of a wall.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Go in.", nextNodeId = "what_the_frame_did"))
+    ),
+    StoryNode(
+        id = "c12_way_cart",
+        chapterId = "chapter_12",
+        title = "The Tithe Road",
+        illustrationId = "back_to_the_ash",
+        narrativeText = """
+            The tithe road is empty. No cart, no collector, no mule belonging to nobody
+            in particular, and the arch at its end stands open with no one there to not
+            look at him. He walks under it with ash on his hand that is only memory, and
+            hears himself breathe in the quiet.
+        """.trimIndent(),
+        choices = listOf(Choice(label = "Go in.", nextNodeId = "what_the_frame_did"))
     ),
     StoryNode(
         id = "what_the_frame_did",
@@ -235,6 +381,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.COURAGE to 1),
                     grantItemIds = listOf("shard_of_the_seventh_door"),
+                    clearFlags = C12_WAY_FAMILY,
                     setFlags = setOf("warned_ilsevet_directly")
                 )
             ),
@@ -245,6 +392,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
                 consequences = Consequences(
                     statDeltas = mapOf(StatType.HONOUR to 1),
                     grantItemIds = listOf("shard_of_the_seventh_door"),
+                    clearFlags = C12_WAY_FAMILY,
                     setFlags = setOf("appealed_to_ilsevets_conscience")
                 )
             ),
@@ -253,6 +401,7 @@ val chapter12Nodes: List<StoryNode> = listOf(
                 nextNodeId = "chapter12_end_helped",
                 consequences = Consequences(
                     grantItemIds = listOf("shard_of_the_seventh_door"),
+                    clearFlags = C12_WAY_FAMILY,
                     setFlags = setOf("left_ilsevet_to_her_wreckage")
                 )
             )
