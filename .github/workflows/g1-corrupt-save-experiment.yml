@@ -1,0 +1,827 @@
+name: 2C-2 G1 Corrupt-Save Experiment
+
+# 2C-2 G1: a MANUAL, workflow-only CHARACTERISATION experiment. It tests no recovery feature (none exists yet).
+#
+# QUESTION: what do Android and the current game do when the stored save is DAMAGED? SharedPreferences loads an unreadable
+# file as EMPTY, so a damaged save may look like a brand-new game, and the next autosave would then overwrite the damaged
+# bytes. A recovery design must not rely on that until it has been observed. This job observes it on a disposable emulator.
+#
+# WHAT IT TESTS: the app built from the ONE fixed commit APP_SHA below (which must be on main). It builds one debug APK,
+# installs it on an emulator, makes ONE predetermined Chapter 1 choice to create a genuine synthetic save, restarts the app
+# normally, keeps a private copy of that baseline inside the app's own storage, and then, for each variant, restores that same
+# baseline and damages it: V1 truncated, V2 empty, V3 garbage, V4 missing, V5 one wrong-typed value, V6 damaged main file
+# next to a valid .bak copy (plus V0, an undamaged control). For each it records whether the app crashes, what it shows,
+# whether the damaged bytes survive until the first save, and whether the first save replaces them.
+#
+# SAFETY: only com.thelastjailer.app.debug on the disposable emulator is touched (the Play package is never named in any
+# command; a guard refuses it). The save is synthetic. No file contents, hashes, UI text, log text or exception messages are
+# printed; the output is PASS / FAIL / INCONCLUSIVE / INFO lines, true/false results, counts, and file names and sizes.
+# Nothing is uploaded: no APK, no key, no storage contents. Read-only token, no secrets, fresh-key guard (self-tested).
+# No game code is changed by the pull request that adds this file. It leaves the historical O4 workflows untouched.
+#
+# OUTCOMES: PASS = the observation matched the stated hypothesis; FAIL = clearly different from it (a finding, not a harness
+# error); INCONCLUSIVE = the harness could not establish what it needs. Exit code 0 / 1 (any FAIL) / 3 (inconclusive only).
+# It does not prove interrupted-write durability, stamp or checkpoint behaviour, or anything about a recovery implementation.
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/g1-corrupt-save-experiment.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  corrupt-save:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      APP_SHA: 16a69c241a480e67b1ea290d4fc1a7ac669b1dc0   # main after O4 (#127); the game code under test
+      EXPECTED_PACKAGE: com.thelastjailer.app.debug
+    steps:
+      - name: Checkout the app under test
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.APP_SHA }}
+          path: src/APP
+          persist-credentials: false
+
+      - name: Confirm the exact commit (fail closed)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          want="$APP_SHA"
+          case "$want" in
+            *[!0-9a-f]*|"") echo "::error::commit id is not lowercase hex"; exit 1 ;;
+          esac
+          [ "${#want}" -eq 40 ] || { echo "::error::commit id is not 40 characters"; exit 1; }
+          got="$(git -C src/APP rev-parse HEAD)"
+          if [ "$got" != "$want" ]; then echo "::error::checked out $got, expected $want"; exit 1; fi
+          status="$(gh api "repos/${GITHUB_REPOSITORY}/compare/${want}...main" --jq .status)"
+          case "$status" in
+            ahead|identical) echo "$want is on main ($status)" ;;
+            *) echo "::error::$want is not an ancestor of main (compare status: $status)"; exit 1 ;;
+          esac
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Write the fresh-key guard
+        run: |
+          cat > "$RUNNER_TEMP/fresh-key-guard.sh" <<'GUARD'
+          #!/bin/bash
+          # Fails if ANY debug keystore already exists where the Android build tools would look for one.
+          # The QA builds must use a key created on this runner during this job, so the guard must pass
+          # BEFORE the first build. The three builds then share the key the first build creates.
+          set -u
+          found=""
+          for d in "${ANDROID_USER_HOME:-}" "${ANDROID_SDK_HOME:-}/.android" "${HOME:-}/.android"; do
+            case "$d" in ""|"/.android") continue ;; esac
+            if [ -e "$d/debug.keystore" ]; then found="$found $d/debug.keystore"; fi
+          done
+          if [ -n "$found" ]; then
+            echo "::error title=Debug key pre-existed::A debug keystore already exists on this runner:$found. The QA builds must use a fresh key."
+            exit 1
+          fi
+          echo "no pre-existing debug keystore"
+          GUARD
+          chmod +x "$RUNNER_TEMP/fresh-key-guard.sh"
+      - name: Self-test the fresh-key guard
+        run: |
+          set -u
+          guard="$RUNNER_TEMP/fresh-key-guard.sh"
+          t="$(mktemp -d)"
+          mkdir -p "$t/clean" "$t/dirty/.android" "$t/custom"
+          : > "$t/dirty/.android/debug.keystore"
+          : > "$t/custom/debug.keystore"
+          env -u ANDROID_USER_HOME -u ANDROID_SDK_HOME HOME="$t/clean" "$guard" >/dev/null \
+            || { echo "::error::guard self-test: a clean home was wrongly rejected"; exit 1; }
+          if env -u ANDROID_USER_HOME -u ANDROID_SDK_HOME HOME="$t/dirty" "$guard" >/dev/null 2>&1; then
+            echo "::error::guard self-test: a pre-existing ~/.android/debug.keystore was NOT rejected"; exit 1
+          fi
+          if env -u ANDROID_SDK_HOME HOME="$t/clean" ANDROID_USER_HOME="$t/custom" "$guard" >/dev/null 2>&1; then
+            echo "::error::guard self-test: a pre-existing keystore in ANDROID_USER_HOME was NOT rejected"; exit 1
+          fi
+          rm -rf "$t"
+          echo "guard self-test passed: clean home accepted, both pre-existing-key cases rejected"
+      - name: Require a fresh runner (no pre-existing debug key)
+        run: '"$RUNNER_TEMP/fresh-key-guard.sh"'
+
+      - name: Build the debug APK
+        run: |
+          set -euo pipefail
+          mkdir -p qa
+          (cd src/APP && ./gradlew assembleDebug --stacktrace)
+          cp src/APP/app/build/outputs/apk/debug/app-debug.apk qa/app.apk
+          ls -l qa
+
+      - name: Verify the APK (fail closed)
+        run: |
+          set -euo pipefail
+          root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}/build-tools"
+          [ -d "$root" ] || { echo "::error::Android build-tools folder not found"; exit 1; }
+          AAPT2="$root/$(ls "$root" | sort -V | tail -1)/aapt2"
+          [ -x "$AAPT2" ] || { echo "::error::aapt2 not found"; exit 1; }
+          badging="$("$AAPT2" dump badging qa/app.apk)"
+          pkg="$(sed -n "s/^package: name='\([^']*\)'.*/\1/p" <<<"$badging" | head -n1)"
+          [ "$pkg" = "$EXPECTED_PACKAGE" ] || { echo "::error::package is '$pkg', expected $EXPECTED_PACKAGE"; exit 1; }
+          grep -q '^application-debuggable' <<<"$badging" || { echo "::error::not a debuggable build"; exit 1; }
+          echo "verified: package $pkg, debuggable build"
+
+      - name: Write the experiment script
+        run: |
+          cat > "$RUNNER_TEMP/g1-experiment.sh" <<'G1EXPERIMENT'
+          #!/bin/bash
+          # 2C-2 G1: what does Android (and the current game) do when the stored save is DAMAGED?
+          # A workflow-only characterisation experiment on a disposable emulator. It builds nothing new and changes no game code.
+          #
+          # WHY: SharedPreferences hides a damaged file by loading it as EMPTY, so a damaged save can look like a brand-new game, and
+          # the next autosave would then overwrite the damaged bytes. Before any recovery design relies on that, it is observed here.
+          # This experiment characterises Android's failure behaviour; it does NOT test any recovery feature (none exists yet).
+          #
+          # SAFETY
+          #   * Only the QA package com.thelastjailer.app.debug on this disposable emulator is ever touched. The Play package
+          #     (com.thelastjailer.app) is never named in a command; a guard refuses any command that would name it.
+          #   * The save is synthetic: it exists only because this script makes ONE Chapter 1 choice on a throwaway emulator.
+          #     No player data is involved. File contents, hashes, UI text and exception messages are never printed; the output is
+          #     PASS / FAIL / INCONCLUSIVE / INFO lines, fixed vocabulary, true/false results, counts and file NAMES and SIZES only.
+          #   * Fails closed: if the baseline or the device state cannot be established, the remaining steps are NOT run.
+          #
+          # METHOD
+          #   B: uninstall the QA package once, install the app, make ONE predetermined choice ("OPEN THE DOOR"), wait for the save to
+          #      settle, check its state, restart the app normally and check it again, then stash a private copy of the whole
+          #      shared_prefs folder inside the app's own storage. Every variant below starts from a fresh copy of that same baseline.
+          #   V0 control: the baseline restored untouched must come back as the saved game (proves restore + observation work).
+          #   V1 truncated    V2 empty file    V3 garbage bytes    V4 file missing
+          #   V5 one value with the wrong type
+          #   V6 damaged main file next to a valid .bak copy
+          #
+          # OUTCOMES (per check): PASS = the observation matched the stated hypothesis. FAIL = the observation was clear and DIFFERENT
+          # from the hypothesis (a finding that changes the design; not a harness error). INCONCLUSIVE = the harness could not
+          # establish what it needs (baseline, damage, launch or UI), so nothing is concluded. INFO = observation only.
+          # Exit code: 0 all PASS; 1 any FAIL; 3 any INCONCLUSIVE (and no FAIL).
+          set -u
+          set +e   # never abort on a failed probe; every failure is recorded explicitly and decides the exit code
+          PKG="${EXPECTED_PACKAGE:?EXPECTED_PACKAGE is required}"
+          APK="${APK:?APK is required}"
+          ADB="${ADB:-adb}"
+          OUT="${RESULTS_FILE:?RESULTS_FILE is required}"
+          ACT="com.thelastjailer.app.MainActivity"
+          COMP="$PKG/$ACT"
+          POLL="${O4_POLL_SECS:-2}"
+          HEALTHY_TRIES="${O4_HEALTHY_TRIES:-30}"
+          SETTLE_TRIES="${O4_SETTLE_TRIES:-15}"     # polls while waiting for a save to reach disk and stop changing
+          SCROLL_TRIES="${O4_SCROLL_TRIES:-10}"     # most swipes used to bring a button into view
+          SAVE_FILE="shared_prefs/jailer_saves.xml"
+          BAK_FILE="shared_prefs/jailer_saves.xml.bak"
+          STASH="files/g1_base"
+          DMGDIR="files/g1_dmg"
+          MAX_TAPS=6
+          LABELS="Story Character Inventory Map Save Options"
+          FLAGS1="opened_black_door hunted_on_the_road"
+          passes=0; fails=0; incs=0; taps=0; swipes=0
+          t_start=$SECONDS
+          secs() { awk -v a="$1" -v b="$2" 'BEGIN { printf "%g", a * b }'; }
+          rec() { # status id detail
+            printf '%s %s: %s\n' "$1" "$2" "$3" | tee -a "$OUT"
+            case "$1" in PASS) passes=$((passes + 1)) ;; FAIL) fails=$((fails + 1)) ;; INCONCLUSIVE) incs=$((incs + 1)) ;; esac
+            return 0
+          }
+          finish() {
+            rec INFO G99 "experiment took $((SECONDS - t_start))s; story choices activated: $taps (limit $MAX_TAPS); scroll swipes: $swipes"
+            rec RESULT G1 "$passes passed, $fails failed, $incs inconclusive (INFO lines are not passes; inconclusive is not a pass)"
+            if [ "$fails" -gt 0 ]; then exit 1; fi
+            if [ "$incs" -gt 0 ]; then exit 3; fi
+            exit 0
+          }
+          bail() { # status id detail : record, say what was not run, stop
+            rec "$1" "$2" "$3"
+            rec INFO G98 "the remaining steps were NOT run, so they are neither passed nor failed"
+            finish
+          }
+          # The Play package must never be the target of any command. The QA package name ends in ".debug"; any command text that names
+          # com.thelastjailer.app NOT followed by a dot (i.e. the bare Play id) is refused outright.
+          dsh() { local o rc
+            if grep -qE 'com\.thelastjailer\.app($|[^.])' <<<"$1"; then printf 'REFUSED: command names the Play package\n'; return 97; fi
+            o="$(timeout 60 "$ADB" shell "$1" 2>&1)"; rc=$?; printf '%s\n' "$o" | tr -d '\r'; return "$rc"; }
+          names() { local o; if o="$(dsh "run-as $PKG ls -1 $1")"; then printf '%s' "$o" | paste -sd ',' -; else printf '(absent)'; fi; }
+          sizes() { dsh "run-as $PKG sh -c 'for f in shared_prefs/* files/*; do [ -f \"\$f\" ] && stat -c \"%n %s\" \"\$f\"; done'" | grep -v '^$' | paste -sd ';' -; }
+          pkg_field() { dsh "dumpsys package $PKG" | sed -n "s/^ *$1=\(.*\)$/\1/p" | head -n1; }
+          installed_sha() {
+            local p; p="$(dsh "pm path $PKG" | sed -n 's/^package://p' | grep '/base\.apk$' | head -n1)"
+            [ -n "$p" ] || return 1
+            dsh "sha256sum $p" | cut -d' ' -f1
+          }
+          foreground_ok() { grep -q "$PKG/.*MainActivity" <<<"$1" && ! grep -qiE 'Application Error|Application Not Responding|isn.t responding|has stopped' <<<"$1"; }
+          look() {
+            local p f
+            p="$(dsh "pidof $PKG" | head -n1)"
+            f="$(dsh "dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'; dumpsys activity activities | grep -E 'topResumedActivity'" | head -n 4 | paste -sd ' ' -)"
+            printf '%s|%s' "$p" "$f"
+          }
+
+          stop_app() { # force-stop and confirm the process is gone. 0 gone / 1 still there.
+            dsh "am force-stop $PKG" >/dev/null
+            local p
+            for _ in 1 2 3 4 5; do p="$(dsh "pidof $PKG" | head -n1)"; [ -z "$p" ] && return 0; sleep 1; done
+            return 1
+          }
+
+          # ---- UI helpers --------------------------------------------------------------------------------------------------
+          UIXML=""
+          ui_dump() { # bounded retries; the app's own nodes land in $UIXML (one <node .../> per line). 0 ok / 1 unreadable.
+            local o rc raw
+            for a in 1 2 3; do
+              o="$(dsh "uiautomator dump /sdcard/o4-window.xml")"; rc=$?
+              if [ "$rc" -eq 0 ] && grep -qi 'dumped to' <<<"$o"; then
+                raw="$(dsh "cat /sdcard/o4-window.xml")"; dsh "rm -f /sdcard/o4-window.xml" >/dev/null
+                UIXML="$(grep -oE "<node [^>]*package=\"$PKG\"[^>]*>" <<<"$raw")"
+                [ -n "$UIXML" ] && return 0
+              fi
+              sleep 3
+            done
+            UIXML=""; return 1
+          }
+          # match mode "exact": the node's text (or content-desc) IS the label; "contains": the label is part of it.
+          ui_match() { # label mode : prints "x y clickable" per matching on-screen node
+            awk -v L="$1" -v M="$2" -v H="$SCREEN_H" -v NAVTOP="$NAV_TOP" '
+              function attr(s, name,   re, v) { re = " " name "=\"[^\"]*\""; if (match(s, re)) { v = substr(s, RSTART + length(name) + 3, RLENGTH - length(name) - 4); return v } return "" }
+              { t = attr($0, "text"); d = attr($0, "content-desc"); b = attr($0, "bounds"); c = attr($0, "clickable")
+                ok = (M == "exact") ? (t == L || d == L) : (index(t, L) > 0 || index(d, L) > 0)
+                if (!ok || b !~ /^\[[0-9]+,[0-9]+\]\[[0-9]+,[0-9]+\]$/) next
+                gsub(/[][,]/, " ", b); split(b, p, " ")
+                x = int((p[1] + p[3]) / 2); y = int((p[2] + p[4]) / 2)
+                if (p[3] <= p[1] || p[4] <= p[2]) next
+                if (H > 0 && (p[2] < 0 || p[4] > H)) next
+                if (NAVTOP > 0 && y >= NAVTOP - 10) next
+                print x, y, (c == "true" ? 1 : 0) }' <<<"$UIXML"
+          }
+          SCREEN_H=0; NAV_TOP=0; NAV_OK=no
+          # The bottom navigation bar is the LOWEST row of navigation labels. The lowest node that carries one of the six names sets
+          # the row, and at least three different names must sit in that row (within 40 px of it, in the lower half of the screen).
+          # Same-named icons elsewhere (the Story header has an "Inventory" icon at the top) and stray text above the row are ignored.
+          # If the row cannot be established, NAV_OK stays "no" and nothing is tapped.
+          learn_screen() {
+            SCREEN_H="$(dsh "wm size" | sed -n 's/.*: *[0-9]*x\([0-9]*\).*/\1/p' | tail -n1)"; SCREEN_H="${SCREEN_H:-0}"
+            NAV_TOP=0; NAV_OK=no
+            [ "$SCREEN_H" -gt 0 ] 2>/dev/null || { SCREEN_H=0; return 0; }
+            local row cnt top
+            row="$(awk -v LABELS="$LABELS" -v H="$SCREEN_H" '
+              function attr(s, name,   re) { re = " " name "=\"[^\"]*\""; if (match(s, re)) return substr(s, RSTART + length(name) + 3, RLENGTH - length(name) - 4); return "" }
+              BEGIN { n = split(LABELS, want, " "); for (i = 1; i <= n; i++) isnav[want[i]] = 1 }
+              { b = attr($0, "bounds"); if (b !~ /^\[[0-9]+,[0-9]+\]\[[0-9]+,[0-9]+\]$/) next
+                l = attr($0, "text"); if (!(l in isnav)) l = attr($0, "content-desc"); if (!(l in isnav)) next
+                gsub(/[][,]/, " ", b); split(b, p, " ")
+                if (p[3] <= p[1] || p[4] <= p[2] || p[4] > H) next
+                if (!(l in lowest) || p[2] > lowest[l]) lowest[l] = p[2] }
+              END { max = -1; for (l in lowest) if (lowest[l] > max) max = lowest[l]
+                    if (max < 0) { print "0 0"; exit }
+                    cnt = 0; min = max; for (l in lowest) if (lowest[l] >= max - 40) { cnt++; if (lowest[l] < min) min = lowest[l] }
+                    print cnt, min }' <<<"$UIXML")"
+            read -r cnt top <<<"$row"
+            if [ "${cnt:-0}" -ge 3 ] && [ "${top:-0}" -gt $((SCREEN_H / 2)) ]; then NAV_TOP="$top"; NAV_OK=yes; fi
+            return 0
+          }
+          ui_has() { # label mode : 0 shown / 1 not shown / 2 UI unreadable
+            ui_dump || return 2
+            [ -n "$(ui_match "$1" "$2" | head -n1)" ]
+          }
+          tap_label() { # label : find the button (clickable) with bounded scrolling and activate it once. 0 tapped / 1 not found / 2 unreadable / 3 tap limit / 4 no safe area
+            local label="$1" n m x y c nav_seen=no
+            for n in $(seq 0 "$SCROLL_TRIES"); do
+              ui_dump || return 2
+              learn_screen
+              if [ "$NAV_OK" != yes ]; then sleep 1; continue; fi   # no safe tap area established: neither tap nor scroll on a guess
+              nav_seen=yes
+              m="$(ui_match "$label" contains | sort -k3,3nr | head -n1)"
+              if [ -n "$m" ]; then
+                [ "$taps" -lt "$MAX_TAPS" ] || return 3
+                read -r x y c <<<"$m"
+                dsh "input tap $x $y" >/dev/null
+                taps=$((taps + 1)); SCROLLS_USED="$n"
+                return 0
+              fi
+              dsh "input swipe 540 $((SCREEN_H * 70 / 100)) 540 $((SCREEN_H * 30 / 100)) 400" >/dev/null
+              swipes=$((swipes + 1)); sleep 1
+            done
+            [ "$nav_seen" = yes ] || return 4
+            return 1
+          }
+
+          # ---- save helpers: the save is streamed through a pipe and never printed or written to disk ---------------------
+          save_flat() { timeout 60 "$ADB" shell "run-as $PKG cat $SAVE_FILE" 2>/dev/null | tr -d '\r\n' | sed 's/> *</></g'; }
+          save_sig() { save_flat | sha256sum | cut -d' ' -f1; }     # compared in memory only, never printed
+          save_present() { dsh "run-as $PKG ls -1 shared_prefs" | grep -qx 'jailer_saves.xml'; }
+          settle() { # wait (bounded) until the save exists and is identical on 3 consecutive polls. Sets SIG. 0 settled / 1 absent / 2 never stable
+            local prev="" cur same=0 seen=no
+            for _ in $(seq 1 "$SETTLE_TRIES"); do
+              if save_present; then
+                seen=yes; cur="$(save_sig)"
+                if [ -n "$cur" ] && [ "$cur" = "$prev" ]; then same=$((same + 1)); else same=0; fi
+                prev="$cur"
+                if [ "$same" -ge 2 ]; then SIG="$cur"; return 0; fi
+              fi
+              sleep "$POLL"
+            done
+            [ "$seen" = yes ] && return 2
+            return 1
+          }
+          # check_state SCENE COURAGE "flag flag ..." [stamp]: true/false per field. 0 all true / 1 a field is wrong / 2 unreadable or unexpected shape
+          STATE_DETAIL=""
+          check_state() {
+            local scene="$1" courage="$2" flags="$3" want_stamp="${4:-}" s fset f
+            s="$(save_flat)"
+            if [ -z "$s" ]; then STATE_DETAIL="the save could not be read"; return 2; fi
+            if ! printf '%s' "$s" | grep -F '<string name="1.scene">' >/dev/null; then STATE_DETAIL="a save file exists but not in the expected shape"; return 2; fi
+            local r_scene r_chapter r_courage r_slot r_flags=true r_stamp=n/a
+            printf '%s' "$s" | grep -F "<string name=\"1.scene\">$scene</string>" >/dev/null && r_scene=true || r_scene=false
+            printf '%s' "$s" | grep -F '<string name="1.chapter">chapter_1</string>' >/dev/null && r_chapter=true || r_chapter=false
+            printf '%s' "$s" | grep -F "<int name=\"1.courage\" value=\"$courage\" />" >/dev/null && r_courage=true || r_courage=false
+            printf '%s' "$s" | grep -F '<int name="active_slot" value="1" />' >/dev/null && r_slot=true || r_slot=false
+            fset="$(printf '%s' "$s" | grep -oE '<set name="1\.flags">(<string>[^<]*</string>)*</set>' | head -n1)"
+            for f in $flags; do printf '%s' "$fset" | grep -F "<string>$f</string>" >/dev/null || r_flags=false; done
+            if [ -n "$want_stamp" ]; then
+              printf '%s' "$s" | grep -E '<string name="1\.stamp">[0-9a-f]{32}</string>' >/dev/null && r_stamp=true || r_stamp=false
+            fi
+            STATE_DETAIL="scene=$r_scene chapter=$r_chapter courage=$r_courage active_slot=$r_slot flags=$r_flags${want_stamp:+ stamp_key=$r_stamp}"
+            local v bad=0
+            for v in $r_scene $r_chapter $r_courage $r_slot $r_flags; do [ "$v" = true ] || bad=1; done
+            if [ -n "$want_stamp" ] && [ "$r_stamp" != true ]; then bad=1; fi
+            return "$bad"
+          }
+          state_record() { # id okmsg SCENE COURAGE FLAGS [stamp]: record the result of check_state
+            check_state "$3" "$4" "$5" "${6:-}"; local rc=$?
+            case "$rc" in
+              0) rec PASS "$1" "$2 ($STATE_DETAIL)" ;;
+              1) rec FAIL "$1" "the stored game state is not what the story requires ($STATE_DETAIL)" ;;
+              *) rec INCONCLUSIVE "$1" "$STATE_DETAIL, so the state could not be assessed" ;;
+            esac
+            return "$rc"
+          }
+
+
+          # ---- G1 helpers ---------------------------------------------------------------------------------------------------
+          apk_matches() { local want got; want="$(sha256sum "$APK" | cut -d' ' -f1)"; got="$(installed_sha)"; [ -n "$want" ] && [ "$want" = "$got" ]; }
+          # app_sh SCRIPT: run SCRIPT as the app (run-as). SCRIPT must not contain a single quote. Always end it with an explicit token.
+          app_sh() { dsh "run-as $PKG sh -c '$1'"; }
+          tok() { app_sh "$1" | tail -n1; }
+          exists_tok() { tok "[ -e $1 ] && echo YES || echo NO"; }
+          fsize() { tok "stat -c %s $1 2>/dev/null || echo NONE"; }
+          cmp_state() { tok "if [ -e $1 ] && [ -e $2 ]; then cmp -s $1 $2 && echo SAME || echo DIFF; else echo MISSING; fi"; }
+          warn_count() { dsh "logcat -d -s SharedPreferencesImpl:W" | grep -c 'Cannot read'; }
+          cce_count() { dsh "logcat -d -b crash" | grep -c 'ClassCastException'; }
+          CRASH_KIND=""
+          crash_seen() { # 0 = a crash/ANR/process-death event for this package since the last logcat clear (fixed vocabulary only), 1 = none
+            local n
+            n="$(dsh "logcat -d -b crash" | grep -cF "$PKG")"; if [ "${n:-0}" -gt 0 ]; then CRASH_KIND="crash-log"; return 0; fi
+            if [ -n "$PID" ]; then
+              n="$(dsh "logcat -d -b main,crash --pid=$PID" | grep -c 'FATAL EXCEPTION')"; if [ "${n:-0}" -gt 0 ]; then CRASH_KIND="fatal-exception"; return 0; fi
+            fi
+            n="$(dsh "logcat -d -b events" | grep -E 'am_crash|am_anr|am_proc_died' | grep -cF "$PKG")"; if [ "${n:-0}" -gt 0 ]; then CRASH_KIND="activity-manager-event"; return 0; fi
+            n="$(dsh "logcat -d -b system,main" | grep -cE "ANR in $PKG|Process $PKG .*has died")"; if [ "${n:-0}" -gt 0 ]; then CRASH_KIND="anr-or-death"; return 0; fi
+            return 1
+          }
+          # observe_launch: one COLD launch, classified. Sets OBS (FRESH | BASELINE | OTHER | CRASH | NOFG | NOTCOLD | UNREADABLE) and PID.
+          OBS=""; PID=""
+          classify_screen() {
+            local rc
+            ui_has "The Fallen Knight" exact; rc=$?
+            if [ "$rc" -eq 0 ]; then OBS=FRESH; return 0; fi
+            if [ "$rc" -eq 2 ]; then OBS=UNREADABLE; return 0; fi
+            ui_has "A Witness at the Door" exact; rc=$?
+            if [ "$rc" -eq 0 ]; then OBS=BASELINE; elif [ "$rc" -eq 2 ]; then OBS=UNREADABLE; else OBS=OTHER; fi
+          }
+          observe_launch() {
+            OBS=""; PID=""; CRASH_KIND=""
+            if [ -n "$(dsh "pidof $PKG" | head -n1)" ]; then OBS=NOTCOLD; return 0; fi
+            timeout 30 "$ADB" logcat -b all -c >/dev/null 2>&1
+            local out r pid focus
+            out="$(timeout 90 "$ADB" shell "am start -W -n $COMP" 2>&1)"
+            if grep -q '^Error' <<<"$out"; then OBS=NOFG; return 0; fi
+            for _ in $(seq 1 "$HEALTHY_TRIES"); do
+              r="$(look)"; pid="${r%%|*}"; focus="${r#*|}"
+              [ -n "$pid" ] && PID="$pid"
+              if crash_seen; then OBS=CRASH; return 0; fi
+              if [ -n "$pid" ] && foreground_ok "$focus"; then
+                sleep "$POLL"
+                if crash_seen; then OBS=CRASH; return 0; fi
+                classify_screen; return 0
+              fi
+              sleep "$POLL"
+            done
+            OBS=NOFG
+          }
+          # ---- baseline stash and restore -----------------------------------------------------------------------------------
+          BASE_NAMES=""
+          stash_baseline() { # copy the whole shared_prefs folder into the app's own files/ ; 0 ok
+            local t f
+            t="$(tok "rm -rf $STASH; mkdir -p $STASH && cp shared_prefs/* $STASH/ && echo DONE")"
+            [ "$t" = DONE ] || return 1
+            BASE_NAMES="$(names shared_prefs)"
+            [ "$BASE_NAMES" = "$(names $STASH)" ] || return 1
+            for f in $(tr ',' ' ' <<<"$BASE_NAMES"); do [ "$(cmp_state shared_prefs/$f $STASH/$f)" = SAME ] || return 1; done
+            case ",$BASE_NAMES," in *,jailer_saves.xml,*) ;; *) return 1 ;; esac
+            return 0
+          }
+          restore_baseline() { # stop the app, put the baseline back byte-for-byte ; 0 ok
+            local t f
+            stop_app || return 1
+            t="$(tok "rm -f shared_prefs/* && cp $STASH/* shared_prefs/ && echo DONE")"
+            [ "$t" = DONE ] || return 1
+            [ "$(names shared_prefs)" = "$BASE_NAMES" ] || return 1
+            for f in $(tr ',' ' ' <<<"$BASE_NAMES"); do [ "$(cmp_state shared_prefs/$f $STASH/$f)" = SAME ] || return 1; done
+            return 0
+          }
+          snapshot_damage() { [ "$(tok "rm -rf $DMGDIR; mkdir -p $DMGDIR; cp shared_prefs/jailer_saves.xml* $DMGDIR/ 2>/dev/null; echo DONE")" = DONE ]; }
+          HALF=0
+          half_script() { printf 'n=$(wc -c < %s); head -c $((n/2)) %s > %s.t && mv %s.t %s && echo DONE' "$SAVE_FILE" "$SAVE_FILE" "$SAVE_FILE" "$SAVE_FILE" "$SAVE_FILE"; }
+          # Each damage_* applies ONE kind of damage and verifies, from outside the app, that exactly that damage is present. 0 = applied and verified.
+          damage_truncate() { local n; n="$(fsize $SAVE_FILE)"; [ "${n:-0}" -gt 100 ] 2>/dev/null || return 1
+            [ "$(tok "$(half_script)")" = DONE ] || return 1; [ "$(fsize $SAVE_FILE)" = "$((n / 2))" ] && [ "$(cmp_state $SAVE_FILE $STASH/jailer_saves.xml)" = DIFF ]; }
+          damage_empty() { [ "$(tok ": > $SAVE_FILE && echo DONE")" = DONE ] && [ "$(fsize $SAVE_FILE)" = 0 ]; }
+          damage_garbage() { [ "$(tok "yes GARBAGEGARBAGE | head -c 512 > $SAVE_FILE && echo DONE")" = DONE ] && [ "$(fsize $SAVE_FILE)" = 512 ] \
+            && [ "$(tok "grep -c -F \"<\" $SAVE_FILE; true")" = 0 ] && [ "$(cmp_state $SAVE_FILE $STASH/jailer_saves.xml)" = DIFF ]; }
+          damage_missing() { [ "$(tok "rm -f $SAVE_FILE $BAK_FILE && echo DONE")" = DONE ] && [ "$(exists_tok $SAVE_FILE)" = NO ] && [ "$(exists_tok $BAK_FILE)" = NO ]; }
+          damage_wrongtype() { local s='sed -i "s/<int\([[:space:]]name=.1\.level.\)/<string\1/" shared_prefs/jailer_saves.xml && echo DONE'
+            [ "$(tok "$s")" = DONE ] || return 1
+            local flat; flat="$(save_flat)"
+            [ -n "$flat" ] && ! grep -qF '<int name="1.level"' <<<"$flat" && grep -qF '<string name="1.level"' <<<"$flat"; }
+          damage_bak() { local n; n="$(fsize $SAVE_FILE)"; [ "${n:-0}" -gt 100 ] 2>/dev/null || return 1
+            [ "$(tok "cp $SAVE_FILE $BAK_FILE && echo DONE")" = DONE ] || return 1
+            [ "$(tok "$(half_script)")" = DONE ] || return 1
+            [ "$(fsize $SAVE_FILE)" = "$((n / 2))" ] && [ "$(cmp_state $BAK_FILE $STASH/jailer_saves.xml)" = SAME ] && [ "$(cmp_state $SAVE_FILE $STASH/jailer_saves.xml)" = DIFF ]; }
+          begin_variant() { # id name damage_function : fresh baseline, damage applied and verified, evidence kept. Stops the run on a harness problem.
+            local id="$1" name="$2" fn="$3"
+            dsh "input keyevent KEYCODE_HOME" >/dev/null   # leave any system crash dialog of the previous variant behind
+            restore_baseline || bail INCONCLUSIVE "${id}0" "$name: the baseline could not be restored byte-for-byte, so this variant was not run"
+            if [ -n "$fn" ]; then
+              $fn || bail INCONCLUSIVE "${id}0" "$name: the intended damage could not be applied and verified from outside the app, so this variant was not run"
+            fi
+            snapshot_damage || bail INCONCLUSIVE "${id}0" "$name: the damaged state could not be kept for comparison, so this variant was not run"
+            local sz; sz="$(fsize $SAVE_FILE)"; [ "$sz" = NONE ] && sz="absent" || sz="$sz bytes"
+            if [ -n "$fn" ]; then rec INFO "${id}0" "$name: the baseline was restored byte-for-byte and the damage applied and verified (main save file now: $sz)"
+            else rec INFO "${id}0" "$name: the baseline was restored byte-for-byte; nothing was damaged (main save file: $sz)"; fi
+          }
+          launch_verdict_fresh() { # id name : PASS 0 if the opening scene (fresh game) is shown; otherwise records and returns 1
+            local id="$1" name="$2"
+            observe_launch
+            case "$OBS" in
+              FRESH) rec PASS "${id}a" "$name: launched with no crash and shows the opening scene 'The Fallen Knight', i.e. it looks like a brand-new game"; return 0 ;;
+              CRASH) rec FAIL "${id}a" "$name: the app crashed on launch (event kind: $CRASH_KIND; ClassCastException lines in the crash log: $(cce_count))" ;;
+              BASELINE) rec FAIL "${id}a" "$name: the app shows 'A Witness at the Door' (the baseline progress) although the stored save was damaged" ;;
+              OTHER) rec FAIL "${id}a" "$name: the app is running but shows neither the opening scene nor the baseline scene" ;;
+              *) rec INCONCLUSIVE "${id}a" "$name: the launch could not be classified (result: $OBS)" ;;
+            esac
+            return 1
+          }
+          untouched_check() { # id name : is the damaged main file still exactly as damaged (or still absent)? Records PASS/FAIL/INCONCLUSIVE.
+            local id="$1" name="$2" s i
+            for i in 1 2 3; do sleep "$POLL"; done   # let any asynchronous write land first
+            if [ "$(exists_tok $DMGDIR/jailer_saves.xml)" = NO ]; then
+              s="$(exists_tok $SAVE_FILE)"
+              case "$s" in NO) rec PASS "${id}c" "$name: the file is still absent after launch, so nothing wrote a new save yet" ;; YES) rec FAIL "${id}c" "$name: a save file appeared during launch, before any choice" ;; *) rec INCONCLUSIVE "${id}c" "$name: could not check whether the file exists" ;; esac
+            else
+              s="$(cmp_state $SAVE_FILE $DMGDIR/jailer_saves.xml)"
+              case "$s" in SAME) rec PASS "${id}c" "$name: the damaged file is still byte-for-byte as damaged after launch, so nothing wrote over it" ;; DIFF|MISSING) rec FAIL "${id}c" "$name: the damaged file was changed or removed during launch, before any choice" ;; *) rec INCONCLUSIVE "${id}c" "$name: could not compare the file after launch" ;; esac
+            fi
+          }
+          first_save_check() { # id name : tap the first choice; the next save must replace the damaged data with a valid, complete save
+            local id="$1" name="$2" rc flat done_ chg sig0 cur changed=no u
+            sig0="$(save_sig)"
+            SCROLLS_USED=0
+            tap_label "OPEN THE DOOR"; rc=$?
+            if [ "$rc" -ne 0 ]; then rec INCONCLUSIVE "${id}d" "$name: the first choice could not be activated (tap_label result $rc), so the next-save behaviour was not observed"; return; fi
+            for _ in $(seq 1 "$SETTLE_TRIES"); do   # wait (bounded) for the file to change from its damaged state
+              flat="$(save_flat)"; cur="$(save_sig)"
+              if [ -n "$flat" ] && [ "$cur" != "$sig0" ]; then changed=yes; break; fi
+              sleep "$POLL"
+            done
+            if [ "$changed" = no ]; then
+              ui_has "The Fallen Knight" exact; u=$?
+              if [ "$u" -eq 0 ]; then rec INCONCLUSIVE "${id}d" "$name: the screen still shows the opening scene and the file did not change, so the tap may not have registered"
+              elif [ "$u" -eq 2 ]; then rec INCONCLUSIVE "${id}d" "$name: the file did not change and the UI could not be dumped to see whether the tap registered"
+              else rec FAIL "${id}d" "$name: the screen moved on after the first choice but the damaged file was never replaced within $(secs "$SETTLE_TRIES" "$POLL")s"; fi
+              return
+            fi
+            settle; rc=$?   # the first change may be only one of several writes of this choice; wait for the file to stop changing
+            if [ "$rc" -ne 0 ]; then rec INCONCLUSIVE "${id}d" "$name: the new save kept changing or vanished, so it was not assessed"; return; fi
+            flat="$(save_flat)"; done_=false; grep -q '</map>$' <<<"$flat" && done_=true
+            chg="$(cmp_state $SAVE_FILE $DMGDIR/jailer_saves.xml)"
+            check_state ch1_door_witness 3 "$FLAGS1" stamp; rc=$?
+            if [ "$rc" -eq 0 ] && [ "$done_" = true ] && [ "$chg" != SAME ]; then
+              rec PASS "${id}d" "$name: the first choice wrote a complete, valid save that replaced the damaged data (complete=$done_ replaced=true $STATE_DETAIL)"
+            elif [ "$rc" -eq 2 ]; then rec INCONCLUSIVE "${id}d" "$name: the new save could not be assessed ($STATE_DETAIL)"
+            else rec FAIL "${id}d" "$name: the first choice did not produce a complete, valid, replaced save (complete=$done_ replaced=$([ "$chg" != SAME ] && echo true || echo false) $STATE_DETAIL)"; fi
+          }
+          variant_fresh() { # id name hypothesis: a damaged or missing main file looks like a brand-new game
+            local id="$1" name="$2"
+            launch_verdict_fresh "$id" "$name" || { rec INFO "${id}s" "$name: observed=$OBS"; return; }
+            rec INFO "${id}b" "$name: 'Cannot read' warnings logged by SharedPreferencesImpl for this app: $(warn_count)"
+            untouched_check "$id" "$name"
+            first_save_check "$id" "$name"
+            rec INFO "${id}s" "$name: observed=$OBS (a damaged save was treated as an empty one)"
+          }
+
+          # ======================================================================================================================
+          # G0: guards and a clean start. Only the QA package is removed, and only this once.
+          if [ "$PKG" != "com.thelastjailer.app.debug" ]; then bail FAIL G0 "refusing to run: package is '$PKG', not com.thelastjailer.app.debug"; fi
+          [ -s "$APK" ] || bail INCONCLUSIVE G0 "the APK to test is missing or empty"
+          stop_app >/dev/null
+          un="$(timeout 90 "$ADB" uninstall "$PKG" 2>&1 | tr -d '\r' | tail -n1)"
+          if dsh 'pm list packages' | grep -qx "package:$PKG"; then bail FAIL G0 "the debug package is still installed after uninstall ('$un')"; fi
+          rec PASS G0 "removed only $PKG from the disposable emulator to start clean (uninstall said '$un'); the Play package is never touched"
+
+          # B1: install
+          inst="$(timeout 120 "$ADB" install "$APK" 2>&1 | tr -d '\r' | tail -n1)"
+          if [ "$inst" = Success ] && apk_matches; then rec PASS B1 "the app under test installed fresh and the installed APK is the built APK"
+          else bail FAIL B1 "the app did not install cleanly (install said '$inst')"; fi
+
+          # B2: first launch: opening scene, no save yet
+          observe_launch
+          if [ "$OBS" != FRESH ]; then bail INCONCLUSIVE B2 "the first launch did not reach the opening scene 'The Fallen Knight' (result: $OBS), so no baseline can be made"; fi
+          if save_present; then bail FAIL B2 "a save file already exists before any choice, so the baseline cannot start clean"; fi
+          rec PASS B2 "the app is in the foreground (pid $PID) on the opening scene 'The Fallen Knight'; no save exists yet"
+
+          # B3: ONE predetermined choice makes the genuine synthetic save
+          SCROLLS_USED=0
+          tap_label "OPEN THE DOOR"; rc=$?
+          case "$rc" in
+            0) rec PASS B3 "activated 'OPEN THE DOOR' once (after $SCROLLS_USED scroll swipe(s))" ;;
+            1) bail INCONCLUSIVE B3 "no 'OPEN THE DOOR' button was found within $SCROLL_TRIES scroll swipes; nothing was tapped" ;;
+            2) bail INCONCLUSIVE B3 "the UI could not be dumped while looking for the button; nothing was tapped" ;;
+            4) bail INCONCLUSIVE B3 "the bottom navigation bar could not be located, so no safe tap area was established; nothing was tapped" ;;
+            *) bail INCONCLUSIVE B3 "the tap limit was reached" ;;
+          esac
+          settle; rc=$?
+          if [ "$rc" -eq 1 ]; then bail INCONCLUSIVE B4 "no save appeared after the choice, so the tap may not have registered"; fi
+          if [ "$rc" -eq 2 ]; then bail INCONCLUSIVE B4 "the save kept changing, so it was not assessed"; fi
+          state_record B4 "the genuine synthetic baseline save has the known progress" ch1_door_witness 3 "$FLAGS1" stamp || bail INCONCLUSIVE B4b "the baseline is not what the story requires, so no variant was run"
+          SIG_BASE="$SIG"
+
+          # B5: it survives an ordinary stop and cold start
+          if ! stop_app; then bail INCONCLUSIVE B5 "the app could not be stopped for the restart check"; fi
+          observe_launch
+          if [ "$OBS" != BASELINE ]; then bail FAIL B5 "after an ordinary restart the app does not show 'A Witness at the Door' (result: $OBS), so the baseline does not survive a restart"; fi
+          settle; rc=$?
+          if [ "$rc" -ne 0 ] || [ "$SIG" != "$SIG_BASE" ]; then bail FAIL B5 "the baseline save changed or disappeared across an ordinary restart"; fi
+          rec PASS B5 "after stopping and restarting the app the save is unchanged and the screen shows 'A Witness at the Door'"
+
+          # B6: keep a private copy of the baseline (inside the app's own storage; never printed, never uploaded)
+          if ! stop_app; then bail INCONCLUSIVE B6 "the app could not be stopped before the baseline was copied"; fi
+          if ! stash_baseline; then bail INCONCLUSIVE B6 "the baseline copy could not be made and verified, so no variant was run"; fi
+          rec PASS B6 "kept a verified private copy of the baseline; files in it: [$BASE_NAMES]"
+
+          # V0: control. The untouched baseline, restored, must come back as the saved game.
+          begin_variant V0 "control (baseline restored, undamaged)" ""
+          observe_launch
+          case "$OBS" in
+            BASELINE) rec PASS V0a "control: the restored baseline launches with no crash and shows 'A Witness at the Door'" ;;
+            *) bail INCONCLUSIVE V0a "control: the restored baseline did not come back as the saved game (result: $OBS), so the variants cannot be interpreted" ;;
+          esac
+          rec INFO V0s "control: observed=$OBS"
+
+          # V1-V4: the main file is truncated / empty / garbage / missing. Hypothesis: loaded as EMPTY, a fresh game, no crash,
+          # the damaged bytes untouched until the first save, and that first save replaces them with a valid file.
+          begin_variant V1 "truncated file" damage_truncate;   variant_fresh V1 "truncated file"
+          begin_variant V2 "empty file" damage_empty;          variant_fresh V2 "empty file"
+          begin_variant V3 "garbage bytes" damage_garbage;     variant_fresh V3 "garbage bytes"
+          begin_variant V4 "file missing" damage_missing;      variant_fresh V4 "file missing"
+
+          # V5: one value has the wrong type. Hypothesis (from reading the code, not yet seen on a device): the typed read throws
+          # during the first screen, the app crashes on launch, and a second launch crashes the same way (the damaged file is not changed).
+          begin_variant V5 "wrong-typed value" damage_wrongtype
+          observe_launch
+          FIRST_OBS="$OBS"
+          case "$OBS" in
+            CRASH) rec PASS V5a "wrong-typed value: the app crashes on launch (event kind: $CRASH_KIND; ClassCastException lines in the crash log: $(cce_count))" ;;
+            FRESH) rec FAIL V5a "wrong-typed value: no crash; the app shows the opening scene (a fresh game)" ;;
+            BASELINE) rec FAIL V5a "wrong-typed value: no crash; the app shows 'A Witness at the Door'" ;;
+            OTHER) rec FAIL V5a "wrong-typed value: no crash; the app shows neither known scene" ;;
+            *) rec INCONCLUSIVE V5a "wrong-typed value: the launch could not be classified (result: $OBS), so a crash can be neither confirmed nor ruled out" ;;
+          esac
+          if [ "$OBS" = CRASH ]; then
+            stop_app >/dev/null; observe_launch
+            if [ "$OBS" = CRASH ]; then rec PASS V5b "wrong-typed value: a second launch crashes the same way, so restarting does not clear it"
+            elif [ "$OBS" = NOFG ] || [ "$OBS" = UNREADABLE ] || [ "$OBS" = NOTCOLD ]; then rec INCONCLUSIVE V5b "wrong-typed value: the second launch could not be classified (result: $OBS)"
+            else rec FAIL V5b "wrong-typed value: the second launch did not crash (result: $OBS)"; fi
+            case "$(cmp_state $SAVE_FILE $DMGDIR/jailer_saves.xml)" in
+              SAME) rec PASS V5c "wrong-typed value: the damaged file is unchanged after the crashes" ;;
+              DIFF|MISSING) rec FAIL V5c "wrong-typed value: the damaged file was changed or removed by the crashes" ;;
+              *) rec INCONCLUSIVE V5c "wrong-typed value: could not compare the file after the crashes" ;;
+            esac
+          fi
+          rec INFO V5s "wrong-typed value: first launch observed=$FIRST_OBS"
+
+          # V6: damaged main file next to a valid .bak. Hypothesis: Android swaps the .bak in, the baseline game comes back, no crash.
+          begin_variant V6 "damaged file plus valid .bak" damage_bak
+          observe_launch
+          case "$OBS" in
+            BASELINE) rec PASS V6a ".bak case: launched with no crash and shows 'A Witness at the Door', the baseline game" ;;
+            FRESH) rec FAIL V6a ".bak case: the app shows the opening scene (a fresh game); the valid .bak copy was NOT used" ;;
+            CRASH) rec FAIL V6a ".bak case: the app crashed on launch (event kind: $CRASH_KIND)" ;;
+            OTHER) rec FAIL V6a ".bak case: the app shows neither known scene" ;;
+            *) rec INCONCLUSIVE V6a ".bak case: the launch could not be classified (result: $OBS)" ;;
+          esac
+          if [ "$OBS" = BASELINE ]; then
+            for _ in 1 2 3; do sleep "$POLL"; done
+            case "$(cmp_state $SAVE_FILE $STASH/jailer_saves.xml)" in
+              SAME) rec PASS V6b ".bak case: the main file is now byte-for-byte the baseline, so the .bak was swapped in" ;;
+              DIFF|MISSING) rec FAIL V6b ".bak case: the game came back but the main file is not the baseline copy" ;;
+              *) rec INCONCLUSIVE V6b ".bak case: could not compare the main file with the baseline" ;;
+            esac
+            rec INFO V6c ".bak case: the .bak file still exists afterwards: $(exists_tok $BAK_FILE)"
+          fi
+          rec INFO V6s ".bak case: observed=$OBS"
+
+          stop_app >/dev/null
+          rec INFO G90 "private storage after the run, names and sizes only: shared_prefs=[$(names shared_prefs)] sizes: $(sizes)"
+          finish
+
+          G1EXPERIMENT
+          bash -n "$RUNNER_TEMP/g1-experiment.sh"
+
+      - name: Enable KVM acceleration (fail closed)
+        run: |
+          set -eu
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules >/dev/null
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          if [ ! -e /dev/kvm ]; then
+            echo "::error title=No KVM::/dev/kvm is not available on this runner, so the emulator cannot run with acceleration."
+            echo "FAIL E0: /dev/kvm not available on this runner; emulator not started" > "$RUNNER_TEMP/o4-spike-results.txt"
+            exit 1
+          fi
+          ls -l /dev/kvm
+
+      - name: Install the emulator and a system image
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          SM="$SDK/cmdline-tools/latest/bin/sdkmanager"
+          [ -x "$SM" ] || { echo "::error::sdkmanager not found at $SM"; echo "FAIL E0: sdkmanager not found" > "$RUNNER_TEMP/o4-spike-results.txt"; exit 1; }
+          "$SM" --licenses < <(yes) > "$RUNNER_TEMP/sdk-licenses.log" 2>&1 || true
+          if ! "$SM" --install "platform-tools" "emulator" "system-images;android-34;default;x86_64" > "$RUNNER_TEMP/sdkmanager.log" 2>&1; then
+            tail -n 40 "$RUNNER_TEMP/sdkmanager.log"
+            echo "FAIL E0: sdkmanager could not install the emulator or system image" > "$RUNNER_TEMP/o4-spike-results.txt"
+            exit 1
+          fi
+          tail -n 5 "$RUNNER_TEMP/sdkmanager.log"
+
+      - name: Install libpulse0 and verify the emulator can start (fail closed)
+        run: |
+          set -uo pipefail
+          set +e   # the runner starts steps with bash -e; every failure here is handled explicitly and still exits non-zero
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          RES="$RUNNER_TEMP/o4-spike-results.txt"
+          ann() { # level title ; message on stdin
+            local m; m="$(head -c 3500 | tr -d '\r' | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')"
+            echo "::$1 title=$2::$m"
+          }
+          stop() { echo "FAIL E0: $1" > "$RES"; echo "::error title=Emulator library check::$1"; exit 1; }
+          # The emulator's QEMU binary needs libpulse.so.0 even with audio off; the runner image does not ship it.
+          # This installs exactly one package, libpulse0, and nothing else.
+          sudo apt-get update -qq > "$RUNNER_TEMP/apt-update.log" 2>&1
+          sudo apt-get install -y --no-install-recommends libpulse0 > "$RUNNER_TEMP/apt-install.log" 2>&1
+          apt_rc=$?
+          if [ "$apt_rc" -ne 0 ]; then tail -n 15 "$RUNNER_TEMP/apt-install.log" | cut -c1-300 | ann notice "apt install libpulse0 output"; stop "apt-get install libpulse0 failed (exit code $apt_rc)"; fi
+          pkgver="$(dpkg-query -W -f='${Package} ${Version}' libpulse0 2>&1)"
+          soname="$(ldconfig -p 2>&1 | grep 'libpulse\.so\.0' | head -n 2 | paste -sd ';' -)"
+          ver_full="$(timeout 30 "$SDK/emulator/emulator" -version 2>&1)"
+          ver_rc=$?
+          ver_out="$(head -n 6 <<<"$ver_full")"
+          {
+            echo "package: $pkgver"
+            echo "libpulse.so.0 known to ldconfig: ${soname:-NO}"
+            echo "emulator -version (exit code $ver_rc):"; echo "$ver_out"
+          } | ann notice "libpulse and emulator check"
+          [ -n "$soname" ] || stop "libpulse.so.0 is not available after installing libpulse0"
+          if ! grep -q '^Android emulator version' <<<"$ver_out" || grep -q 'error while loading' <<<"$ver_out"; then stop "emulator -version did not succeed (exit code $ver_rc)"; fi
+          echo "libpulse0 installed; emulator -version works"
+
+      - name: Boot the emulator and run the experiment
+        run: |
+          set -uo pipefail
+          set +e   # the runner starts steps with bash -e; every failure in this step is handled explicitly and still exits non-zero
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          export ADB="$SDK/platform-tools/adb"
+          RES="$RUNNER_TEMP/g1-results.txt"
+          export RESULTS_FILE="$RES"
+          ELOG="$RUNNER_TEMP/emulator.log"
+          # Put the virtual device in an explicit folder. avdmanager and the emulator both read ANDROID_AVD_HOME first,
+          # so they cannot disagree about where it is. (The first runs showed the emulator found nothing in ~/.android/avd.)
+          export ANDROID_AVD_HOME="$RUNNER_TEMP/avd-home"
+          mkdir -p "$ANDROID_AVD_HOME"
+          TRIES="${O4_BOOT_TRIES:-120}"   # 120 x 5 s = 10 minutes
+          # Diagnostics are bounded and contain no app storage, saves, keys or credentials: runner/emulator facts and the
+          # emulator's own startup log. Everything goes out as annotations (step logs cannot be read without a download).
+          ann() { # level title ; message on stdin
+            local m; m="$(head -c 3500 | tr -d '\r' | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')"
+            echo "::$1 title=$2::$m"
+          }
+          diagnose() { # reason
+            {
+              echo "reason: $1"
+              echo "runner: ${ImageOS:-?} ${ImageVersion:-?}; cpus=$(nproc 2>&1); mem_mb=$(free -m 2>&1 | awk '/Mem:/{print $2}'); disk_free=$(df -h / 2>&1 | awk 'NR==2{print $4}')"
+              ls -l /dev/kvm 2>&1; echo "user=$(id -un 2>&1) groups=$(id -Gn 2>&1)"
+              ls -l "$SDK/emulator/emulator" 2>&1
+            } | ann notice "emulator diag 1: runner"
+            { timeout 30 "$SDK/emulator/emulator" -version 2>&1 | head -n 6; } | ann notice "emulator diag 2: emulator version"
+            { timeout 60 "$SDK/cmdline-tools/latest/bin/sdkmanager" --list_installed 2>&1 | grep -E 'emulator|system-images|platform-tools|Path' | head -n 12
+              grep -E '^(Pkg\.Desc|Pkg\.Revision|SystemImage\.)' "$SDK/system-images/android-34/default/x86_64/source.properties" 2>&1 | head -n 8
+              grep -E '^(abi\.type|image\.sysdir\.1|hw\.cpu\.arch|hw\.ramSize|hw\.gpu\.(enabled|mode)|AvdId|tag\.id)' "$ANDROID_AVD_HOME/o4.avd/config.ini" 2>&1 | head -n 10
+            } | ann notice "emulator diag 3: system image and AVD"
+            { echo "--- first 25 lines"; head -n 25 "$ELOG" 2>&1 | cut -c1-300; } | ann notice "emulator diag 4: log head"
+            { echo "--- last 40 lines"; tail -n 40 "$ELOG" 2>&1 | cut -c1-300; } | ann notice "emulator diag 5: log tail"
+            { echo "processes:"; pgrep -fa 'qemu-system|emulator' 2>&1 | cut -c1-200 | head -n 6
+              echo "adb devices:"; timeout 20 "$ADB" devices -l 2>&1 | head -n 6
+              echo "boot_completed: $(timeout 20 "$ADB" shell getprop sys.boot_completed 2>&1 | tr -d '\r')"
+            } | ann notice "emulator diag 6: processes and adb"
+          }
+          printf 'no\n' | "$SDK/cmdline-tools/latest/bin/avdmanager" create avd --force -n o4 -k "system-images;android-34;default;x86_64" --device pixel_6 > "$RUNNER_TEMP/avd.log" 2>&1
+          avd_rc=${PIPESTATUS[1]}
+          avd_listed="$(timeout 30 "$SDK/emulator/emulator" -list-avds 2>&1 | head -n 10)"
+          {
+            echo "avdmanager exit code: $avd_rc"
+            env | grep '^ANDROID_' | sed 's/^/env /'
+            echo "AVD folder: $ANDROID_AVD_HOME"; ls -la "$ANDROID_AVD_HOME" 2>&1 | head -n 12
+            echo "emulator -list-avds: ${avd_listed:-<empty>}"
+            echo "--- avdmanager output (last 15 lines)"; tail -n 15 "$RUNNER_TEMP/avd.log" | cut -c1-300
+          } | ann notice "AVD creation"
+          if [ "$avd_rc" -ne 0 ] || [ ! -f "$ANDROID_AVD_HOME/o4.ini" ] || [ ! -f "$ANDROID_AVD_HOME/o4.avd/config.ini" ] || ! grep -qx o4 <<<"$avd_listed"; then
+            where="$(find "$HOME" "$RUNNER_TEMP" -maxdepth 5 -name 'o4.ini' 2>/dev/null | head -n 5 | paste -sd ' ' -)"
+            reason="the virtual device o4 was not created and found in $ANDROID_AVD_HOME (avdmanager exit code $avd_rc; o4.ini found elsewhere at: ${where:-nowhere})"
+            echo "FAIL E0: $reason" > "$RES"
+            diagnose "$reason"
+            exit 1
+          fi
+          setsid nohup "$SDK/emulator/emulator" -avd o4 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -accel on -memory 3072 > "$ELOG" 2>&1 &
+          emu_pid=$!
+          stop_emulator() { "$ADB" emu kill >/dev/null 2>&1 || true; kill "$emu_pid" >/dev/null 2>&1 || true; }
+          trap stop_emulator EXIT
+          "$ADB" start-server >/dev/null 2>&1
+          booted=no; exited=no; started=$SECONDS
+          for _ in $(seq 1 "$TRIES"); do
+            if ! kill -0 "$emu_pid" 2>/dev/null; then exited=yes; break; fi
+            if [ "$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ]; then booted=yes; break; fi
+            sleep 5
+          done
+          waited=$((SECONDS - started))
+          if [ "$booted" != yes ]; then
+            if [ "$exited" = yes ]; then
+              wait "$emu_pid" 2>/dev/null; emu_rc=$?
+              sleep 15   # observation only: is an emulator process still alive after the tracked process exited?
+              reason="the tracked emulator process exited after about ${waited}s with exit code ${emu_rc} (wait status; 127 means unavailable)"
+              echo "FAIL E0: $reason" > "$RES"
+            else
+              reason="the emulator process was still running but sys.boot_completed was not 1 after ${waited}s (limit $((TRIES * 5))s)"
+              echo "FAIL E0: $reason" > "$RES"
+            fi
+            diagnose "$reason"
+            exit 1
+          fi
+          echo "emulator booted after about ${waited}s"
+          "$ADB" version | head -n 1
+          export APK="$GITHUB_WORKSPACE/qa/app.apk"
+          bash "$RUNNER_TEMP/g1-experiment.sh"
+          exit $?
+
+      - name: Report the results
+        if: always()
+        run: |
+          set -u
+          RES="$RUNNER_TEMP/g1-results.txt"
+          if [ ! -s "$RES" ]; then
+            echo "::error title=No experiment results::The experiment never produced results (an earlier step failed before the emulator was ready)."
+            body="No experiment results were produced."
+          else
+            body="$(cat "$RES")"
+            total="$(wc -l < "$RES")"; nparts=$(( (total + 11) / 12 )); [ "$nparts" -le 9 ] || nparts=9
+            for part in $(seq 1 "$nparts"); do
+              chunk="$(sed -n "$(( (part - 1) * 12 + 1 )),$(( part * 12 ))p" "$RES")"
+              chunk="${chunk//%/%25}"
+              echo "::notice title=G1 corrupt-save results (${part} of ${nparts})::${chunk//$'\n'/%0A}"
+            done
+          fi
+          {
+            echo "### 2C-2 G1 corrupt-save experiment (disposable emulator, synthetic save)"
+            echo
+            echo "Runner image: ${ImageOS:-unknown} ${ImageVersion:-unknown}. System image: android-34 default x86_64. App commit: ${APP_SHA}."
+            echo
+            echo "Characterises what Android and the current game do when a genuine synthetic Chapter 1 save is damaged. It tests no"
+            echo "recovery feature. PASS = matched the stated hypothesis, FAIL = clearly different (a finding), INCONCLUSIVE = the harness"
+            echo "could not establish what it needs. No file contents, hashes, UI text or exception messages are printed."
+            echo
+            echo '```'
+            echo "$body"
+            echo '```'
+            echo
+            echo "**Not demonstrated by this run:** interrupted-write or power-loss behaviour, stamp or checkpoint behaviour, other devices"
+            echo "or Android versions, or anything about a recovery implementation."
+          } >> "$GITHUB_STEP_SUMMARY"
