@@ -50,7 +50,7 @@ class Chapter1LegacyNodesTest {
         val pinned = mapOf(
             "black_door_opened" to Triple(1959063171, "iron_door_open_tunnel", listOf("Descend into the dark." to "beneath_the_roots")),
             "sword_drawn" to Triple(-1049031501, "knight_sword_drawn_door", listOf("Enter, blade first." to "beneath_the_roots")),
-            "walked_the_road" to Triple(1140992229, "road_away_from_tree", listOf("Follow the broken ground down." to "beneath_the_roots"))
+            "walked_the_road" to Triple(1140992229, "ch1_walked_the_road", listOf("Follow the broken ground down." to "beneath_the_roots"))
         )
         pinned.forEach { (id, expected) ->
             val n = StoryRepository.node(id)
