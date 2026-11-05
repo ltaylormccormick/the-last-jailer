@@ -129,13 +129,14 @@ class Batch1SafetyFoundationsTest {
     }
 
     @Test
-    fun `consumables and keepsakes still stack`() {
+    fun `consumables still stack but audited story keepsakes no longer do`() {
         val result = GameState(inventory = listOf("healing_draught", "dwarven_token")).applyChoice(
             choiceInto("x", Consequences(grantItemIds = listOf("healing_draught", "dwarven_token")))
         )
 
         assertEquals(2, result.inventory.count { it == "healing_draught" })
-        assertEquals(2, result.inventory.count { it == "dwarven_token" })
+        // R3 (deliberate update, was 2): dwarven_token is on the audited carried-once allow-list.
+        assertEquals(1, result.inventory.count { it == "dwarven_token" })
     }
 
     @Test

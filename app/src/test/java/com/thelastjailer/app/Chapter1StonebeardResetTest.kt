@@ -163,10 +163,11 @@ class Chapter1StonebeardResetTest {
     }
 
     @Test
-    fun `replay no longer stacks a second buckler - token duplication is still the separate ticket`() {
+    fun `replay no longer stacks a second buckler or token`() {
         val s = choose(choose(replayedAtHold(), "Help him"), "Take the buckler")
         assertEquals(1, s.inventory.count { it == "sturdy_buckler" })
-        assertEquals(2, s.inventory.count { it == "dwarven_token" })
+        // R3 (deliberate update, was 2): dwarven_token is on the audited carried-once allow-list.
+        assertEquals(1, s.inventory.count { it == "dwarven_token" })
     }
 
     // ---- Existing saves ----
